@@ -3,7 +3,7 @@ from analitiq.base.BaseMemory import BaseMemory
 from analitiq.llm.BaseLlm import AnalitiqLLM
 
 logging.basicConfig(
-    filename='analitiq/logs/latest_run.log'
+    filename='logs/latest_run.log'
     ,encoding='utf-8'
     ,filemode='w'
     ,level=logging.DEBUG
@@ -51,7 +51,7 @@ class Analitiq():
             msg_lookback += 1
             if msg_lookback > 5:
                 logging.warning(f"Prompt refinement process exceeded 3 iterations with no resolution. {response.Feedback}")
-                raise AttributeError(f"Prompt is not clear: {response.Feedback}")
+                return (f"Prompt is not clear: {response.Feedback}")
 
             user_prompt = refined_prompt
         logging.info(f"\nFinal user prompt '{user_prompt}'.")

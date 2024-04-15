@@ -99,8 +99,9 @@ class ProfileLoader:
         """
         Initializes the ProjectLoader with an empty list of services and a dictionary for profiles.
         """
-        home_directory = Path.home()
-        self.file_path = home_directory / file_path
+        #home_directory = Path.home()
+        #self.file_path = home_directory / file_path
+        self.file_path = Path(file_path)
 
     def load_and_validate_config(self, profile_name) -> Configuration:
         with open(self.file_path, 'r') as file:

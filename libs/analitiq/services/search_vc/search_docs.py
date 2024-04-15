@@ -18,6 +18,8 @@ class Search_docs:
 
     def run(self, user_prompt):
         project_name = GlobalConfig().get_project_name()
+
+        GlobalConfig().set_vdb(GlobalConfig().profile_configs['vector_dbs'])  # We do not need to init the VDB, until we need to use it
         response = self.vdb.kw_search(project_name, user_prompt)
 
         if response.objects:

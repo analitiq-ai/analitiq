@@ -150,21 +150,10 @@ class Sql():
         # Identify relevant tables based on the user's prompt
         relevant_tables = self.get_relevant_tables(user_prompt)
 
-        # If this request has nothing to do with this service, we exit with the word SKIP
-        if relevant_tables == 'SKIP':
-            response = BaseResponse(
-                content='SKIP'
-            )
-
-            return response
-
         # Generate an SQL query from the user's prompt using the identified relevant tables
         sql_query = self.prompt2sql(user_prompt, relevant_tables)
 
         logging.info(sql_query) ## TODO if the query returns an error, we need to re-try
-
-        if sql_query == 'SKIP':
-            return
 
         # Execute the generated SQL query and receive the result as a DataFrame
         result_df = self.run_sql(sql_query)
@@ -172,18 +161,18 @@ class Sql():
         # Check if the DataFrame is empty, return empty string instead
         if result_df.empty:
             result_df_json_str = ''
-        else:
-            print(result_df)
 
-            # Convert the DataFrame to a JSON string with "split" orientation for better portability
-            result_df_json_str = result_df.to_json(orient="split")
+        # Convert the DataFrame to a JSON string with "split" orientation for better portability
+        result_df_json_str = result_df.to_json(orient="split")
 
         # Package the result and metadata into a Response object
         response = BaseResponse(
             content=result_df_json_str,
             metadata={
                 "relevant_tables": relevant_tables,
-                "sql": sql_query
+                "sql": sql_query,
+                "format": 'dataframe',
+                "unpack_format": 'split' # this is helpful to let other services understand how to format this Data frame.
             }
         )
 

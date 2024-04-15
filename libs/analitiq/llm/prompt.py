@@ -82,8 +82,9 @@ For each item on the list put a name of a tool or human you could use to complet
 """
 
 REFINE_TASK_LIST = """
-Here is a list of generated tasks to answer a users query {user_prompt}
-Your goal is to reduce the number of tasks, without sacrificing the quality of the response to users prompt.
+Here is a list of generated tasks to answer a users query {user_prompt}.
+Your goal is to reduce the number of tasks, without sacrificing the quality of the response.
+Consider the possibility that if multiple consecutive tasks use the same service, they can be combined into one task.
 If some task can be combined for better and faster execution to answer the users query, combine these tasks together.
 If you cannot find any improvements, do not do anything.
 Return back combined list, if you found tasks that can be combined, or return back the original list.

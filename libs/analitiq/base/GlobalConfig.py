@@ -32,7 +32,7 @@ class GlobalConfig:
             self.project_config = self.load_yaml(Path('project.yml')) #this is the users project.yml
 
             # Load and validate the Profile configuration
-            profile_loader = ProfileLoader(file_path='.analitiq/profiles.yml')
+            profile_loader = ProfileLoader(file_path='profiles.yml')
             self.profile_configs = profile_loader.load_and_validate_config(self.project_config['profile'])
 
             # Load Services
@@ -48,7 +48,7 @@ class GlobalConfig:
             self.llm = self.set_llm(self.profile_configs['llms'])  # Placeholder for llm instance
             self.database = None
             #self.database = self.set_database()  # Placeholder for database instance
-            #self.vdb = self.set_vdb(self.profile_configs['vector_dbs'])  # We do not need to init the VDB, until we need to use it
+            self.vdb = None
             self._initialized = True
 
     def load_yaml(self, file_path: str) -> Dict[str, Any]:

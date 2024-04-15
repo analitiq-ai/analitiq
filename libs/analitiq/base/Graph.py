@@ -2,7 +2,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 import importlib
 import os
 import logging
-import json
 import importlib.util
 import inspect
 import pandas as pd
@@ -127,15 +126,7 @@ class Graph:
                 # Wait for at least one node to complete
                 for future in as_completed(futures_to_nodes):
                     completed_node = futures_to_nodes.pop(future)  # Pop to prevent re-execution
-                    result = future.result()
-
-                    if isinstance(result, pd.DataFrame):
-                        # Serializing with JSON
-                        result_formatted = result.to_json(orient="split")
-                        node_outputs[completed_node.name] = str(result_formatted)  # Store the result for dependent nodes
-                    else:
-                        result_formatted = result
-                        node_outputs[completed_node.name] = str(result_formatted)  # Store the result for dependent nodes
+                    node_outputs[completed_node.name] = future.result()  # Store the result for dependent nodes as a BaseResponse object.
 
                     # Check and schedule dependent nodes
                     for consumer in completed_node.consumers:
@@ -166,10 +157,7 @@ class Graph:
 
         response = service_instance.run(**params)
         logging.info(f"Response from service {node.service_name}: {response}")
-        # if we have a response with some data from LLM, it will be in response.content
-        # but if there is no data, then there could a response of False or just None, so we pass that
-        if response is not None and response.content is not None:
-            return response.content
+        # if we have a response with some data from a services, it will be structured as BaseResponse object
 
         return response
 
