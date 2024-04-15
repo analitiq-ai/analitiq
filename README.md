@@ -99,10 +99,10 @@ Once a new user is created or a user signs in, if there is no DB connection save
 ![image](assets/images/db_connection.png)
 
 you can use the following connections for sample DB
-- POSTGRES_HOST=analitiq-db.cw1g0qte5un7.eu-central-1.rds.amazonaws.com
-- POSTGRES_PORT=5432
-- POSTGRES_USER=analitiq_pg
-- POSTGRES_PASSWORD=yNgjV9mrJsCFGRAFV345e5v
+- POSTGRES_HOST=
+- POSTGRES_PORT=
+- POSTGRES_USER=
+- POSTGRES_PASSWORD=
 - POSTGRES_DB=postgres
 
 ### Query the Data
