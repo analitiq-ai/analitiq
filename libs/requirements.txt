@@ -1,0 +1,5 @@
+jq
+weaviate-client
+pyyaml
+langchain-openai
+langchain_mistralai

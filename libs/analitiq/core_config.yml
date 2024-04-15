@@ -1,0 +1,27 @@
+name: 'analitiq'
+version: '0.1'
+data_warehouse: 'bikmo'
+config-version: 2
+
+services:
+  - name: QueryDatabase
+    description: "Use this service to query data from the database. Useful when users asks questions with no prior data available."
+    path: "analitiq/services/sql/sql.py"
+    class: "Sql"
+    method: "run"
+    inputs:
+    outputs: "dataframe converted into json"
+  - name: AnalyzeData
+    description: "Use this service to analyse data that is provided by the user, available in memory or has been provided by previous service."
+    path: "analitiq/services/analyze/analyse.py"
+    class: "Analyze"
+    method: "run"
+    inputs: "dataframe converted into json"
+    outputs: "text"
+  - name: SearchVectoreStore
+    description: "Use this service to search for information in documentation that has been indexed into vector database."
+    path: "analitiq/services/search_vc/search_docs.py"
+    class: "Search_docs"
+    method: "run"
+    inputs: "text"
+    outputs: "text"
