@@ -73,21 +73,35 @@ Services at my disposal:
 
 
 TASK_LIST = """
-You are a data analyst and you have a request to "{user_prompt}".
-Create a minimal list of tasks you have to do to complete the request.
-Consider combining homogeneous tasks together if they can be done with one process.
-Ideally, tasks should be heterogeneous.
-For each item on the list put a name of a tool or human you could use to complete the request.
+You are a data analyst and you have a user query to "{user_prompt}".
+Create a minimal list of tasks needed to complete the request.
+Do no include tasks that are not directly related to the users query, for example:
+- if you do not have proof that the data is dirty, do not include a step to clean data.
+- if you do not have proof that the data is missing values, do not include a step to deal with missing values.
+- if you do not have proof that the data has duplicates, do not include a step to remove duplicates
+- if you do not have proof that the data has errors, do not include a step to clean errors.
+Only include tasks necessary to efficiently complete the user query.
+For each task on the final list put a name of a tool or human required to complete the task.
+Each task could have only one tool.
+If multiple tasks are using the same tool consider combining these tasks into one task.
+
+You have access to the following tools: 
+SQL - SQl tool to query data in the database or data warehouse.
+DataViz - Data visualization and charting tool.
+VectorStore - Access and search vector store database that has company documentation and processes and operations.
+
 {format_instructions}
 """
 
 REFINE_TASK_LIST = """
 Here is a list of generated tasks to answer a users query {user_prompt}.
-Your goal is to reduce the number of tasks, without sacrificing the quality of the response.
-Consider the possibility that if multiple consecutive tasks use the same service, they can be combined into one task.
-If some task can be combined for better and faster execution to answer the users query, combine these tasks together.
-If you cannot find any improvements, do not do anything.
-Return back combined list, if you found tasks that can be combined, or return back the original list.
+Your goal is to reduce the number of tasks, without sacrificing the quality of the final result.
+Each task could have only one tool.
+If consecutive tasks are using the same tool consider combining these tasks into one task.
+If some task can be combined for better and faster execution to answer the users query, combine these tasks together, but make sure they are using the same tool.
+If you cannot find any improvements, return back the original list.
+If you found tasks that can be combined, return back combined list.
+
 Tasks:
 {tasks}
 

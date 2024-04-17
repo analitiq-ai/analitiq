@@ -1,112 +1,91 @@
-# App Deployment
-This chat app for ChatGPT has a frontend in React and a backend in Python using FastApi to communicate with the front end.
-- Frontend is all in directory `/frontend`
-- Backend is all in the directory `/app`
+# Analitiq
+Analitiq is a Framework for managin your data using LLMs. Analitiq can be extended with your own services written in python. These custom services can address your unique tasks for managing your data and they can function as part of the overall analytical engine of Analitiq.
+![image](assets/images/Analitiq_Diagram.png)
 
-The app is running in Docker so docker-compose is available in the home directory of the app.
+Analitiq currently supports the following LLM models
+- ChatGPT
+- Mistral
+- Bedrock (AWS)
 
-## First Time / One-Time Setup
-Note: the python requirements.txt lists CUDA as a required package. CUDA supports only Intel-based GPUs. So, installing on a Mac will lead to some hardware incompatibility issues.
+Analitiq currently integrates with the following vectorDBs
+- Weaviate
+- ChromaDB
+## Quick Start
+1. Clone the repo
+2. Set up `profiles.yml` in root directory. The file `profiles.yml` has all of your sensitive info, such as your API keys and DB credentials, so treat it with respect. Under `uses` you can define which connections should be used for the current deployment. 
+Ideally, you would have different `profiles.yml` for your prod and dev instances.
+```yaml
+test:
+  connections:
+    databases:
+      - name: prod_dw
+        type: postgres
+        host: xxxxx
+        user: xxxx
+        password: 'xxxxx'
+        port: 5432
+        dbname: sample_db
+        dbschema: sample_schema
+        threads: 4
+        keepalives_idle: 240 # default 240 seconds
+        connect_timeout: 10 # default 10 seconds
+        # search_path: public # optional, not recommended
+    llms:
+      - name: prod_llm
+        type: openai
+        api_key: xxxxxx
+        temperature: 0.0
+        llm_model_name: gpt-3.5-turbo
+      - name: dev_llm
+        type: mistral
+        api_key: xxxxxx
+      - name: aws_llm
+        type: bedrock
+        credentials_profile_name: my_profile
+        provider: anthropic
+        llm_model_name: anthropic.claude-v2:1
+        temperature: 0.0
+    vector_dbs:
+      - name: prod_vdb
+        type: weaviate
+        host: example.com
+        api_key: xxxxx
 
-### Install Git
-On a fresh EC2 instance, install requirements with the following commands:
-
-```bash
-# install Git
-sudo yum update -y
-sudo yum install git -y
-git --version # verify Git installation
-
-# Install Docker
-sudo yum install docker -y
-sudo service docker start
-sudo chkconfig docker on # make Docker auto-start
-sudo usermod -a -G docker ec2-user
-docker --version # verify Docker installation
-
-# Install Docker Compose
-sudo curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -
-sudo chmod +x /usr/local/bin/docker-compose
-docker-compose version # verify Docker Compose installation
+  usage:
+    databases: prod_dw
+    llms: aws_llm
+    vector_dbs: prod_vdb
 ```
+3. Set up `project.yml` in root directory. The file `project.yml` has all of your project data, such as where the logs are stored. Most importantly, `project.yml` defines where your custom Services are located so Analitiq can pick them up and use them to manage your data.
+```yaml
+name: 'analitiq'
+version: '0.1'
+profile: 'test'
+config_version: 2
 
-### GitHub PAT Token
+config:
+  general:
+    chat_log_dir: "chats" # this is where we save our chat logs.
+    sql_dir: "analysis" # this is where the ETL SQLs are being saved and managed
+    services_dir: "custom_services"
+    session_uuid_file: 'session_uuid.txt' # Where session identifier is being recorded. When session is reset, it is like beginning of a new chat topic and new log file will be created.
+    target_path: "target"
+    message_lookback: 5 # when LLM has no clue about users request, or users request relates to some item in chat history, how far back (in number of messages) should the LLM look in the current session chat log
+  vectordb:
+    doc_chunk_size: 2000
+    doc_chunk_overlap: 200
 
-To authenticate with GitHub, create a Personal Identification Token (PAT) in your GitHub settings.
-
-If the PAT token is expired, update the remote URL using the new PAT token:
+services:
+  - name: ChartService
+    description: "Use this service to generate script for APEX charts to visualize data"
+    path: "custom_services/chart/chart.py"
+    class: "Chart"
+    method: "run"
+    inputs: "dataframe as serialized json"
+    outputs: "javascript that is used by the frontend to visualize data"
 ```
-git remote set-url origin https://<username>:<NEW_PAT_TOKEN>@github.com/key2market/analitiq.git
-```
+5. Run the example file `example.py` (located in the root directory.)
 
-### Cloning the Repo
-```
-git clone --branch dev https://{YOUR USERNAME}:{PAT}@github.com/key2market/analitiq analitiq
-```
-
-## ENV Variables
-Before building the docker image, we need to set up some environmental variables needed by the app. The `.env` file should reside in the root directory. The root directory also has an `.env.template` file which can be copied and used as a template.
-
-### Required Variables
-The following variables from `.env` file are essential for the app's core function and should be set up before Docker is built:
-- ENVIRONMENT=dev
-- HOST={IP OF THE HOST} 
-- OPENAI_API_KEY={KEY}
-- FASTAPI_HOST=localhost
-- FASTAPI_PORT={PORT}
-- SECRET_KEY=XXXX
-- ALGORITHM=HS256
-- ACCESS_TOKEN_EXPIRE_MINUTES=30
-- CHROMA_DB_HOST={IP}
-- CHROMA_DB_PORT={PORT}
-- VECTOR_STORE_CONTEXT_COLLECTION=table-schema
-- EMBEDDING_MODEL=local:sentence-transformers/all-MiniLM-L6-v2
-
-The app uses a centralised Postgres server sitting on AWS RDS, however, for local testing, it is fine to deploy a local Postgres db and fill in the parameters for the local server
-- POSTGRES_USER=
-- POSTGRES_PASSWORD=
-- POSTGRES_DB=
-- POSTGRES_HOST=
-- POSTGRES_PORT=
-
-### Optional Variables
-Some variables in the `.env` file are not required for local development and are only needed for the production environment. They can be left blank:
-- MAIL_USERNAME= 
-- MAIL_PASSWORD=
-- MAIL_FROM=
-- MAIL_PORT=
-- MAIL_SERVER=
-- MAIL_STARTTLS=FALSE
-- MAIL_SSL_TLS=True
-
-- AWS_REGION=
-- AWS_ACCESS_KEY_ID=
-- AWS_SECRET_ACCESS_KEY=
-- AWS_SESSION_TOKEN=
-- AWS_SAGEMAKER_LLM_ENDPOINT=
-- AWS_SAGEMAKER_LLM_ENDPOINT_COMP_NAME=
-
-
-### Build Docker
-After the `.env` file has been set up properly, the app can be deployed:
-```
-docker-compose up -d # run in background mode
-```
-
-### Add DB Connection
-One of the functions of the app is to connect to a database and query data.
-Once a new user is created or a user signs in, if there is no DB connection saved for the user from a previous session, the app will ask for DB credentials.
-![image](assets/images/db_connection.png)
-
-you can use the following connections for sample DB
-- POSTGRES_HOST=
-- POSTGRES_PORT=
-- POSTGRES_USER=
-- POSTGRES_PASSWORD=
-- POSTGRES_DB=postgres
-
-### Query the Data
-Once the DB connection has been set up, you can query the Analyst.
+## UI
+The app interface can be extended with a UI, such as streamlit app.
 ![image](assets/images/query.png)
-
-

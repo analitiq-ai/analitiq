@@ -30,14 +30,16 @@ class DatabaseConnection(BaseModel):
 class LLMConnection(BaseModel):
     type: str
     name: str
-    api_key: str
+    api_key: Optional[str] = None
     temperature: Optional[float] = None
     llm_model_name: Optional[str] = None
+    credentials_profile_name: Optional[str] = None
+    provider: Optional[str] = None
 
 
     @validator('type')
     def validate_type(cls, v):
-        assert v in ['openai', 'mistral'], f"Invalid LLM type: {v}"
+        assert v in ['openai', 'mistral', 'bedrock'], f"Invalid LLM type: {v}"
         return v
 
 

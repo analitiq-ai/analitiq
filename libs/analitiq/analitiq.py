@@ -23,19 +23,49 @@ from analitiq.prompt import (
 class Analitiq():
 
     def __init__(self, user_prompt):
+        """
+        self.prompts is a dictionary that will have 1. original prompt as by user and refined prompt by LLM.
+        :param user_prompt:
+        """
         self.memory = BaseMemory()
         self.services = GlobalConfig().services
-        self.llm = AnalitiqLLM(user_prompt)
+        self.avail_services_str = self.get_available_services_str(self.services)
+        self.llm = AnalitiqLLM()
+        self.prompts = {'original': user_prompt}
 
-    def is_prompt_clear(self, user_prompt):
+    def get_available_services_str(self, avail_services):
+        """
+        Here we convert available services from a dictionary into a string so it can be placed into a prompt.
+        :return:
+        """
+        available_services_list = []
 
-        # Because current prompt is written to chat log, we need to go back 2 steps in chat history to get prior prompt
-        msg_lookback = 2
+        # Iterate over each item in the Services dictionary
+        for name, details in avail_services.items():
+            # Determine the appropriate description to use
+            description = details['description']
+            # Format and add the string to the list
+            available_services_list.append(f"{name}: {description}. The input for this tools is {details['inputs']}. The output of this tools is {details['outputs']}.")
+            # Join the list into a single string variable, separated by new lines
+        available_services_str = "\n".join(available_services_list)
+
+        return available_services_str
+
+    def is_prompt_clear(self, user_prompt, msg_lookback: int = 2):
+        """
+
+        :param user_prompt:
+        :param msg_lookback: Because the current prompt is already written to chat log, we ned to go back 2 steps to get the previous prompt.
+        :return:
+        """
+
         response = self.llm.llm_is_prompt_clear(user_prompt)
 
         # is LLM does not need any further explanation, we return the prompt
         if response.Clear is True:
-            return user_prompt
+            # add the refined prompts by the model.
+            self.prompts['refined'] = response.Feedback
+            return response.Feedback
 
         while response.Clear is False:
             # Log that the model needs clarification
@@ -54,7 +84,7 @@ class Analitiq():
                 return (f"Prompt is not clear: {response.Feedback}")
 
             user_prompt = refined_prompt
-        logging.info(f"\nFinal user prompt '{user_prompt}'.")
+
         return user_prompt
 
     def combine_prompt_with_hist(self, user_prompt, num_messages: int = 5, ):
@@ -95,7 +125,7 @@ class Analitiq():
           of prompts retrieved from the conversation history, with the current user prompt added last.
         """
 
-        user_prompt_hist = self.memory.get_last_messages_within_minutes(num_messages,5, 'Human')
+        user_prompt_hist = self.memory.get_last_messages_within_minutes(num_messages, 5, 'Human')
 
         # by default, we return current prompt
         response = user_prompt
@@ -108,19 +138,21 @@ class Analitiq():
         if len(user_prompt_list) > 0:
             user_prompt_w_hist = '\n'.join(user_prompt_list)
 
-            response = self.llm.llm_summ_user_prompts(user_prompt_w_hist)
+            response = self.llm.llm_summ_user_prompts(user_prompt, user_prompt_w_hist)
 
             logging.info(f"Summarised user prompts: {user_prompt_w_hist} \n\n Into: {response}")
 
         return response
 
     def convert_task_list_to_dict(self, task_list):
+
         # Convert list of objects into a dictionary where name is the key and description is the value
-        dict = {item.Name: {'Name': item.Name, 'Using': item.Using, 'Description': item.Description} for item in task_list}
+        task_dict = {item.Name: {'Name': item.Name, 'Using': item.Using, 'Description': item.Description} for item in task_list}
 
-        return dict
+        return task_dict
 
-    def get_task_list(self, user_prompt: str):
+    def create_task_list(self, user_prompt: str):
+
         tasks_list = self.llm.llm_create_task_list(user_prompt)
 
         # Ensure the list is not empty to avoid IndexError
@@ -129,6 +161,7 @@ class Analitiq():
 
         logging.info(f"Task list: {tasks_list}")
         # Convert list of objects into a dictionary where name is the key and description is the value
+
         return tasks_list
 
     def refine_tasks_until_stable(self, user_prompt: str, tasks_list):
@@ -180,17 +213,6 @@ class Analitiq():
         """
         # Initialize an empty list to hold the formatted strings
 
-        available_services_list = []
-
-        # Iterate over each item in the Services dictionary
-        for name, details in self.services.items():
-            # Determine the appropriate description to use
-            description = details['description'] if details['description'] else details.get('class_docstring_description', 'No description available')
-            # Format and add the string to the list
-            available_services_list.append(f"{name}: {description}")
-        # Join the list into a single string variable, separated by new lines
-        available_services_str = "\n".join(available_services_list)
-
         required_services_list = []
 
         # Iterate over each item in the Services dictionary
@@ -201,7 +223,7 @@ class Analitiq():
         # Join the list into a single string variable, separated by new lines
         required_services_str = "\n".join(required_services_list)
 
-        selected_services = self.llm.llm_select_services(user_prompt, required_services_str, available_services_str)
+        selected_services = self.llm.llm_select_services(user_prompt, required_services_str, self.avail_services_str)
 
         # Convert list of objects into a dictionary where name is the key and description is the value
         service_dict = {service.Name: {'Name': service.Name, 'Description': service.Description, 'Task': service.TaskName} for service in selected_services}
@@ -215,13 +237,6 @@ class Analitiq():
         # In a real scenario, this function would interact with an LLM to make an informed decision.
 
         # Convert each service's details into a formatted string
-        available_service_details_list = []
-
-        for service_name, details in available_services.items():
-            service_str = f"{service_name}: Inputs: {details['inputs']}. Outputs: {details['outputs']}"
-            available_service_details_list.append(service_str)
-
-        available_service_details_str = "\n".join(available_service_details_list)
 
         selected_service_details_list = []
 
@@ -230,7 +245,7 @@ class Analitiq():
 
         selected_service_details_str = "\n".join(selected_service_details_list)
 
-        service_dependency_list = self.llm.llm_build_service_dependency(user_prompt, available_service_details_str, selected_service_details_str)
+        service_dependency_list = self.llm.llm_build_service_dependency(user_prompt, self.avail_services_str, selected_service_details_str)
 
         # Convert list of objects into a dictionary where name is the key and description is the value
         service_dependency_dict = {service.Name: {'Name': service.Name, 'Dependencies': service.Dependencies} for service in service_dependency_list}
@@ -255,6 +270,8 @@ class Analitiq():
             return help_resp
 
         logging.info(f"\nUser query: {user_prompt}")
+        # add original prompts by the user.
+        self.prompts['original'] = user_prompt
         self.memory.log_human_message(user_prompt)
         self.memory.save_to_file()
 
@@ -262,9 +279,10 @@ class Analitiq():
 
         # Step 1 - Is the task clear?
         user_prompt = self.is_prompt_clear(user_prompt)
+        logging.info(f"\nRefined query: {user_prompt}")
 
-        # Step 2 - Formulate the tasks
-        tasks_list = self.get_task_list(user_prompt)
+        # Step 2 - Generate a list of the tasks needed
+        tasks_list = self.create_task_list(user_prompt)
 
         if tasks_list is False:
             return "Could not formulate tasks."

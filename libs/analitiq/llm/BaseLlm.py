@@ -21,7 +21,7 @@ class PromptClarification(BaseModel):
         This class is used to capture primary product details of each task
     """
     Clear: bool = Field(description="True if query is clear. False if more input or clarification is needed.")
-    Feedback: Optional[str] = Field(description="Optional feedback if this task is not clear")
+    Feedback: Optional[str] = Field(description="If user query is clear, rephrase the user query here, while keeping all the details. If query is not clear, put your questions here.")
 
 
 class Task(BaseModel):
@@ -29,7 +29,7 @@ class Task(BaseModel):
         This class is used to capture primary product details of each task
     """
     Name: str = Field(description="Short name for the task to be done")
-    Using: str = Field(description="What kind of tool do you need to complete this task")
+    Using: str = Field(description="Name of a tool needed to complete this task. It can be only one tool per task.")
     Description: str = Field(description="Additional description of the task")
 
 
@@ -61,10 +61,9 @@ class Service(BaseModel):
 
 class AnalitiqLLM():
 
-    def __init__(self, user_prompt):
+    def __init__(self):
         self.llm = GlobalConfig().get_llm()
         self.memory = BaseMemory()
-        self.user_prompt = user_prompt
 
     def save_response(self, response: str):
 
@@ -78,12 +77,13 @@ class AnalitiqLLM():
         self.memory.log_service_message(log_response, 'Core')
         self.memory.save_to_file()
 
-    def llm_summ_user_prompts(self, user_prompt_hist: str):
+    def llm_summ_user_prompts(self, user_prompt: str, user_prompt_hist: str):
         """
         This method asks LLM to summarise multiple disjoined user prompts. For example, if user asks "Give me top 10 customers"
         and the model asks to clarify "based on what criteria?", the user can follow up with "based on sales volume".
         This method will take "Give me top 10 customers" and "based on sales volume" and try to make sense of joined requests.
 
+        :param user_prompt: Current user prompt
         :param user_prompt_hist: History of user prompts
         :return: str
         """
@@ -93,7 +93,7 @@ class AnalitiqLLM():
             partial_variables={"user_prompt_hist": user_prompt_hist}
         )
         table_chain = prompt | self.llm
-        response = table_chain.invoke({"user_prompt": self.user_prompt})
+        response = table_chain.invoke({"user_prompt": user_prompt})
 
         self.save_response(response.content)
 
@@ -141,7 +141,7 @@ class AnalitiqLLM():
         )
 
         table_chain = prompt | self.llm | parser
-        response = table_chain.invoke({"user_prompt": self.user_prompt})
+        response = table_chain.invoke({"user_prompt": user_prompt})
 
         self.save_response(response.ServiceList)
         return response.ServiceList
@@ -156,7 +156,7 @@ class AnalitiqLLM():
         )
 
         table_chain = prompt | self.llm | parser
-        response = table_chain.invoke({"user_prompt": self.user_prompt})
+        response = table_chain.invoke({"user_prompt": user_prompt})
 
         self.save_response(str(response.TaskList))
         return response.TaskList
@@ -171,7 +171,7 @@ class AnalitiqLLM():
         )
 
         table_chain = prompt | self.llm | parser
-        response = table_chain.invoke({"user_prompt": self.user_prompt})
+        response = table_chain.invoke({"user_prompt": user_prompt})
 
         self.save_response(response)
 
@@ -197,7 +197,7 @@ class AnalitiqLLM():
         )
 
         table_chain = prompt | self.llm | parser
-        response = table_chain.invoke({"user_prompt": self.user_prompt})
+        response = table_chain.invoke({"user_prompt": user_prompt})
 
         self.save_response(response.ServicesList)
         return response.ServicesList

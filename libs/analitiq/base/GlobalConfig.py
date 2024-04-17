@@ -79,6 +79,16 @@ class GlobalConfig:
             from langchain_mistralai.chat_models import ChatMistralAI
             logging.info(f"LLM is set to {profile.type}")
             return ChatMistralAI(mistral_api_key=profile.llm_api_key)
+        elif profile.type == 'bedrock':
+            from langchain_community.llms import Bedrock
+            logging.info(f"LLM is set to {profile.type}")
+            return Bedrock(
+                credentials_profile_name=profile.credentials_profile_name,
+                provider=profile.provider,
+                model_id=profile.llm_model_name,
+                model_kwargs={"temperature": profile.temperature},
+                streaming=False
+            )
 
     def get_llm(self):
         return self.llm

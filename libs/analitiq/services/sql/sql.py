@@ -1,18 +1,37 @@
 import logging
 
+import langchain
+langchain.debug = True
+
 from analitiq.base.BaseService import BaseResponse
 from analitiq.base.GlobalConfig import GlobalConfig
 from analitiq.base.BaseMemory import BaseMemory
 from langchain.chains import create_sql_query_chain
 from langchain_core.prompts import ChatPromptTemplate
 from langchain.prompts import PromptTemplate
-from typing import List
+from langchain_core.pydantic_v1 import BaseModel, Field
+from langchain.output_parsers import PydanticOutputParser
+from typing import List, Optional
 import pandas as pd
 
 from analitiq.services.sql.prompt import (
     RETURN_RELEVANT_TABLE_NAMES,
     TEXT_TO_SQL_PROMPT
 )
+
+
+class Table(BaseModel):
+    TableName: str = Field(description="The name of the table")
+    Columns: List[str] = Field(description="A list of relevant columns in the table")
+
+
+class Tables(BaseModel):
+    TableList: List[Table] = Field(description="A list of relevant tables from the list of all tables in a database")
+
+
+class SQL(BaseModel):
+    Code: str = Field(description="Only SQL code goes here")
+    Explanation: Optional[str] = Field(description="Explanation about the SQL, if necessary.")
 
 
 class Sql():
@@ -46,18 +65,46 @@ class Sql():
         """
         table_names_in_db = ",".join(self.get_tables())
 
+        parser = PydanticOutputParser(pydantic_object=Tables)
         prompt = PromptTemplate(
             template=RETURN_RELEVANT_TABLE_NAMES,
             input_variables=["user_prompt"],
-            partial_variables={"table_names_in_db": table_names_in_db},
+            partial_variables={"table_names_in_db": table_names_in_db, "format_instructions": parser.get_format_instructions()},
         )
 
-        table_chain = prompt | self.llm
+        table_chain = prompt | self.llm | parser
         response = table_chain.invoke({"user_prompt": user_prompt})
+        logging.info(f"Get relevant tables.\nInput: {user_prompt}.\nResponse: {response}")
 
-        return response.content
+        return response.TableList
 
-    def prompt2sql(self, user_prompt: str, tables_to_use: List[str]) -> str:
+    def get_sql2(self, user_prompt: str, relevant_tables: List[Tables]) -> str:
+
+        logging.info(f"[Node: SQL->get_sql2]\nInput: {user_prompt}")
+
+        parser = PydanticOutputParser(pydantic_object=SQL)
+        prompt = PromptTemplate(
+            template=TEXT_TO_SQL_PROMPT,
+            input_variables=["user_prompt"],
+            partial_variables={
+                "dialect": self.db.dialect,
+                "table_info": str(relevant_tables),
+                "top_k": 100,  # TODO this should be from config
+                "schema_name": "sample_data",  # TODO this should be from config
+                "format_instructions": parser.get_format_instructions()},
+        )
+
+        logging.info(f"[Node: SQL->get_sql2]\nInput: {user_prompt}")
+
+        table_chain = prompt | self.llm | parser
+        response = table_chain.invoke({"user_prompt": user_prompt})
+        logging.info(f"[Node: SQL->get_sql2]\nResponse: {response}")
+        exit()
+
+        return response.Code
+
+
+    def get_sql(self, user_prompt: str, tables_to_use: List[str]) -> str:
         """Converts a user prompt into an SQL query using specified tables.
 
         Args:
@@ -151,7 +198,7 @@ class Sql():
         relevant_tables = self.get_relevant_tables(user_prompt)
 
         # Generate an SQL query from the user's prompt using the identified relevant tables
-        sql_query = self.prompt2sql(user_prompt, relevant_tables)
+        sql_query = self.get_sql2(user_prompt, relevant_tables)
 
         logging.info(sql_query) ## TODO if the query returns an error, we need to re-try
 
