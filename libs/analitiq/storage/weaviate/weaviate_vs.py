@@ -67,7 +67,7 @@ class WeaviateVS():
     A class for interacting with a Weaviate vector database, including loading documents and performing searches.
     """
 
-    def __init__(self, project_name, host, api_key):
+    def __init__(self, host, api_key, project_name):
         """
         Initializes a new instance of the class, setting up a connection to a Weaviate cluster and ensuring
         a collection with the specified name exists within that cluster.
@@ -271,7 +271,7 @@ class WeaviateVS():
                 filters=wvc.query.Filter.by_property("project_name").equal(project_name)
             )
         except Exception as e:
-            print(f"Weaviate error {e}")
+            logging.error(f"Weaviate error {e}")
         finally:
             self.client.close()  # Close client gracefully
 

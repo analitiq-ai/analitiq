@@ -135,7 +135,7 @@ class ServicesLoader:
                 service_class = self.load_service_class(service, loaded_services)
             except (FileNotFoundError, ValueError, AttributeError, ImportError) as e:
                 # Log and display the error without breaking the execution
-                logging.debug(e)
+                logging.error(e)
                 print(e)  # Displaying the error to the end user
             else:
                 verified_services[service['name']] = service

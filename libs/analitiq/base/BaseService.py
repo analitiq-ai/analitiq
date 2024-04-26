@@ -31,3 +31,11 @@ class BaseResponse:
     def __init__(self, content: Any, metadata: Dict):
         self.content = content
         self.metadata = metadata
+
+    def __str__(self):
+        content_str = str(self.content)
+        metadata_str = ', '.join(f"{key}: {value}" for key, value in self.metadata.items())
+        return f"Content: {content_str}\nMetadata: {metadata_str}"
+
+    def print_details(self):
+        print(self.__str__())

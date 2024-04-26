@@ -19,8 +19,8 @@ def create_db_engine(dialect: str, driver: str, host: str, port: int, username: 
 
 def get_schema_names(engine: Engine) -> List[str]:
     try:
-        insp = sa.inspect(engine)
-        return insp.get_schema_names()
+        inspector = sa.inspect(engine)
+        return inspector.get_schema_names()
     except exc.SQLAlchemyError as e:
         raise e
 
@@ -32,3 +32,23 @@ def get_tables_in_schema(engine, db_schema):
 
     # Retrieve tables with other schema
     return inspector.get_table_names(schema=db_schema)
+
+
+def get_schemas_and_tabes(engine: Engine) -> str:
+    # Create an inspector
+    inspector = inspect(engine)
+
+    # Fetch schemas, tables, and columns
+    schemas = inspector.get_schema_names()
+
+    prompt = ""
+    for schema in schemas:
+        prompt += f"- Schema: {schema}\n"
+        tables = inspector.get_table_names(schema=schema)
+        for table in tables:
+            prompt += f"  - Table: {table}\n    - Columns: "
+            columns = inspector.get_columns(table_name=table, schema=schema)
+            column_details = ', '.join(f"{column['name']} ({column['type']})" for column in columns)
+            prompt += f"{column_details}\n"
+
+    return prompt

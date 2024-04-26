@@ -1,12 +1,15 @@
 import logging
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.llm.BaseLlm import AnalitiqLLM
+from analitiq.utils.task_mgmt import TaskManager
+from analitiq.base.BaseService import BaseResponse
+from analitiq.utils.general import *
 
 logging.basicConfig(
     filename='logs/latest_run.log'
     ,encoding='utf-8'
     ,filemode='w'
-    ,level=logging.DEBUG
+    ,level=logging.INFO
     ,format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])'
     ,datefmt='%d/%m/%Y %I:%M:%S %p'
 )
@@ -19,6 +22,8 @@ from analitiq.prompt import (
     HELP_RESPONSE
 )
 
+# import langchain
+# langchain.debug = True
 
 class Analitiq():
 
@@ -51,48 +56,41 @@ class Analitiq():
 
         return available_services_str
 
-    def is_prompt_clear(self, user_prompt, msg_lookback: int = 2):
+    @retry_response(max_retries=3, check_response=is_response_clear)
+    def is_prompt_clear(self, user_prompt, msg_lookback: int = 2, feedback: str = None):
         """
 
         :param user_prompt:
-        :param msg_lookback: Because the current prompt is already written to chat log, we ned to go back 2 steps to get the previous prompt.
+        :param msg_lookback: Because the current prompt is already written to chat log, we need to go back 2 steps to get the previous prompt.
+        :param feedback: Feedback to the LLM model after failed runs to help the model fix an issue.
         :return:
         """
 
         response = self.llm.llm_is_prompt_clear(user_prompt)
 
         # is LLM does not need any further explanation, we return the prompt
-        if response.Clear is True:
-            # add the refined prompts by the model.
-            self.prompts['refined'] = response.Feedback
-            return response.Feedback
-
-        while response.Clear is False:
+        if not response.Clear:
             # Log that the model needs clarification
-            logging.info(f"Checking history for prompt '{user_prompt}'. Needs explanation: {response.Feedback}")
+            logging.info(f"[Analitiq] Prompt not clear: '{user_prompt}'. Needs explanation:\n{str(response)}")
 
-            # Refine the prompt using chat history.
-            refined_prompt = self.combine_prompt_with_hist(user_prompt, msg_lookback)
+            try:
+                chat_hist = self.get_chat_hist(user_prompt, msg_lookback)
+            except Exception as e:
+                logging.error(f"[Analitiq] Error retrieving chat history: {e}")
+                return (response, False)
 
-            # Try to get task list again with the refined prompt
-            response = self.llm.llm_is_prompt_clear(refined_prompt)
-            logging.info(response)
+            # if response is not clear and there is no chat history, we exit and send the message ot the user.
+            if not chat_hist:
+                logging.info(f"[Analitiq] No chat history found.")
+                return (response, False)
 
-            msg_lookback += 1
-            if msg_lookback > 5:
-                logging.warning(f"Prompt refinement process exceeded 3 iterations with no resolution. {response.Feedback}")
-                return (f"Prompt is not clear: {response.Feedback}")
+            logging.info(f"[Analitiq] Chat history: '{chat_hist}'")
+            user_prompt = chat_hist + "\n" + user_prompt
 
-            user_prompt = refined_prompt
+        return (response, True)  # to indicate chat_hist existence
 
-        return user_prompt
-
-    def combine_prompt_with_hist(self, user_prompt, num_messages: int = 5, ):
+    def get_chat_hist(self, user_prompt, msg_lookback: int = 5):
         """
-        Combines the given user prompt with historical prompts from conversations
-        within the last 5 minutes, ensuring unique and chronological incorporation
-        of prompts.
-
         This function retrieves recent user prompts from the conversation history,
         specifically those marked with an 'entity' value of 'Human', and within
         the last 5 minutes. It then combines these prompts with the current user
@@ -125,12 +123,12 @@ class Analitiq():
           of prompts retrieved from the conversation history, with the current user prompt added last.
         """
 
-        user_prompt_hist = self.memory.get_last_messages_within_minutes(num_messages, 5, 'Human')
+        user_prompt_hist = self.memory.get_last_messages_within_minutes(msg_lookback, 5, 1, 'Human')
+        print(user_prompt_hist)
 
-        # by default, we return current prompt
-        response = user_prompt
+        response = None
 
-        if user_prompt_hist is None:
+        if not user_prompt_hist:
             return response
 
         user_prompt_list = list({message['content'] for message in user_prompt_hist})
@@ -140,7 +138,7 @@ class Analitiq():
 
             response = self.llm.llm_summ_user_prompts(user_prompt, user_prompt_w_hist)
 
-            logging.info(f"Summarised user prompts: {user_prompt_w_hist} \n\n Into: {response}")
+            logging.info(f"[Prompt][Change From]: {user_prompt_w_hist}\n[Prompt][Change To]: {response}")
 
         return response
 
@@ -151,43 +149,7 @@ class Analitiq():
 
         return task_dict
 
-    def create_task_list(self, user_prompt: str):
 
-        tasks_list = self.llm.llm_create_task_list(user_prompt)
-
-        # Ensure the list is not empty to avoid IndexError
-        if not tasks_list:
-            return False
-
-        logging.info(f"Task list: {tasks_list}")
-        # Convert list of objects into a dictionary where name is the key and description is the value
-
-        return tasks_list
-
-    def refine_tasks_until_stable(self, user_prompt: str, tasks_list):
-        num_tasks = len(tasks_list)
-        i = 0
-        refined_tasks_list = "\n".join(f"{task.Name}: {task.Description} using {task.Using}." for task in tasks_list)
-        response = self.llm.llm_refine_task_list(user_prompt, refined_tasks_list)
-
-        while num_tasks != len(response.TaskList):
-            num_tasks = len(response.TaskList)
-            logging.info(f"\nModel input list of tasks [Iteration {i}][Tasks: {len(response.TaskList)}]: \n {refined_tasks_list}")
-            response = self.llm.llm_refine_task_list(user_prompt, refined_tasks_list)
-
-            # make task list from list of objects into a string
-            refined_tasks_list = "\n".join(f"{task.Name}: {task.Description} using {task.Using}." for task in response.TaskList)
-            logging.info(f"\nModel output list of tasks [Iteration: {i}][Tasks: {len(response.TaskList)}]: \n {refined_tasks_list}")
-            i = i+1
-
-            if i >= 5:
-                logging.warning(f"Too many iterations of task optimisations: {i}")
-                dict = {item.Name: {'Name': item.Name, 'Using': item.Using, 'Description': item.Description} for item in response.TaskList}
-                return dict
-
-                # Convert list of objects into a dictionary where name is the key and description is the value
-        dict = {item.Name: {'Name': item.Name, 'Using': item.Using, 'Description': item.Description} for item in response.TaskList}
-        return dict
 
     def select_services(self, user_prompt, task_list):
         """
@@ -224,7 +186,7 @@ class Analitiq():
         required_services_str = "\n".join(required_services_list)
 
         selected_services = self.llm.llm_select_services(user_prompt, required_services_str, self.avail_services_str)
-
+        print(selected_services)
         # Convert list of objects into a dictionary where name is the key and description is the value
         service_dict = {service.Name: {'Name': service.Name, 'Description': service.Description, 'Task': service.TaskName} for service in selected_services}
 
@@ -277,25 +239,40 @@ class Analitiq():
 
         # we now trigger the main forward logic: goal -> tasks -> services/tools -> outcome
 
-        # Step 1 - Is the task clear?
-        user_prompt = self.is_prompt_clear(user_prompt)
+        # Step 1 - Is the task clear? IF not and there is no history to fall back on, exit with feedback.
+        prompt_clear_response = self.is_prompt_clear(user_prompt)
+
+        if not prompt_clear_response.Clear:
+            return {'Analitiq': BaseResponse(content=prompt_clear_response.Feedback, metadata={})}
+
+        # add the refined prompts by the model.
+        self.prompts['refined'] = prompt_clear_response.Query
+        self.prompts['hints'] = prompt_clear_response.Hints
+        user_prompt = self.prompts['refined']
+
         logging.info(f"\nRefined query: {user_prompt}")
 
+        task_mngr = TaskManager()
+
         # Step 2 - Generate a list of the tasks needed
-        tasks_list = self.create_task_list(user_prompt)
+        tasks_list = task_mngr.create_task_list(self.llm, user_prompt)
 
         if tasks_list is False:
             return "Could not formulate tasks."
 
         # Step 3 - Refine task list to the minimum
-        refined_task_list = self.refine_tasks_until_stable(user_prompt, tasks_list)
+        refined_task_list = task_mngr.refine_tasks_until_stable(self.llm, user_prompt, tasks_list)
+        #refined_task_list2 = task_mngr.combine_tasks_pairwise(self.llm, user_prompt, refined_task_list) TODO refine pairwise task evaluation
 
         selected_services = self.select_services(user_prompt, refined_task_list)
-        logging.info(f"\n\nSelected services:\n{selected_services}")
+        logging.info(f"\n[Services][Selected]:\n{selected_services}")
+        exit()
 
         # Building node dependency
         # Check if the list contains exactly one item
-        if len(selected_services) == 1:
+        if len(selected_services) == 0:
+            return "No services selected."
+        elif len(selected_services) == 1:
             # Create instances of ServiceDependencies with just the name of first item in selected services
             service_dependency = {next(iter(selected_services)): []}
         else:
@@ -304,7 +281,7 @@ class Analitiq():
         # Initialize the execution graph with the context
         graph = Graph(self.services)
 
-        logging.debug(f"\n\nService dependency:\n{service_dependency}")
+        logging.info(f"\n\n[Service][Dependency]:\n{service_dependency}")
 
         # First, create all nodes without setting dependencies
         nodes = {}  # Temporary storage to easily access nodes by name

@@ -5,6 +5,8 @@ from analitiq.base.BaseService import BaseResponse
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.pydantic_v1 import BaseModel, Field, validator
+from enum import Enum
+
 
 from analitiq.llm.prompt import (
     PROMPT_CLARIFICATION,
@@ -12,7 +14,8 @@ from analitiq.llm.prompt import (
     SERVICE_SELECTION,
     TASK_LIST,
     REFINE_TASK_LIST,
-    SUMMARISE_REQUEST
+    SUMMARISE_REQUEST,
+    COMBINE_TASK_PAIR
 )
 
 
@@ -21,7 +24,17 @@ class PromptClarification(BaseModel):
         This class is used to capture primary product details of each task
     """
     Clear: bool = Field(description="True if query is clear. False if more input or clarification is needed.")
+    Query: str = Field(description="Properly worded query.")
+    Hints: str = Field(description="User hints or actions given inside double brackets")
     Feedback: Optional[str] = Field(description="If user query is clear, rephrase the user query here, while keeping all the details. If query is not clear, put your questions here.")
+
+
+class CombineTaskPair(Enum):
+    """
+        This class is used to determine if tasks can be combined.
+    """
+    YES = 'Can combine tasks.'
+    NO = 'Cannot combine tasks.'
 
 
 class Task(BaseModel):
@@ -41,8 +54,9 @@ class Tasks(BaseModel):
 
 
 class SelectedService(BaseModel):
-    Name: str = Field(description="Names of service")
-    TaskName: str = Field(description="Name of the task to be done by this service")
+    Name: str = Field(description="Names of service.")
+    TaskName: str = Field(description="Name of the task to be done by this service.")
+    Confidence: str = Field(description="On a scale from 0 to 100 how confident are you that this service is a good match for the task it is selected for.")
     Description: str = Field(description="Description of what needs to be done with this service taken from the list of required services that matched to this service.")
 
 
@@ -84,20 +98,19 @@ class AnalitiqLLM():
         This method will take "Give me top 10 customers" and "based on sales volume" and try to make sense of joined requests.
 
         :param user_prompt: Current user prompt
-        :param user_prompt_hist: History of user prompts
+        :param user_prompt_hist: History of user prompts, including current prompt
         :return: str
         """
         prompt = PromptTemplate(
             template=SUMMARISE_REQUEST,
-            input_variables=["user_prompt"],
-            partial_variables={"user_prompt_hist": user_prompt_hist}
+            input_variables=["user_prompt_hist"]
         )
         table_chain = prompt | self.llm
-        response = table_chain.invoke({"user_prompt": user_prompt})
+        response = table_chain.invoke({"user_prompt_hist": user_prompt_hist +"\n"+ user_prompt})
 
-        self.save_response(response.content)
+        self.save_response(response)
 
-        return response.content
+        return response
 
     def llm_is_prompt_clear(self, user_prompt: str):
         """
@@ -168,6 +181,26 @@ class AnalitiqLLM():
             template=REFINE_TASK_LIST,
             input_variables=["user_prompt"],
             partial_variables={"format_instructions": parser.get_format_instructions(), "tasks": tasks_list}
+        )
+
+        table_chain = prompt | self.llm | parser
+        response = table_chain.invoke({"user_prompt": user_prompt})
+
+        self.save_response(response)
+
+        return response
+
+    def llm_combine_tasks_pairwise(self, user_prompt, task1: dict, task2: dict):
+
+        parser = PydanticOutputParser(pydantic_object=CombineTaskPair)
+        prompt = PromptTemplate(
+            template=COMBINE_TASK_PAIR,
+            input_variables=["user_prompt"],
+            partial_variables={"task_using": task1['Using']
+                ,"Task1": task1['Description']
+                ,"Task2": task2['Description']
+                ,"format_instructions": parser.get_format_instructions()}
+
         )
 
         table_chain = prompt | self.llm | parser

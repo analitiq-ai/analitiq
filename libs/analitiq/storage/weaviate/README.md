@@ -22,12 +22,11 @@ Loading one file into your Weaviate vectore store and indexing it for search
 
 ```python
 from analitiq.storage.weaviate.weaviate_vs import WeaviateVS
-import os
-os.environ["WEAVIATE_URL"] = "https://xxxxxxx.weaviate.network"
-os.environ["WEAVIATE_API_KEY"] = "1234567890"
 project_name = "my_project"
+host = "https://xxxxxxx.weaviate.network"
+api_key = "1234567890"
 
-wc=WeaviateVS(project_name)
+wc=WeaviateVS(host, api_key, project_name)
 FILE_PATH = './project/My_Project/my_file.sql'
 wc.load_file(FILE_PATH, 'sql')
 ```

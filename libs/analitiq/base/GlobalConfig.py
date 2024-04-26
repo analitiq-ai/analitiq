@@ -43,12 +43,12 @@ class GlobalConfig:
             # load custom services created by users, if they exist
             self.services.update(serv_loader.load_services_from_config(self.project_config, self.services))
             # get the available services from the defined directory
-            logging.info(f"\n\nAvailable services:\n{self.services}")
+            logging.info(f"\n[Service][Available]\n{self.services}")
 
             self.llm = self.set_llm(self.profile_configs['llms'])  # Placeholder for llm instance
+            self.db_engine = None
             self.database = None
             #self.database = self.set_database()  # Placeholder for database instance
-            self.vdb = None
             self._initialized = True
 
     def load_yaml(self, file_path: str) -> Dict[str, Any]:
@@ -97,11 +97,17 @@ class GlobalConfig:
         profile = self.profile_configs['databases']
         if profile.type in ['postgres', 'redshift']:
             from analitiq.utils import db_utils
-            db_engine = db_utils.create_db_engine('postgresql', 'psycopg2', profile.host, profile.port, profile.user, profile.password, profile.dbname, profile.dbschema)
+            self.db_engine = db_utils.create_db_engine('postgresql', 'psycopg2', profile.host, profile.port, profile.user, profile.password, profile.dbname, profile.dbschema)
             logging.info(f"Database is set to {profile.type}")
-            return SQLDatabase(db_engine)
+            return SQLDatabase(self.db_engine)
         else:
             print(f"Unsupported database type {profile.type}")
+
+    def get_db_engine(self):
+        if self.db_engine is None:
+            self.database = self.set_database()
+
+        return self.db_engine
 
     def get_database(self):
         if self.database is None:
@@ -109,17 +115,13 @@ class GlobalConfig:
 
         return self.database
 
-    def set_vdb(self, profile):
-
+    def get_vdb_client(self, profile):
         if profile.type in ['weaviate']:
             from analitiq.storage.weaviate.weaviate_vs import WeaviateVS
             logging.info(f"VectorDB is set to {profile.type}")
-            return WeaviateVS(self.get_project_name(), profile.host, profile.api_key)
+            return WeaviateVS(profile.host, profile.api_key, self.get_project_name())
         else:
             print(f"Unsupported Vector DB type {profile.type}")
-
-    def get_vdb(self):
-        return self.vdb
 
     def get_session_uuid_file(self):
         return self.project_config['config']['general']['session_uuid_file']

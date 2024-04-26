@@ -18,7 +18,6 @@ The service operates through several steps:
 
 ### Inputs
 - **User Prompt (str)**: A natural language description of the data retrieval or analysis task.
-- **Tables to Use (List[str])** *(optional)*: Specific tables to be used for constructing the SQL query, if known in advance.
 
 ### Outputs
 - **Response Object**: Contains the query result set as a pandas DataFrame and metadata including executed SQL and relevant tables.
@@ -33,47 +32,13 @@ metadata={
 ## Example Usage
 
 ```python
-user_prompt = 'Show me total sales by category.'
+from analitiq.services.sql.sql import Sql
 
-# Optionally, specify relevant tables if known
-tables_to_use = ['sales_data']
+instance = Sql()
+response = instance.run("Who are our top 10 customers? Give me chart")
+print(response)
 
-sql_service = Sql()
-relevant_tables = sql_service.get_relevant_tables(user_prompt)
-sql_query = sql_service.prompt2sql(user_prompt, relevant_tables)
-
-# Execute the generated SQL query and get results as a DataFrame
-result_df = sql_service.execute_sql(sql_query)
-
-# For demonstration, print the resulting DataFrame
-print(result_df)
-
-# Running the full process in one step
-response = sql_service.run(user_prompt)
 print(response.content)  # DataFrame as JSON
 print(response.metadata)  # Executed SQL and relevant tables
 ```
 
-## Example async usage
-```python
-from utils import db_utils
-from analitiq.services.sql.base import Sql
-import os
-import asyncio
-import json
-
-async def main():
-    user_prompt = "What is our commission per venue?"
-    db_eng = db_utils.create_db_engine('postgresql', 'psycopg2', os.getenv("POSTGRES_HOST"), os.getenv("POSTGRES_PORT"), os.getenv("POSTGRES_USER"), os.getenv("POSTGRES_PASSWORD"), os.getenv("POSTGRES_DB"), 'sample_data')
-    agent = Sql()
-
-    result = agent.run(user_prompt)
-    print(result.metadata['sql'])
-    
-    # If you want to format the resulting Data Frame
-    df_formatted = df.to_json(orient="split")
-    
-    print(df_formatted)
-
-asyncio.run(main())
-```

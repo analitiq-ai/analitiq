@@ -5,12 +5,13 @@ config-version: 2
 
 services:
   - name: QueryDatabase
-    description: "Use this service to query data from the database. Useful when users asks questions with no prior data available."
+    description: "Use this service to query data from the database. Useful when users asks questions that require analysis or tabular data."
     path: "analitiq/services/sql/sql.py"
     class: "Sql"
     method: "run"
     inputs:
     outputs: "dataframe converted into json"
+
   - name: AnalyzeData
     description: "Use this service to analyse data that is provided by the user, available in memory or has been provided by previous service."
     path: "analitiq/services/analyze/analyse.py"
@@ -18,8 +19,9 @@ services:
     method: "run"
     inputs: "dataframe converted into json"
     outputs: "text"
-  - name: SearchVectoreStore
-    description: "Use this service to search for information in documentation that has been indexed into vector database."
+
+  - name: SearchDocs
+    description: "Use this service to search documentation for information. Useful when user is asking how something is done. Use it when you need to find out a formula, method or explanation."
     path: "analitiq/services/search_vc/search_docs.py"
     class: "Search_docs"
     method: "run"

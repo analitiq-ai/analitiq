@@ -1,7 +1,13 @@
 PROMPT_CLARIFICATION = """
 You are a data analyst.
-You have received the following query from the user {user_prompt}:
+You have received the following query from the user "{user_prompt}":
 Is this query from the user clear to you or would you need further info from the user to answer the query?
+Pay attention when user asks you how to do something, versus to actually do something.
+Question about how something is done most likely will require you searching for information.
+Request to do some operation, other than getting information, may need your further evaluation.
+Ignore text inside double square brackets [[]] as this is suggestion to you for the kind of tools you can use.
+Consider the difference between user asking you to find out something, like "how do we define customer" versus "give me top customers".
+One is a request to find out and explain and the second one is a request to do some calculation.
 If the query is not clear, provide feedback about exactly what you need in order to complete the request without further input.
 {format_instructions}
 """
@@ -13,10 +19,12 @@ You received a user query:
 
 Examine the list of the services required to fulfill the query that you have earlier identified and match this list of required services against the list of available services.
 You can only match required services to the list of available services.
-User may specify for you in the query the actions needed to be taken in the order they need to be taken. Example: actions: query data -> analyse.
+User may give you special instructions inside double square brackets.
+If there is word Action, the user defined for you the actions needed to be taken in the order they need to be taken. Example: [[actions: query data -> analyse]] or [[actions: query data, analyse]].
+If there is word Tool or Services, user wants you to only use these services. Example: [[tools: sql->chart]] or [[tools: search]]
+
 You would need to select a tool to match each action.
-Your response should contain only available services
-User can force you to use only specific services by adding to the query word 'tool' and adding service dependency, like this: tools: sql->chart
+Your response should contain selection from the available services
 
 Available Services:
 {available_services}
@@ -71,8 +79,22 @@ Tools: Tool1 -> Tool2
 Services at my disposal:
 """
 
-
 TASK_LIST = """
+You are a data analyst and you have a user query to "{user_prompt}".
+
+You have access to the following tools: 
+SQL - SQl tool to query data in the database or data warehouse.
+DataViz - Data visualization and charting tool.
+Search - Search company documentation and knowledge repository.
+
+Select the minimum number of tools to answer users query.
+You can select each tool more than once.
+Specify the order in which you would use these tools.
+
+{format_instructions}
+"""
+
+TASK_LIST_ = """
 You are a data analyst and you have a user query to "{user_prompt}".
 Create a minimal list of tasks needed to complete the request.
 Do no include tasks that are not directly related to the users query, for example:
@@ -83,18 +105,19 @@ Do no include tasks that are not directly related to the users query, for exampl
 Only include tasks necessary to efficiently complete the user query.
 For each task on the final list put a name of a tool or human required to complete the task.
 Each task could have only one tool.
+You can name the tasks as Task1, Task2 and so on.
 If multiple tasks are using the same tool consider combining these tasks into one task.
 
 You have access to the following tools: 
 SQL - SQl tool to query data in the database or data warehouse.
 DataViz - Data visualization and charting tool.
-VectorStore - Access and search vector store database that has company documentation and processes and operations.
+Search - Search company documentation and knowledge repository.
 
 {format_instructions}
 """
 
 REFINE_TASK_LIST = """
-Here is a list of generated tasks to answer a users query {user_prompt}.
+Here is a list of generated tasks to answer a users query "{user_prompt}".
 Your goal is to reduce the number of tasks, without sacrificing the quality of the final result.
 Each task could have only one tool.
 If consecutive tasks are using the same tool consider combining these tasks into one task.
@@ -109,12 +132,22 @@ Tasks:
 """
 
 SUMMARISE_REQUEST = """
-User has given to you the following queries during a chat.
-Put yourself in place of the user who has given you the queries, examine the queries and try to formulate a coherent request out of them.
-Return back in your response only the formulated request.
-Queries:
+You are a data analyst.
+Bellow is the history if user queries with timestamps.
+Examine the queries and try to summarise them and formulate a proper request out of the history.
+Your response should contain only the proper rephrased request.
+Consider the difference between user asking you to find out something, like "how do we define profit" versus "give me profit by month".
+One is a request to find out and explain and the second one is a request to do some calculation.
+Chat History:
 {user_prompt_hist}
-{user_prompt}
 """
 
+COMBINE_TASK_PAIR = """
+You are an expert as {task_using}. 
+Consider user query "{user_prompt}". 
+In pursuing a response to that query, could you combine the following steps together into a singular step?
+1. {Task1}.
+2. {Task2}.
 
+{format_instructions}
+"""

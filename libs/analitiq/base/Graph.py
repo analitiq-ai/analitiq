@@ -116,7 +116,7 @@ class Graph:
                 # Execute all ready nodes
                 for node in ready_nodes:
                     if node.name not in executed_nodes:  # Check if node has been executed
-                        logging.debug(f"\n\n==== RUNNING SERVICE: {node.name}\n Prompt: {node.instructions} \n Inputs: {str(node_outputs)}")  # Print the current node being executed
+                        logging.info(f"\n\n==== RUNNING SERVICE: {node.name}\n Prompt: {node.instructions} \n Inputs: {str(node_outputs)}")  # Print the current node being executed
 
                         future = executor.submit(self.run_service, node, node.instructions, node_outputs)
                         futures_to_nodes[future] = node
@@ -143,7 +143,7 @@ class Graph:
         service_class = self.get_service_class(node.service_name)
 
         # here we do not pass anything when instantiating a service class because global object management is done through a BaseService class
-        service_instance = service_class()
+        service_instance = service_class(user_prompt)
 
         # Prepare parameters
         params = {}

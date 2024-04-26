@@ -79,7 +79,7 @@ class BaseMemory:
         file_path = os.path.join(self.log_directory, self.filename)
 
         if not os.path.exists(file_path):
-            logging.debug(f"No chat history file found for session UUID {self.session_uuid}.")
+            logging.info(f"No chat history file found for session UUID {self.session_uuid}.")
             return
 
         with open(file_path, 'r') as file:
@@ -89,11 +89,12 @@ class BaseMemory:
         # Return the last `num_messages` entries from the chat history
         return all_messages[-num_messages:]
 
-    def get_last_messages_within_minutes(self, num_messages: int, minutes: int, entity: str = None) -> List[Dict[str, Any]]:
+    def get_last_messages_within_minutes(self, num_messages: int, minutes: int, offset: int = 1, entity: str = None) -> List[Dict[str, Any]]:
         """
         A function to retrieve the last `num_messages` from Chat history within `minutes` minutes from now,
         optionally filtering by an entity type if specified.
 
+        :param offset: How much to offset the search. usualy it is 1 because the last prompt was recorded and in most scenarios we want history before.
         :param num_messages: The maximum number of messages to return
         :param minutes: The time frame in minutes to look for messages
         :param entity: The entity type to filter messages by (e.g., "Human", "Analitiq"). If None, no entity filter is applied.
@@ -105,7 +106,7 @@ class BaseMemory:
         file_path = os.path.join(self.log_directory, self.filename)
 
         if not os.path.exists(file_path):
-            logging.debug(f"No chat history file found for session UUID {self.session_uuid}.")
+            logging.info(f"No chat history file found for session UUID {self.session_uuid}.")
             return
 
         now = datetime.now()
@@ -122,5 +123,7 @@ class BaseMemory:
                     if entity is None or message.get('entity') == entity:
                         filtered_messages.append(message)
 
-        # Return up to `num_messages` entries from the filtered chat history
-        return filtered_messages[-num_messages:]
+        # Adjust the slice to include the offset
+        start_index = -num_messages - offset
+        end_index = None if offset == 0 else -offset
+        return filtered_messages[start_index:end_index]
