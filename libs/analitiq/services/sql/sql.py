@@ -289,7 +289,7 @@ class Sql:
             result_df = pd.DataFrame(eval(result))
             return result_df
         except Exception as e:
-            print(f"Could not convert query result to dataframe: {e}")
+            logging.error(f"Could not convert query result to dataframe: {e}")
             # return empty data frame
             return pd.DataFrame()
 

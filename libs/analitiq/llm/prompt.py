@@ -79,13 +79,27 @@ Tools: Tool1 -> Tool2
 Services at my disposal:
 """
 
+TASK_LIST_HINT = """
+You are a data analyst and you have a user query to "{user_prompt}".
+User has given you the following hints about actions or services to use:
+{hints}
+
+Here is a list of services at your disposal: 
+{available_services}
+
+You need to select the service from available services that best match each of the users hints.
+Your job is to match the tools at your disposal to the user hints and provide the results of this matching as instructed bellow.
+
+
+{format_instructions}
+"""
+
+
 TASK_LIST = """
 You are a data analyst and you have a user query to "{user_prompt}".
 
 You have access to the following tools: 
-SQL - SQl tool to query data in the database or data warehouse.
-DataViz - Data visualization and charting tool.
-Search - Search company documentation and knowledge repository.
+{available_services}
 
 Select the minimum number of tools to answer users query.
 You can select each tool more than once.
@@ -94,7 +108,7 @@ Specify the order in which you would use these tools.
 {format_instructions}
 """
 
-TASK_LIST_ = """
+TASK_LIST_V1 = """
 You are a data analyst and you have a user query to "{user_prompt}".
 Create a minimal list of tasks needed to complete the request.
 Do no include tasks that are not directly related to the users query, for example:

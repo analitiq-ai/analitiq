@@ -4,9 +4,24 @@ import pprint
 
 class TaskManager:
 
-    def create_task_list(self, llm, user_prompt: str):
+    def create_task_list(self, llm, prompts: dict, avail_services_str: str):
+        """
+        :param llm: An instance of the LLM class that provides the methods to create a task list.
+        :param prompts: A dictionary containing the prompts required to create the task list. The dictionary should have the following keys:
+            - 'refined': A list of refined prompts (optional).
+            - 'hints': A list of hints for the prompts (optional).
+            - 'original': A list of original prompts.
+        :param avail_services_str: A string representing available services.
 
-        tasks_list = llm.llm_create_task_list(user_prompt)
+        :return: The generated task list.
+        """
+
+        if len(prompts['refined']) > 10 and len(prompts['hints']) > 10:
+            tasks_list = llm.llm_create_task_list_w_hints(prompts['refined'], prompts['hints'], avail_services_str)
+        elif len(prompts['refined']) > 10:
+            tasks_list = llm.llm_create_task_list(prompts['refined'], avail_services_str)
+        else:
+            tasks_list = llm.llm_create_task_list(prompts['original'], avail_services_str)
 
         # Ensure the list is not empty to avoid IndexError
         if not tasks_list:
@@ -23,7 +38,7 @@ class TaskManager:
         :param llm: llm object
         :param user_prompt:
         :param tasks_list:
-        :param iter_limit: Limit to how many interations or checking we want to do.
+        :param iter_limit: Limit to how many interactions or checking we want to do.
         :return:
         """
         num_tasks = len(tasks_list)
@@ -39,7 +54,7 @@ class TaskManager:
             # make task list from list of objects into a string
             refined_tasks_list = "\n".join(f"{task.Name}: {task.Description} using {task.Using}." for task in response.TaskList)
             logging.info(f"\n[Tasks][Combine][Iteration: {i}][Tasks: {len(response.TaskList)}]: \n {refined_tasks_list}")
-            print(refined_tasks_list)
+
             i = i+1
 
             if i >= iter_limit:

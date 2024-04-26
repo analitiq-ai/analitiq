@@ -13,6 +13,7 @@ from analitiq.llm.prompt import (
     SERVICE_DEPENDENCY,
     SERVICE_SELECTION,
     TASK_LIST,
+    TASK_LIST_HINT,
     REFINE_TASK_LIST,
     SUMMARISE_REQUEST,
     COMBINE_TASK_PAIR
@@ -25,7 +26,7 @@ class PromptClarification(BaseModel):
     """
     Clear: bool = Field(description="True if query is clear. False if more input or clarification is needed.")
     Query: str = Field(description="Properly worded query.")
-    Hints: str = Field(description="User hints or actions given inside double brackets")
+    Hints: str = Field(description="Extract here a list of tools or actions from the double square brackets, if available.")
     Feedback: Optional[str] = Field(description="If user query is clear, rephrase the user query here, while keeping all the details. If query is not clear, put your questions here.")
 
 
@@ -159,13 +160,40 @@ class AnalitiqLLM():
         self.save_response(response.ServiceList)
         return response.ServiceList
 
-    def llm_create_task_list(self, user_prompt):
+    def llm_create_task_list(self, user_prompt, avail_services_str):
+        """
+        :param user_prompt: The prompt given to the user to generate the task list.
+        :param avail_services_str: A string representing the available services.
 
+        :return: The generated task list as a response.
+
+        """
         parser = PydanticOutputParser(pydantic_object=Tasks)
         prompt = PromptTemplate(
             template=TASK_LIST,
             input_variables=["user_prompt"],
             partial_variables={"format_instructions": parser.get_format_instructions()}
+        )
+
+        table_chain = prompt | self.llm | parser
+        response = table_chain.invoke({"user_prompt": user_prompt, "available_services": avail_services_str})
+
+        self.save_response(str(response.TaskList))
+        return response.TaskList
+
+    def llm_create_task_list_w_hints(self, user_prompt, hints, avail_services_str):
+        """
+        :param user_prompt: The prompt to be displayed to the user for input.
+        :param hints: The hints to be displayed to the user.
+        :param avail_services_str: The available services as a string.
+        :return: The created task list.
+
+        """
+        parser = PydanticOutputParser(pydantic_object=Tasks)
+        prompt = PromptTemplate(
+            template=TASK_LIST_HINT,
+            input_variables=["user_prompt"],
+            partial_variables={"format_instructions": parser.get_format_instructions(), "hints": hints, "available_services": avail_services_str}
         )
 
         table_chain = prompt | self.llm | parser
@@ -175,7 +203,22 @@ class AnalitiqLLM():
         return response.TaskList
 
     def llm_refine_task_list(self, user_prompt: str, tasks_list: str):
+        """
+        :param user_prompt: the user prompt or question to refine the task list
+        :param tasks_list: the original list of tasks
+        :return: the refined task list based on user input
 
+        This method refines the given task list based on user input. It uses the PydanticOutputParser class to parse the output in Pydantic format.
+        It creates a PromptTemplate with the 'REFINE_TASK_LIST' template and sets 'user_prompt' as the input variable. It also sets 'format_instructions' and 'tasks' as partial variables in
+        * the template using the PydanticOutputParser's 'get_format_instructions' method and the 'tasks_list' parameter respectively.
+
+        Next, it creates a table_chain using the PromptTemplate, the 'llm' method, and the PydanticOutputParser. It then invokes the table_chain by passing the 'user_prompt' parameter as a dictionary
+        *.
+
+        The response returned by the table_chain is saved using the 'save_response' method.
+
+        Finally, the method returns the response.
+        """
         parser = PydanticOutputParser(pydantic_object=Tasks)
         prompt = PromptTemplate(
             template=REFINE_TASK_LIST,
@@ -191,7 +234,13 @@ class AnalitiqLLM():
         return response
 
     def llm_combine_tasks_pairwise(self, user_prompt, task1: dict, task2: dict):
+        """
+        :param user_prompt: The prompt given to the user to combine the tasks.
+        :param task1: A dictionary containing information about the first task.
+        :param task2: A dictionary containing information about the second task.
+        :return: The response received after combining the tasks.
 
+        """
         parser = PydanticOutputParser(pydantic_object=CombineTaskPair)
         prompt = PromptTemplate(
             template=COMBINE_TASK_PAIR,
@@ -211,8 +260,14 @@ class AnalitiqLLM():
         return response
 
     def llm_build_service_dependency(self, user_prompt, available_services, selected_services):
-        """Decide which tool(s) to use based on the user prompt in which order.
-            This is a placeholder function. Integration with an LLM for decision-making goes here."""
+        """
+        Builds service dependencies based on user input and available services.
+
+        :param user_prompt: The user input prompt to generate service dependencies from.
+        :param available_services: The list of available services.
+        :param selected_services: The list of selected services.
+        :return: The generated service dependencies.
+        """
         # Example: Return a tool based on a keyword in the prompt.
         # In a real scenario, this function would interact with an LLM to make an informed decision.
 

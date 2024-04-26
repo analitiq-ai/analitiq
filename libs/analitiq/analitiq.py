@@ -40,8 +40,10 @@ class Analitiq():
 
     def get_available_services_str(self, avail_services):
         """
-        Here we convert available services from a dictionary into a string so it can be placed into a prompt.
-        :return:
+        :param avail_services: A dictionary containing the available services. Each service should be represented by a key-value pair, with the key being the name of the service and the value
+        * being a dictionary containing the service details.
+        :return: A string containing the formatted representation of the available services.
+
         """
         available_services_list = []
 
@@ -91,6 +93,7 @@ class Analitiq():
 
     def get_chat_hist(self, user_prompt, msg_lookback: int = 5):
         """
+        Gets the chat history for a user prompt.
         This function retrieves recent user prompts from the conversation history,
         specifically those marked with an 'entity' value of 'Human', and within
         the last 5 minutes. It then combines these prompts with the current user
@@ -99,21 +102,6 @@ class Analitiq():
         into a single string, separated by periods. If the user prompt is the only
         prompt, or if it's the first unique prompt in the specified time frame,
         it is returned as is.
-
-        Parameters:
-        - user_prompt (str): The current user prompt to be combined with the historical prompts.
-
-        Returns:
-        - str: A single string consisting of the combined prompts. If there's only the current
-               user prompt, it is returned without modification. If there are historical prompts
-               within the specified timeframe and they are unique, they are concatenated
-               with the current prompt, separated by periods.
-
-        Raises:
-        - ValueError: If the `user_prompt` is empty or not a string.
-        - Any exceptions raised by `memory.get_last_messages_within_minutes` method,
-          such as connectivity issues or timeouts when retrieving historical prompts.
-
         Note:
         - This function relies on `BaseMemory.get_last_messages_within_minutes` method to fetch
           historical prompts. Ensure `BaseMemory` is properly initialized and configured.
@@ -121,10 +109,14 @@ class Analitiq():
           message dictionaries, each containing at least a 'content' key.
         - The chronological order of prompts in the combined string is determined by the order
           of prompts retrieved from the conversation history, with the current user prompt added last.
+
+
+        :param user_prompt: The user prompt.
+        :param msg_lookback: The number of messages to look back in the chat history. Default is 5.
+        :return: The response generated based on the chat history, or None if there is no chat history.
         """
 
         user_prompt_hist = self.memory.get_last_messages_within_minutes(msg_lookback, 5, 1, 'Human')
-        print(user_prompt_hist)
 
         response = None
 
@@ -150,28 +142,22 @@ class Analitiq():
         return task_dict
 
 
-
     def select_services(self, user_prompt, task_list):
         """
-        Selects appropriate service tools based on a user's prompt by utilizing a language model (LLM) for decision-making.
+        :param user_prompt: The prompt to be displayed to the user to select services.
+        :param task_list: A dictionary containing the task names and descriptions.
+        :return: A dictionary containing the selected services with their details.
 
-        This function analyzes a given user prompt and a dictionary mapping tools to tasks, and decides which tools are best suited to perform the required tasks. It interacts with a language model to evaluate the appropriateness of each available tool against the tasks extracted from the user prompt.
+        This method takes a user prompt and a task list as input parameters. It iterates over each item in the task list and formats the name and description of each task. These formatted strings
+        * are then appended to a list. The list is then joined into a single string variable, with each item separated by a new line.
 
-        Parameters:
-            user_prompt (str): The user's input describing the task or requirement.
-            task_list (dict): A dictionary where keys are tool names and values are descriptions of the tasks they perform.
+        The method calls the 'llm_select_services' method with the user prompt, the required services string, and the available services string. The 'llm_select_services' method returns a list
+        * of selected services.
 
-        Returns:
-            dict: A dictionary where each key is a tool name and the value is its description, representing the tools selected by the LLM to best meet the user's requirements.
+        The list of selected services is then converted into a dictionary, where the name of the service is used as the key and the name, description, task name, and confidence are used as the
+        * values.
 
-        Usage:
-            response = instance.select_services("extract top 10 customer data", {"QueryDatabase": "Queries databases"})
-            print(response)  # Prints the names and descriptions of the selected tools
-
-        Notes:
-            The `services` attribute of the instance should be a dictionary containing details of all available tools.
-            This function is a placeholder for integration with an LLM. In its current implementation, it simulates decision-making based on hardcoded logic.
-            After selecting the tools, the function formats the service information into a readable string format and sends it to the LLM for final decision-making.
+        Finally, the dictionary of selected services is returned.
         """
         # Initialize an empty list to hold the formatted strings
 
@@ -186,9 +172,9 @@ class Analitiq():
         required_services_str = "\n".join(required_services_list)
 
         selected_services = self.llm.llm_select_services(user_prompt, required_services_str, self.avail_services_str)
-        print(selected_services)
+
         # Convert list of objects into a dictionary where name is the key and description is the value
-        service_dict = {service.Name: {'Name': service.Name, 'Description': service.Description, 'Task': service.TaskName} for service in selected_services}
+        service_dict = {service.Name: {'Name': service.Name, 'Description': service.Description, 'Task': service.TaskName, 'Conf': service.Confidence} for service in selected_services}
 
         return service_dict
 
@@ -225,37 +211,34 @@ class Analitiq():
 
         # First, we check if user typed Help. If so, we can skiop the rest of the logic, for now
         if user_prompt.lower() == 'help':
-
-            help_resp = HELP_RESPONSE
-            for name, details in self.services.items():
-                help_resp = help_resp + details['name'] + ": " + details['description'] + "\n"
-            return help_resp
+            return HELP_RESPONSE + '\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
 
         logging.info(f"\nUser query: {user_prompt}")
-        # add original prompts by the user.
-        self.prompts['original'] = user_prompt
+
+        # check if there are user hints in the prompt
+        self.prompts['original'], self.prompts['hints'] = extract_hints(user_prompt)
+
         self.memory.log_human_message(user_prompt)
         self.memory.save_to_file()
 
         # we now trigger the main forward logic: goal -> tasks -> services/tools -> outcome
 
         # Step 1 - Is the task clear? IF not and there is no history to fall back on, exit with feedback.
-        prompt_clear_response = self.is_prompt_clear(user_prompt)
+        prompt_clear_response = self.is_prompt_clear(self.prompts['original'])
 
         if not prompt_clear_response.Clear:
             return {'Analitiq': BaseResponse(content=prompt_clear_response.Feedback, metadata={})}
 
         # add the refined prompts by the model.
         self.prompts['refined'] = prompt_clear_response.Query
-        self.prompts['hints'] = prompt_clear_response.Hints
         user_prompt = self.prompts['refined']
 
-        logging.info(f"\nRefined query: {user_prompt}")
+        logging.info(f"\nRefined prompt context: {self.prompts}")
 
         task_mngr = TaskManager()
 
         # Step 2 - Generate a list of the tasks needed
-        tasks_list = task_mngr.create_task_list(self.llm, user_prompt)
+        tasks_list = task_mngr.create_task_list(self.llm, self.prompts, self.avail_services_str)
 
         if tasks_list is False:
             return "Could not formulate tasks."
@@ -266,7 +249,7 @@ class Analitiq():
 
         selected_services = self.select_services(user_prompt, refined_task_list)
         logging.info(f"\n[Services][Selected]:\n{selected_services}")
-        exit()
+
 
         # Building node dependency
         # Check if the list contains exactly one item

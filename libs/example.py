@@ -1,7 +1,7 @@
 
 from analitiq.analitiq import Analitiq
 
-user_prompt = "Who are our top 10 customers?."
+user_prompt = "How do we calculate revenue? [[Search documents]]"
 
 a = Analitiq(user_prompt)
 services_responses = a.run(user_prompt)
