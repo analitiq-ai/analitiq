@@ -60,39 +60,39 @@ class Graph:
         self.available_services = available_services
         self.nodes = {}
 
-    def add_node(self, node):
+    def add_node(self, service, details):
         """
         Adds a node to the graph.
 
         Args:
             node (Node): The node to add to the graph.
         """
+        if service not in self.available_services:
+            logging.warning(f"Trying to add non existent service: {service}")
+            return
+        node = Node(service, self.available_services[service]['path'], details['Instructions'])
+
         self.nodes[node.name] = node
 
-    def get_service_class(self, service_name):
-        """Get the class inside the given service's directory.
-        TODO this is a duplicate of load_service in ProjectLoader
-        """
-        service = self.available_services.get(service_name)
+    def build_service_dependency(self, selected_services):
+        # Then, set up dependencies based on the JSON response
+        for service, details in selected_services.items():
+            if len(details['DependsOn']) > 0:
+                try:
+                    dependency_node = self.nodes.get(service)
+                except Exception as e:
+                    logging.warning(f"Dep node not found: {dependency_node}. {e}")
 
-        if not service:
-            raise ServiceNotFoundException(f"Service '{service_name}' not found in available services.")
+                for master_name in details['DependsOn']:
+                    try:
+                        master_node = self.nodes.get(master_name)  # Retrieve the node from temporary storage
+                    except Exception as e:
+                        logging.warning(f"Dep node not found: {dependency_node}. {e}")
 
-        if not os.path.exists(service['path']):
-            raise FileNotFoundError(f"{service['path']} not found for service '{service_name}'.")
+                    if master_node and dependency_node:
+                        dependency_node.add_dependency(master_node)
 
-        # Dynamically import the module from the given path
-        spec = importlib.util.spec_from_file_location(service['class'], service['path'])
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-
-        # Retrieve the class from the module using the constructed class name
-        if hasattr(module, service['class']):
-            return getattr(module, service['class'])
-        else:
-            raise AttributeError(f"Class '{service['class']}' not found in module '{service_name}.base'.")
-
-    def run(self):
+    def run(self, services):
         """Executes the graph, respecting node dependencies, and allows for parallel execution.
         Key Assumptions:
         Parallel Execution: Nodes without dependencies are submitted for execution immediately. As each node completes, its output is stored, and the executor checks if dependent (consumer) nodes are ready to be executed (i.e., all their dependencies have completed). This allows for parallel execution where possible.
@@ -118,7 +118,7 @@ class Graph:
                     if node.name not in executed_nodes:  # Check if node has been executed
                         logging.info(f"\n\n==== RUNNING SERVICE: {node.name}\n Prompt: {node.instructions} \n Inputs: {str(node_outputs)}")  # Print the current node being executed
 
-                        future = executor.submit(self.run_service, node, node.instructions, node_outputs)
+                        future = executor.submit(self.run_service, node, services[node.name]['class_inst'], node.instructions, node_outputs)
                         futures_to_nodes[future] = node
                         executed_nodes.add(node.name)  # Mark node as executed
                 ready_nodes.clear()
@@ -136,13 +136,11 @@ class Graph:
 
         return node_outputs  # Return the aggregated results
 
-    def run_service(self, node, user_prompt=None, node_outputs=None):
+    def run_service(self, node, service_class, user_prompt=None, node_outputs=None):
         """Instantiates and runs a node's service, passing necessary parameters."""
         # Assuming dynamic loading if necessary or direct instantiation
 
-        service_class = self.get_service_class(node.service_name)
-
-        # here we do not pass anything when instantiating a service class because global object management is done through a BaseService class
+        # here we pass the prompt
         service_instance = service_class(user_prompt)
 
         # Prepare parameters

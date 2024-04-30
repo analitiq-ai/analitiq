@@ -35,6 +35,8 @@ RETURN_RELEVANT_TABLE_NAMES = """
 You are a detail oriented data analyst.
 What kind of tables and columns from the database structure below may contain data that will help you answer a query "{user_prompt}"?
 Return the names of ALL the SQL tables that MIGHT be relevant to the user query.
+Do not return empty table names or empty column names.
+Do not return table names and column names that do not exist in the Database Structure.
 
 Database Structure:\n
 {ddl}

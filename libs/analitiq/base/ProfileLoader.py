@@ -35,7 +35,9 @@ class LLMConnection(BaseModel):
     llm_model_name: Optional[str] = None
     credentials_profile_name: Optional[str] = None
     provider: Optional[str] = None
-
+    aws_access_key_id: Optional[str] = None
+    aws_secret_access_key: Optional[str] = None
+    region_name: Optional[str] = None
 
     @validator('type')
     def validate_type(cls, v):

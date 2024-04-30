@@ -36,12 +36,15 @@ class GlobalConfig:
             self.profile_configs = profile_loader.load_and_validate_config(self.project_config['profile'])
 
             # Load Services
-            self.services: Dict[str, Any] = {} #this is where project services from the yml will be stored
+            self.services: Dict[str, Any] = {} #this is where project services from the YAML will be stored
             serv_loader = ServicesLoader()
+
             # load core services
             self.services.update(serv_loader.load_services_from_config(self.core_config, self.services))
+
             # load custom services created by users, if they exist
             self.services.update(serv_loader.load_services_from_config(self.project_config, self.services))
+
             # get the available services from the defined directory
             logging.info(f"\n[Service][Available]\n{self.services}")
 
@@ -80,13 +83,21 @@ class GlobalConfig:
             logging.info(f"LLM is set to {profile.type}")
             return ChatMistralAI(mistral_api_key=profile.llm_api_key)
         elif profile.type == 'bedrock':
-            from langchain_community.llms import Bedrock
+            from langchain_aws import BedrockLLM
+            import boto3
+
             logging.info(f"LLM is set to {profile.type}")
-            return Bedrock(
-                credentials_profile_name=profile.credentials_profile_name,
+            client = boto3.client("bedrock-runtime",
+                                  aws_access_key_id=profile.aws_access_key_id,
+                                  aws_secret_access_key=profile.aws_secret_access_key,
+                                  region_name=profile.region_name
+                                  )
+            return BedrockLLM(
+                client=client,
+                region_name=profile.region_name,
                 provider=profile.provider,
                 model_id=profile.llm_model_name,
-                model_kwargs={"temperature": profile.temperature},
+                model_kwargs={"temperature": profile.temperature, "max_tokens_to_sample": 10000},
                 streaming=False
             )
 

@@ -81,7 +81,11 @@ class ServicesLoader:
             logging.error(msg)
             return
         else:
-            service_class = getattr(module, class_name, None)
+            # Retrieve the class from the module using the constructed class name
+            if hasattr(module, class_name):
+                service_class = getattr(module, class_name, None)
+            else:
+                raise AttributeError(f"Class '{class_name}' not found in module '{service_path}'.")
 
         if method_name and not hasattr(service_class, method_name):
             raise AttributeError(f"The specified method '{method_name}' does not exist in the class '{class_name}'")
@@ -139,6 +143,7 @@ class ServicesLoader:
                 print(e)  # Displaying the error to the end user
             else:
                 verified_services[service['name']] = service
+                verified_services[service['name']]['class_inst'] = service_class
 
         return verified_services
 

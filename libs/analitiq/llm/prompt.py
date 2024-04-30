@@ -1,67 +1,41 @@
 PROMPT_CLARIFICATION = """
 You are a data analyst.
 You have received the following query from the user "{user_prompt}":
-Is this query from the user clear to you or would you need further info from the user to answer the query?
+After carefully reading the instructions and examining available tools, you will need to decide if the instructions are clear.
+Ignore text inside double square brackets [[]] as this is suggestion to you for the kind of tools you can use.
 Pay attention when user asks you how to do something, versus to actually do something.
 Question about how something is done most likely will require you searching for information.
 Request to do some operation, other than getting information, may need your further evaluation.
-Ignore text inside double square brackets [[]] as this is suggestion to you for the kind of tools you can use.
 Consider the difference between user asking you to find out something, like "how do we define customer" versus "give me top customers".
 One is a request to find out and explain and the second one is a request to do some calculation.
 If the query is not clear, provide feedback about exactly what you need in order to complete the request without further input.
+
+Is this query from the user clear to you or would you need further info from the user to answer the query?
+
+Available tools:
+{available_services}
+
+Response format instructions:
 {format_instructions}
 """
 
 SERVICE_SELECTION = """
-You are a leader of a data team with multiple tools called services at your disposal. 
-You received a user query:
-{user_prompt}
+You are an experienced Data Analyst. 
+You received a user query "{user_prompt}".
 
-Examine the list of the services required to fulfill the query that you have earlier identified and match this list of required services against the list of available services.
-You can only match required services to the list of available services.
-User may give you special instructions inside double square brackets.
-If there is word Action, the user defined for you the actions needed to be taken in the order they need to be taken. Example: [[actions: query data -> analyse]] or [[actions: query data, analyse]].
-If there is word Tool or Services, user wants you to only use these services. Example: [[tools: sql->chart]] or [[tools: search]]
+Create an action list based on the available list of services provided.
+Keep the list of actions to the minimum required to fulfill users query.
+Avoid duplicating actions, unless it is necessary for the workflow.
+Try to combine actions where possible.
+Each action should be linked to one of the available services.
+For each action create an action input and detailed instructions for that action.
 
-You would need to select a tool to match each action.
-Your response should contain selection from the available services
+{extra_info}
 
 Available Services:
 {available_services}
 
-Required Services:
-{required_services}
-
-{format_instructions}
-"""
-
-SERVICE_DEPENDENCY = """
-You are a leader of a data team. You received a user query:
-{user_prompt}
-
-You have already selected a list of services to use to fulfill users query.
-You now need to construct a dependency dictionary from the selected services in the order needed to execute them to answer the users query.
-Pay particular attention to the inputs and the outputs of each service as some services take inputs from previous services.
-The inputs and outputs formats are defined in the list of available services.
-You need to make sure in your dependency dictionary that if Service B runs after Service A, then service A produces output in a format in which service B can process it.
-
-Follow these rules:
--If services can run in parallel, do not make them dependant on each other. For example, chart does not have to depend on the analyze service.
--If a service depends on another service, its' inputs must match the output of the service on which it depends. Check the service info input and output parameters for this.
--Services can be reused in the dependency JSON, if needed
--Use example dependency JSON for an example of how to structure dependency between nodes
--Once you complete the dependency JSON, double check that the inputs of the service can accept the outputs of dependencies services.
-
-Please respond with only a dictionary of service names as nodes as per example provided.
-Do not add numbering or bullets.
-Return a properly formatted json.
-
-Selected services as a list of service names:
-{selected_services}
-
-Available Services in JSON format:
-{available_services}
-
+Response format instructions:
 {format_instructions}
 """
 
@@ -79,34 +53,21 @@ Tools: Tool1 -> Tool2
 Services at my disposal:
 """
 
-TASK_LIST_HINT = """
-You are a data analyst and you have a user query to "{user_prompt}".
-User has given you the following hints about actions or services to use:
-{hints}
-
-Here is a list of services at your disposal: 
-{available_services}
-
-You need to select the service from available services that best match each of the users hints.
-Your job is to match the tools at your disposal to the user hints and provide the results of this matching as instructed bellow.
-
-
-{format_instructions}
-"""
-
-
 TASK_LIST = """
-You are a data analyst and you have a user query to "{user_prompt}".
+You are a data analyst.
+You received a user query: "{user_prompt}".
+{extra_info}
 
-You have access to the following tools: 
+Your job is to examine users prompt, examine users hints, examine your previous thoughts and select the tools from the list bellow that are needed to answer users query.
+You can only select from the list provided.
+You must not select tools for tasks the user did not ask for explicitly.
+
+List of tools: 
 {available_services}
-
-Select the minimum number of tools to answer users query.
-You can select each tool more than once.
-Specify the order in which you would use these tools.
 
 {format_instructions}
 """
+
 
 TASK_LIST_V1 = """
 You are a data analyst and you have a user query to "{user_prompt}".

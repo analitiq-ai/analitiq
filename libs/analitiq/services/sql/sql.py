@@ -16,7 +16,7 @@ import pandas as pd
 from analitiq.utils.general import *
 
 
-from libs.analitiq.services.sql.prompt import (
+from analitiq.services.sql.prompt import (
     RETURN_RELEVANT_TABLE_NAMES,
     TEXT_TO_SQL_PROMPT,
     FIX_SQL
@@ -68,7 +68,7 @@ class Sql:
         self.user_prompt = user_prompt
         self.relevant_tables = ""
         self.metadata = {
-            "llm_response": "",
+            "text": "",
             "relevant_tables": self.relevant_tables,
             "sql": "",
             "format": 'dataframe',
@@ -117,6 +117,8 @@ class Sql:
                 ,"format_instructions": parser.get_format_instructions()}
         )
 
+        prompt_as_string = prompt.format(user_prompt=self.user_prompt)
+
         table_chain = prompt | self.llm | parser
         response = table_chain.invoke({"user_prompt": self.user_prompt})
 
@@ -139,6 +141,7 @@ class Sql:
                 output_lines.append(f"    - Columns: {column_details}")
 
         self.relevant_tables = "\n".join(output_lines)
+        self.metadata['relevant_tables'] = self.relevant_tables
 
         return True
 
@@ -388,7 +391,7 @@ class Sql:
 
             if success:
                 self.metadata['sql'] = llm_response['SQL_Code']
-                self.metadata['llm_response'] = llm_response['Explanation']
+                self.metadata['text'] = llm_response['Explanation']
                 logging.info(f"[Node: SQL][SQL Success][Iteration {attempts}]: {result}")
                 return result
             else:
@@ -417,16 +420,15 @@ class Sql:
 
         # Check if the DataFrame is empty, return empty string instead
         if result_df.empty:
-            result_df_json_str = ''
+            response = BaseResponse(
+                content=None,
+                metadata=self.metadata
+            )
         else:
-            # Convert the DataFrame to a JSON string with "split" orientation for better portability
-            result_df_json_str = result_df.to_json(orient="split")
-
-        # Package the result and metadata into a Response object
-        response = BaseResponse(
-            content=result_df_json_str,
-            metadata=self.metadata
-        )
+            response = BaseResponse(
+                content=result_df,
+                metadata=self.metadata
+            )
 
         # Save the response to memory
         memory = BaseMemory()

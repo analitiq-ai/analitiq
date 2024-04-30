@@ -26,10 +26,15 @@ class BaseMemory:
 
     def log_service_message(self, service_response: BaseResponse, source_class) -> None:
         """Logs a single entity message along with the service response."""
+        if 'format' in service_response.metadata and service_response.metadata['format'] == 'dataframe' and service_response.content:
+            content = service_response.content.to_json(orient="split")
+        else:
+            content = service_response.content
+
         conversation_entry = {
             'timestamp': datetime.now().isoformat(),
             'entity': EntityType.ANALITIQ.value,
-            'content': service_response.content,
+            'content': content,
             'metadata': service_response.metadata,
             'source_class_name': source_class
         }

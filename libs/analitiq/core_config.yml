@@ -5,23 +5,15 @@ config-version: 2
 
 services:
   - name: QueryDatabase
-    description: "Use this service to query data from the database. Useful when users asks questions that require analysis or tabular data."
+    description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales."
     path: "analitiq/services/sql/sql.py"
     class: "Sql"
     method: "run"
     inputs:
     outputs: "dataframe converted into json"
 
-  - name: AnalyzeData
-    description: "Use this service to analyse data that is provided by the user, available in memory or has been provided by previous service."
-    path: "analitiq/services/analyze/analyse.py"
-    class: "Analyze"
-    method: "run"
-    inputs: "dataframe converted into json"
-    outputs: "text"
-
   - name: SearchDocs
-    description: "Use this service to search documentation for information. Useful when user is asking how something is done. Use it when you need to find out a formula, method or explanation."
+    description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?"
     path: "analitiq/services/search_vc/search_docs.py"
     class: "Search_docs"
     method: "run"
