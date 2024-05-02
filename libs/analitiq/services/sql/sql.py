@@ -1,7 +1,7 @@
 import json
 import logging
 from analitiq.utils import db_utils
-from analitiq.base.BaseService import BaseResponse
+from analitiq.base.BaseResponse import BaseResponse
 from analitiq.base.GlobalConfig import GlobalConfig
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.utils.code_extractor import CodeExtractor
@@ -67,13 +67,8 @@ class Sql:
         self.llm = GlobalConfig().get_llm()
         self.user_prompt = user_prompt
         self.relevant_tables = ""
-        self.metadata = {
-            "text": "",
-            "relevant_tables": self.relevant_tables,
-            "sql": "",
-            "format": 'dataframe',
-            "unpack_format": 'split' # this is helpful to let other services understand how to format this Data frame.
-        }
+        self.response_sql = BaseResponse(self.__class__.__name__)
+        self.response_df = BaseResponse(self.__class__.__name__)
 
     def get_ddl(self) -> List[str]:
         """Retrieves a list of usable table names from the database.
@@ -141,7 +136,7 @@ class Sql:
                 output_lines.append(f"    - Columns: {column_details}")
 
         self.relevant_tables = "\n".join(output_lines)
-        self.metadata['relevant_tables'] = self.relevant_tables
+        self.response_sql.set_metadata({"relevant_tables": self.relevant_tables})
 
         return True
 
@@ -390,8 +385,8 @@ class Sql:
             success, result = self.execute_sql(llm_response['SQL_Code'])
 
             if success:
-                self.metadata['sql'] = llm_response['SQL_Code']
-                self.metadata['text'] = llm_response['Explanation']
+                self.response_sql.set_content(llm_response['SQL_Code'], 'sql')
+                self.response_sql.set_metadata({'text': llm_response['Explanation']})
                 logging.info(f"[Node: SQL][SQL Success][Iteration {attempts}]: {result}")
                 return result
             else:
@@ -399,6 +394,9 @@ class Sql:
                 logging.info(f"[Node: SQL][SQL Error][Iteration {attempts}]: {result}")
                 error = {'response': llm_response['SQL_Code'], 'error': result}
                 attempts += 1
+
+        # return empty dataframe
+        return pd.DataFrame()
 
     def run(self, user_prompt: str, **kwargs) -> BaseResponse:
         """Executes the full process from interpreting a user prompt to SQL query generation and execution.
@@ -419,21 +417,22 @@ class Sql:
         result_df = self.iterate_sql_get_and_exec(5)
 
         # Check if the DataFrame is empty, return empty string instead
+
         if result_df.empty:
-            response = BaseResponse(
-                content=None,
-                metadata=self.metadata
-            )
+            self.response_df.set_content(None, 'text')
         else:
-            response = BaseResponse(
-                content=result_df,
-                metadata=self.metadata
-            )
+            # remove empty rows
+            result_df.dropna(how='any', axis=0, inplace=True)
+            # remove empty columns
+            result_df.dropna(how='any', axis=0, inplace=True)
+
+
+            self.response_df.set_content(result_df, 'dataframe')
 
         # Save the response to memory
         memory = BaseMemory()
-        memory.log_service_message(response, 'SQL')
+        memory.log_service_message(self.response_df)
         memory.save_to_file()
 
-        return response
+        return [self.response_df, self.response_sql]
 

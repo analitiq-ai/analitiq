@@ -1,5 +1,5 @@
 import logging
-from analitiq.base.BaseService import BaseResponse
+from analitiq.base.BaseResponse import BaseResponse
 from analitiq.base.GlobalConfig import GlobalConfig
 from langchain.prompts import PromptTemplate
 from analitiq.services.search_vc.prompt import (
@@ -16,6 +16,7 @@ class Search_docs:
         self.llm = GlobalConfig().get_llm()
         self.client = None
         self.user_prompt = user_prompt
+        self.response = BaseResponse(self.__class__.__name__)
 
     def run(self):
         project_name = GlobalConfig().get_project_name()
@@ -28,7 +29,8 @@ class Search_docs:
             docs = response.objects
         except Exception as e:
             logging.error(f"[Bode: Vector Search] Error: No objects returned")
-            return BaseResponse(content='Search failed', metadata={})
+            self.response.set_content('Search failed')
+            return self.response
 
         # Initialize an empty string to hold the formatted content
         document_name_list = []
@@ -47,5 +49,7 @@ class Search_docs:
 
         table_chain = prompt | self.llm
         ai_response = table_chain.invoke({"user_prompt": self.user_prompt})
+        self.response.set_content(ai_response)
+        self.response.set_metadata({"documents": ', '.join(document_name_list)})
 
-        return BaseResponse(content=ai_response, metadata={"documents": ', '.join(document_name_list)})
+        return self.response

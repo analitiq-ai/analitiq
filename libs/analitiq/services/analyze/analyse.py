@@ -1,5 +1,5 @@
 import logging
-from analitiq.base.BaseService import BaseResponse
+from analitiq.base.BaseResponse import BaseResponse
 from analitiq.base.GlobalConfig import GlobalConfig
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
@@ -22,6 +22,7 @@ class Analyze():
         """Initialize the service.
         """
         self.llm = GlobalConfig().get_llm()
+        self.response = BaseResponse(self.__class__.__name__)
 
     def run(self, service_input: list, user_prompt=None,  **kwargs):
         """Initialize the Analyzer.
@@ -30,20 +31,13 @@ class Analyze():
           service_input: List of BaseResponse objects from previous nodes
         """
 
-        # Set up the response content right away
-        response = BaseResponse(
-            content='',
-            metadata={
-            }
-        )
-
         if service_input is None or service_input is []:
-            return BaseResponse
+            return self.response
 
         # we combine the responses from all higher level nodes
         combined_responses = ''
         for item in service_input:
-            combined_responses = combined_responses + f"{item.metadata['format']}:\n{item.content}"
+            combined_responses = combined_responses + f"{item.content_format}:\n{item.content}"
 
         parser = PydanticOutputParser(pydantic_object=AnalysisResponse)
 
@@ -58,11 +52,6 @@ class Analyze():
         logging.info(f"Response {llm_response}")
 
         # Package the result and metadata into a Response object
-        response = BaseResponse(
-            content=f"Summary: {llm_response.Summary}\nObservations: {llm_response.Observations}\nAnomalies: {llm_response.Anomalies}\n ",
-            metadata={
-                'format': 'text'
-            }
-        )
+        self.response.set_content(f"Summary: {llm_response.Summary}\nObservations: {llm_response.Observations}\nAnomalies: {llm_response.Anomalies}\n ")
 
-        return response
+        return self.response

@@ -64,3 +64,25 @@ def extract_hints(text):
     cleaned_prompt = re.sub(pattern, '', text).strip()
 
     return cleaned_prompt, hints
+
+
+def flatten(lst):
+    """
+    Flatten a nested list.
+
+    :param lst: The nested list to be flattened.
+    :type lst: list
+    :return: The flattened list.
+    :rtype: list
+    """
+    output = []
+    if isinstance(lst, list):
+        for i in lst:
+            if isinstance(i, list):
+                output.extend(flatten(i))
+            else:
+                output.append(i)
+    else:
+        output.append(lst)
+
+    return output

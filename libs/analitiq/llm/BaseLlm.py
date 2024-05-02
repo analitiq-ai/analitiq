@@ -1,7 +1,7 @@
 from typing import List, Optional
 from analitiq.base.GlobalConfig import GlobalConfig
 from analitiq.base.BaseMemory import BaseMemory
-from analitiq.base.BaseService import BaseResponse
+from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.code_extractor import CodeExtractor
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
@@ -102,17 +102,14 @@ class AnalitiqLLM:
     def __init__(self):
         self.llm = GlobalConfig().get_llm()
         self.memory = BaseMemory()
+        self.response = BaseResponse(self.__class__.__name__)
 
     def save_response(self, response: str):
 
         # Package the result and metadata into a Response object
-        log_response = BaseResponse(
-            content=str(response),
-            metadata={
-            }
-        )
+        self.response.set_content(str(response))
 
-        self.memory.log_service_message(log_response, 'Core')
+        self.memory.log_service_message(self.response)
         self.memory.save_to_file()
 
 

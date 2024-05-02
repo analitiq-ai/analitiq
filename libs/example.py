@@ -1,10 +1,12 @@
 
 from analitiq.analitiq import Analitiq
 
-user_prompt = "Show me a chart of our revenues by month for all time."
+user_prompt = "Query the database for me and give me a chart of our top 10 customers."
 
 a = Analitiq(user_prompt)
 services_responses = a.run(user_prompt)
-for service_name, response in services_responses.items():
-    response.print_details()
+print(services_responses)
+for service, response in services_responses.items():
+    print(response)
+    #response.print_details()
 

@@ -1,7 +1,7 @@
 import os
 from analitiq.base.GlobalConfig import GlobalConfig
 from analitiq.base.BaseMemory import BaseMemory
-from analitiq.base.BaseService import BaseService, BaseResponse
+from analitiq.base.BaseResponse import BaseResponse
 from langchain_core.pydantic_v1 import BaseModel, Field
 from analitiq.base.BaseSession import BaseSession
 from langchain_core.output_parsers import JsonOutputParser
@@ -21,7 +21,7 @@ class ElementToSave(BaseModel):
     filename: str = Field(description="Filename that you think would suit best to the content")
 
 
-class Save():
+class Save:
     """
     A class to process chat history and extract information based on user prompts.
 
@@ -43,6 +43,7 @@ class Save():
         self.llm = GlobalConfig().get_llm()
         self.base_memory = BaseMemory()
         self.output_directory = output_directory
+        self.response = BaseResponse(self.__class__.__name__)
 
     def extract_chat_entity(self, user_prompt, num_messages: int = 5) -> None:
         """
@@ -104,7 +105,7 @@ class Save():
 
         return filename
 
-    def run(self, user_prompt: str, service_input, **kwargs) -> BaseResponse:
+    def run(self, user_prompt: str, service_input, **kwargs):
         """Executes the search of data in chat history and it's saving .
 
         This method determines the appropriate element from chat_history based on the user's prompt,
@@ -115,22 +116,19 @@ class Save():
             service_input: The input data for chart generation, either as a DataFrame or a pickled string.
 
         Returns:
-            Response: A JSON object containing filename and description of the data that was saved.
+            Response: BaseResponse object containing filename and description of the data that was saved.
         """
 
         llm_response = self.extract_chat_entity(user_prompt)
 
         filename = self.save_object(llm_response['filename'], llm_response['content'])
 
-        # Package the result and metadata into a Response object
-        response = BaseResponse(
-            content=f"I have found that {llm_response['descr']} from our chat history matches your request. The information was saved under file {filename}",
-            metadata={
-                "timestamp": llm_response['timestamp'],
-                "filename": llm_response['filename'],
-                "descr": llm_response['descr']
-            }
-        )
+        self.response.set_content(f"I have found that {llm_response['descr']} from our chat history matches your request. The information was saved under file {filename}")
+        self.response.set_metadata({
+            "timestamp": llm_response['timestamp'],
+            "filename": llm_response['filename'],
+            "descr": llm_response['descr']
+        })
 
-        return response
+        return self.response
 

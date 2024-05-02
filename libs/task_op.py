@@ -34,6 +34,7 @@ class Analitiq():
         """
         self.memory = BaseMemory()
         self.services = GlobalConfig().services
+        self.response = BaseResponse(self.__class__.__name__, content='', metadata={})
         self.avail_services_str = self.get_available_services_str(self.services)
         self.llm = AnalitiqLLM()
         self.prompts = {'original': user_prompt}
@@ -227,7 +228,8 @@ class Analitiq():
         prompt_clear_response = self.is_prompt_clear(self.prompts['original'])
 
         if not prompt_clear_response.Clear:
-            return {'Analitiq': BaseResponse(content=prompt_clear_response.Feedback, metadata={})}
+            self.response.content = prompt_clear_response.Feedback
+            return self.response
 
         # add the refined prompts by the model.
         self.prompts['refined'] = prompt_clear_response.Query
