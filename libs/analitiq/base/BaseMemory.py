@@ -3,7 +3,7 @@ import os
 import json
 from typing import List, Dict, Any
 from datetime import datetime, timedelta
-from analitiq.base.BaseService import BaseResponse
+from analitiq.base.BaseResponse import BaseResponse
 from analitiq.base.BaseSession import BaseSession
 from analitiq.base.GlobalConfig import GlobalConfig
 from enum import Enum
@@ -24,19 +24,16 @@ class BaseMemory:
         #filename = f"{self.start_time.strftime('%Y%m%d%H%M%S')}.log"
         self.filename = f"{self.session_uuid}.log"
 
-    def log_service_message(self, service_response: BaseResponse, source_class) -> None:
-        """Logs a single entity message along with the service response."""
-        if 'format' in service_response.metadata and service_response.metadata['format'] == 'dataframe' and service_response.content:
-            content = service_response.content.to_json(orient="split")
-        else:
-            content = service_response.content
+    def log_service_message(self, service_response: BaseResponse) -> None:
+
+        content = service_response.get_content_str()
 
         conversation_entry = {
             'timestamp': datetime.now().isoformat(),
             'entity': EntityType.ANALITIQ.value,
             'content': content,
             'metadata': service_response.metadata,
-            'source_class_name': source_class
+            'source_class_name': service_response.service_name
         }
         self.conversations.append(conversation_entry)
 

@@ -1,7 +1,7 @@
 import logging
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.llm.BaseLlm import AnalitiqLLM
-from analitiq.base.BaseService import BaseResponse
+from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.general import *
 
 logging.basicConfig(
@@ -36,7 +36,7 @@ class Analitiq():
         self.avail_services_str = self.get_available_services_str(self.services)
         self.llm = AnalitiqLLM()
         self.prompts = {'original': user_prompt}
-        self.response = BaseResponse(content='', metadata={})
+        self.response = BaseResponse(self.__class__.__name__)
 
     def get_available_services_str(self, avail_services):
         """
@@ -174,8 +174,8 @@ class Analitiq():
         prompt_clear_response = self.is_prompt_clear(self.prompts['original'])
 
         if not prompt_clear_response.Clear:
-            self.response.add_llm_msg(prompt_clear_response.Feedback)
-            return {"Analitiq": self.response}
+            self.response.set_content(prompt_clear_response.Feedback)
+            return self.response
 
         # add the refined prompts by the model.
         self.prompts['refined'] = prompt_clear_response.Query
@@ -194,8 +194,8 @@ class Analitiq():
         # Building node dependency
         # Check if the list contains exactly one item
         if len(selected_services) == 0:
-            self.response.add_llm_msg("No services selected.")
-            return {"Analitiq": self.response}
+            self.response.set_content("No services selected.")
+            return self.response
 
         # Initialize the execution graph with the context
         graph = Graph(self.services)

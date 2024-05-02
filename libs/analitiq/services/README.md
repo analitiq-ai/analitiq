@@ -68,7 +68,7 @@ Onside the object, `metadata={}` dictionary can be used to store and pass any in
 ```python
 from analitiq.base.GlobalConfig import GlobalConfig
 from langchain.prompts import PromptTemplate
-from analitiq.base.BaseService import BaseResponse
+from analitiq.base.BaseResponse import BaseResponse
 
 class MyService:
     """
@@ -77,6 +77,7 @@ class MyService:
     def __init__(self) -> None:
         self.llm = GlobalConfig().get_llm()
         self.db = GlobalConfig().get_db()
+        self.response = BaseResponse(self.__class__.__name__)
         
     def run(self, user_prompt) -> BaseResponse:
         """Executes the new service
@@ -96,16 +97,18 @@ class MyService:
         response = table_chain.invoke({"user_prompt": "Tell me a joke"})
 
         # Package the result and metadata into a Response object
-        return BaseResponse(
-            content=response.content,
-            metadata={
-                "note": 'This is some metadata important to this response',
-            }
-        )
+        self.response.set_content(response.content)
+
+        metadata={
+            "note": 'This is some metadata important to this response',
+        }
+        self.response.set_metadata(metadata)
+        
+        return self.response
 ```
 
 ### Service + Chat History Access (Memory)
-Saving response to a chat history file can be done using `memory.log_service_message({RESPONSE},{SERVICE_NAME})` from the `BaseMemory` class.
+Saving response to a chat history file can be done using `memory.log_service_message({RESPONSE})` from the `BaseMemory` class.
 Any future services will now be able to reference this information and retrieve it from the memory.
 ```python
 from analitiq.base.GlobalConfig import GlobalConfig
@@ -139,7 +142,7 @@ class MyService:
 
         # Save the response to memory
         memory = BaseMemory()
-        memory.log_service_message(response,'Chart')
+        memory.log_service_message(response)
         memory.save_to_file()
         
         return response
@@ -175,16 +178,16 @@ class BaseResponse:
 
 Your service's main response should be returned in the `content` attribute, with supplementary information in the `metadata` attribute of the dictionary.
 
-## BaseService Class
+## BaseResponse Class
 
-If your custom service needs access to a database or LLM, extend the `BaseService` from `service.py`. The `BaseService` class provides a shared context and initializes essential resources:
+If your custom service needs access to a database or LLM, extend the `BaseResponse` from `service.py`. The `BaseResponse` class provides a shared context and initializes essential resources:
 
 ```python
 from analitiq.utils import db_utils
 from langchain_community.utilities import SQLDatabase
 import os
 
-class BaseService:
+class BaseResponse:
     """Initializes the service with shared context and parameters.
     
     Args:
@@ -206,13 +209,15 @@ To add a new service, for example, `DataAnalysis`, follow these steps:
 
 ```python
 # /services/data_analysis/base.py
-from analitiq.base.BaseService import BaseService, BaseResponse
+from analitiq.base.BaseResponse import BaseResponse
 
-class DataAnalysis(BaseService):
+class DataAnalysis:
     """Performs data analysis based on user prompts and returns insights.
     
     This service analyzes data to provide insights, trends, and patterns.
     """
+    def __init__(self, user_prompt) -> None:
+        self.response = BaseResponse(self.__class__.__name__)
     
     def run(self, data, prompt: str) -> BaseResponse:
         """Analyzes data based on a prompt.
@@ -225,9 +230,13 @@ class DataAnalysis(BaseService):
             BaseResponse: Contains analysis results and metadata.
         """
         # Your analysis logic here
-        content = ...
-        metadata = ...
-        return BaseResponse(content, metadata)
+        pass
+        
+        # update the data to return from this node
+        self.response.set_content("Your content data")
+        self.response.set_metadata({"some key": "some value"})
+        
+        return self.response
 ```
 
 3. **Implement Your Service**: Define your analysis logic within the `run` method.
