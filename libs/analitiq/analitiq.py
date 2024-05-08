@@ -3,19 +3,10 @@ from analitiq.base.BaseMemory import BaseMemory
 from analitiq.llm.BaseLlm import AnalitiqLLM
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.general import *
-
-logging.basicConfig(
-    filename='logs/latest_run.log'
-    ,encoding='utf-8'
-    ,filemode='w'
-    ,level=logging.INFO
-    ,format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])'
-    ,datefmt='%d/%m/%Y %I:%M:%S %p'
-)
+from analitiq.base.GlobalConfig import GlobalConfig
 
 from analitiq.base.Graph import Graph, Node
 from analitiq.base.BaseSession import BaseSession
-from analitiq.base.GlobalConfig import GlobalConfig
 
 from analitiq.prompt import (
     HELP_RESPONSE

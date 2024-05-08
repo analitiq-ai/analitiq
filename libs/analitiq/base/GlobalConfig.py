@@ -5,6 +5,7 @@ from pathlib import Path
 from langchain_community.utilities import SQLDatabase
 from analitiq.base.ProfileLoader import ProfileLoader
 from analitiq.base.ServicesLoader import ServicesLoader
+import os
 
 
 class GlobalConfig:
@@ -53,6 +54,21 @@ class GlobalConfig:
             self.database = None
             #self.database = self.set_database()  # Placeholder for database instance
             self._initialized = True
+
+            # Check if the log directory exists
+            if not os.path.exists(self.project_config['config']['general']['log_dir']):
+                # If it doesn't exist, create it
+                os.makedirs(self.project_config['config']['general']['log_dir'])
+
+        logging.basicConfig(
+            filename='logs/latest_run.log'
+            ,encoding='utf-8'
+            ,filemode='w'
+            ,level=logging.INFO
+            ,format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])'
+            ,datefmt='%d/%m/%Y %I:%M:%S %p'
+        )
+
 
     def load_yaml(self, file_path: str) -> Dict[str, Any]:
         """

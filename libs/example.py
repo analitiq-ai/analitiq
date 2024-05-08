@@ -8,5 +8,5 @@ services_responses = a.run(user_prompt)
 print(services_responses)
 for service, response in services_responses.items():
     print(response)
-    #response.print_details()
+    response.print_details()
 
