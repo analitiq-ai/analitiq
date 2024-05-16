@@ -23,6 +23,7 @@ EXTRACT_INFO_FROM_DB_SCHEMA = """
 You are a data analyst and your role is to examine user query and database schema.
 From the database schema, determine what information may be necessary to answer user query.
 Extract the necessary information and provide it in your response.
+Always qualify tables with the name of the schema they reside in.
 If nothing in the database schema can be used to address users query or you are unable extract relevant information, return the word "None" in your reponse.
 User query: {user_query}.
 Database schema: {db_schema}

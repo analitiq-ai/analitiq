@@ -230,13 +230,15 @@ class Sql:
 
     def _attempt_llm_recovery(self, exception, result):
         a = AnalitiqLLM()
+        response = a.llm_fix_json(str(exception), result)
+
         try:
-            response = a.llm_fix_json(str(exception), result)
             response_dict = json.loads(response)
             return response_dict
         except Exception as e:
-            self.logger.error(f"Could not extract dictionary from response: {str(e)}")
+            self.logger.error(f"Could not extract dictionary from response {response}.\n{str(e)}")
             raise RuntimeError("Failed to recover from LLM error.") from e
+
 
     def get_sql_from_llm(self, iteration_num: int) -> str:
         """Generate SQL from LLM based on the user prompt and handle retries with error logging."""
