@@ -122,11 +122,14 @@ class Graph:
                 # Wait for at least one node to complete
                 for future in as_completed(futures_to_nodes):
                     completed_node = futures_to_nodes.pop(future)  # Pop to prevent re-execution
-                    node_outputs[completed_node.name] = future.result()  # Store the result for dependent nodes as a BaseResponse object.
+                    result = future.result()
+
+                    # Store the result for dependent nodes as a BaseResponse object.
+                    node_outputs[completed_node.name] = result if result.content is not None else None
 
                     # Check and schedule dependent nodes
                     for consumer in completed_node.consumers:
-                        if all(dep.name in node_outputs for dep in consumer.dependencies):
+                        if all(dep.name in node_outputs and node_outputs[dep.name] is not None for dep in consumer.dependencies):
                             if consumer.name not in executed_nodes:  # Check if consumer has been executed
                                 ready_nodes.append(consumer)
 

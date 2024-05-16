@@ -1,8 +1,11 @@
 import logging
+import os
+import sys
+from pathlib import Path
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.llm.BaseLlm import AnalitiqLLM
 from analitiq.base.BaseResponse import BaseResponse
-from analitiq.utils.general import *
+from analitiq.utils.general import load_yaml, extract_hints
 from analitiq.base.GlobalConfig import GlobalConfig
 
 from analitiq.base.Graph import Graph, Node
@@ -14,6 +17,25 @@ from analitiq.prompt import (
 
 # import langchain
 # langchain.debug = True
+
+core_config = load_yaml(Path('analitiq/core_config.yml')) #this is analitiq project.yml
+project_config = load_yaml(Path('project.yml')) #this is the users project.yml
+sys.path.append("/analitiq")
+
+# Check if the log directory exists
+if not os.path.exists(project_config['config']['general']['log_dir']):
+    # If it doesn't exist, create it
+    os.makedirs(project_config['config']['general']['log_dir'])
+print()
+
+logging.basicConfig(
+    filename=f"{project_config['config']['general']['log_dir']}/{project_config['config']['general']['latest_run_filename']}"
+    ,encoding='utf-8'
+    ,filemode='w'
+    ,level=logging.INFO
+    ,format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])'
+    ,datefmt='%d/%m/%Y %I:%M:%S %p'
+)
 
 class Analitiq():
 

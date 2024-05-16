@@ -38,6 +38,7 @@ class ServicesLoader:
         return inputs, outputs
 
     def load_service_class(self, service_config: dict, loaded_services: dict = {}) -> bool:
+
         """
         This class runs checks on a service:
         1. whether service file and class exist

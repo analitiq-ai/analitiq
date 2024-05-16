@@ -1,47 +1,31 @@
 import json
 import logging
+import pandas as pd
+import os
+import re
+from typing import List
 from analitiq.utils import db_utils
+from analitiq.utils.general import *
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.base.GlobalConfig import GlobalConfig
-from analitiq.base.BaseMemory import BaseMemory
+from analitiq.llm.BaseLlm import AnalitiqLLM
 from analitiq.utils.code_extractor import CodeExtractor
-from langchain.chains import create_sql_query_chain
-from langchain_core.prompts import ChatPromptTemplate
-from langchain.prompts import PromptTemplate
-from langchain_core.pydantic_v1 import BaseModel, Field
-from langchain.output_parsers import PydanticOutputParser
-from langchain_core.output_parsers import JsonOutputParser
-from typing import List, Optional
-import pandas as pd
-from analitiq.utils.general import *
 
+from analitiq.services.sql.schema import Table, Column, Tables, SQL, TableCheck
+from langchain.prompts import PromptTemplate
+from langchain_core.output_parsers import JsonOutputParser
+from langchain.output_parsers import PydanticOutputParser
 
 from analitiq.services.sql.prompt import (
     RETURN_RELEVANT_TABLE_NAMES,
     TEXT_TO_SQL_PROMPT,
-    FIX_SQL
+    FIX_SQL,
+    FIX_RESPONSE
 )
 
-
-class Column(BaseModel):
-    ColumnName: str = Field(description="The name of the column.")
-    DataType: str = Field(description="Data type of the column.")
-
-
-class Table(BaseModel):
-    SchemaName: str = Field(description="The schema where this table resides.")
-    TableName: str = Field(description="The name of the table.")
-    Columns: List[Column] = Field(description="A list of relevant columns in the table.")
-
-
-class Tables(BaseModel):
-    TableList: List[Table] = Field(description="A list of relevant tables from the list of all tables in a database")
-
-
-class SQL(BaseModel):
-    SQL_Code: str = Field(description="Only SQL code goes in here.")
-    Explanation: str = Field(description="Any text or explanation other than SQL code.")
-
+# Maximum iterations for all loops to LLM
+max_iterations = 5
+db_docs_name = "schema" # this is the identifier of the name of the DB schema doc
 
 class Sql:
     """Handles SQL query generation and execution against database. Useful when user would like to query data.
@@ -57,18 +41,51 @@ class Sql:
     get_relevant_tables: Identifies relevant tables based on user input.
     get_sql2: Generates SQL queries based on user input.
     get_sql: Converts a user prompt into an SQL query using specified tables.
-    run_sql: Executes SQL queries and returns results as a DataFrame.
+    execute_sql: Executes SQL queries and returns results as a DataFrame.
     get_sql_from_llm: Parses and handles responses from the LLM.
     run: Orchestrates the process from prompt interpretation to SQL query execution.
     """
 
-    def __init__(self, user_prompt) -> None:
-        self.db = GlobalConfig().get_database()
-        self.llm = GlobalConfig().get_llm()
+    """Class to generate and execute SQL queries using prompts submitted to an LLM, with logging and retries."""
+
+    def __init__(self, user_prompt):
         self.user_prompt = user_prompt
+        self.db = GlobalConfig().get_database()
+        self.llm = AnalitiqLLM()
+
         self.relevant_tables = ""
-        self.response_sql = BaseResponse(self.__class__.__name__)
-        self.response_df = BaseResponse(self.__class__.__name__)
+        self.response = BaseResponse(self.__class__.__name__)
+        self.logger = self.setup_logger()
+
+    def setup_logger(self):
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
+        handler = logging.FileHandler(self.get_log_file_path())
+        handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+        logger.addHandler(handler)
+        logger.propagate = False
+
+        # clear the logfile content
+        with open(self.get_log_file_path(), "w") as log_file:
+            pass
+
+        return logger
+
+    def get_log_file_path(self):
+        return f"{os.path.dirname(os.path.abspath(__file__))}/logs/latest_run.log"
+
+    def _format_prompt(self, prompt, is_history):
+        formatted_prompt = prompt.format(user_prompt=self.user_prompt)
+        if is_history:
+            return "\n\t".join(formatted_prompt.splitlines())
+        return formatted_prompt
+
+    def _log_prompt(self, prompt_as_txt, is_history):
+
+        if is_history:
+            self.logger.info(f"[[PROMPT_WITH_CHAT_HISTORY_START]]\n\n{prompt_as_txt}\n\n[[PROMPT_WITH_CHAT_HISTORY_END]]")
+        else:
+            self.logger.info(f"Human:\n{prompt_as_txt}")
 
     def get_ddl(self) -> List[str]:
         """Retrieves a list of usable table names from the database.
@@ -95,7 +112,7 @@ class Sql:
 
         return ddl
 
-    def get_relevant_tables(self) -> List[str]:
+    def get_relevant_tables(self, docs: str = None) -> List[str]:
         """
         Determines tables relevant to the given user prompt using AI.
 
@@ -103,28 +120,40 @@ class Sql:
             List[Table]: A list of relevant Table objects.
         """
         ddl = self.get_ddl()
-
+        docs = ''
+        if docs:
+            docs = f"Database Documentation:\n{docs}\n"
+        else:
+            docs = ''
         parser = PydanticOutputParser(pydantic_object=Tables)
         prompt = PromptTemplate(
             template=RETURN_RELEVANT_TABLE_NAMES,
             input_variables=["user_prompt"],
-            partial_variables={"ddl": ddl
-                ,"format_instructions": parser.get_format_instructions()}
+            partial_variables={
+                "ddl": ddl
+                , "db_docs": docs
+                , "format_instructions": parser.get_format_instructions()
+            }
         )
 
-        prompt_as_string = prompt.format(user_prompt=self.user_prompt)
+        response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
 
-        table_chain = prompt | self.llm | parser
-        response = table_chain.invoke({"user_prompt": self.user_prompt})
-
-        logging.info(f"[Node:SQL][Get relevant tables].\nInput: {self.user_prompt}.\nResponse: {response}")
+        #self.logger.info(f"Assistant:\nList of tables believed to be relevant - {response.to_json()}")
 
         schema_dict = {}
         # Organize tables by schema
         for table in response.TableList:
-            if table.SchemaName not in schema_dict:
-                schema_dict[table.SchemaName] = []
-            schema_dict[table.SchemaName].append(table)
+
+            # first check if table is needed
+            check_result = self.check_relevant_table(table.SchemaName, table.TableName)
+
+            if check_result.Required is True:
+                if table.SchemaName not in schema_dict:
+                    schema_dict[table.SchemaName] = []
+                schema_dict[table.SchemaName].append(table)
+
+        if not schema_dict:
+            return
 
         # Format the output string
         output_lines = []
@@ -136,303 +165,228 @@ class Sql:
                 output_lines.append(f"    - Columns: {column_details}")
 
         self.relevant_tables = "\n".join(output_lines)
-        self.response_sql.set_metadata({"relevant_tables": self.relevant_tables})
+        self.logger.info(f"Assistant:\nList of relevant tables and columns.\n{self.relevant_tables}")
+        self.response.add_text_to_metadata(f"Relevant tables: {self.relevant_tables}")
+
+        self.response.set_metadata({"relevant_tables": self.relevant_tables})
 
         return True
 
-    def parse_sql_from_string(self, llm_output: str):
-        """
-        Attempts to extract SQL from LLM textual putput.
-        :param llm_output:
-        :return:
+    def check_relevant_table(self, schema_name, table_name):
+        limit = 5
 
-        Example:
-        Here is the fixed SQL:
+        sql = f"SELECT * FROM {schema_name}.{table_name} LIMIT {limit}"
+        result = self.db.run(sql, include_columns=True)
 
-        ```sql
-        SELECT "name", SUM("sales_amount") AS "total_sales"
-        FROM sample_data.sales
-        GROUP BY "name"
-        ORDER BY "total_sales" DESC
-        LIMIT 10
-        ```
-
-        I made the following changes:
-
-        - Replaced "customer" with "name", since the error indicates "customer" does not exist as a column. I assumed "name" is the correct column with customer names.
-        - Kept the rest of the query the same - summing the sales_amount per name, ordering by total sales descending, and limiting to the top 10 rows.
-
-        Let me know if you have any other questions!
-        """
-        if '```sql' in llm_output:
-            # Example usage:
-            extractor = CodeExtractor()
-            extracted_code = extractor.extract_code('sql', llm_output)
-            logging.info(f"Extracted SQL from output: {extracted_code}")
-
-        return extracted_code
-
-    def get_sql_primary(self, error: dict = None) -> str:
-        """
-       Generates a SQL query from the user prompt and relevant tables information.
-
-       Args:
-           error (Optional[dict]): Error message from the previous attempt, if any.
-
-       Returns:
-           str: Generated SQL query.
-       """
-
-        logging.info(f"[Node:SQL][get_sql_primary]\nInput: {self.user_prompt}")
-
-        feedback = ""
-
-        if error:
-            feedback = f"""
-            Your previous response generated an error that is listed bellow. Please fix this the error and provide a valid SQL.
-            Previous response:\n
-            {error['response']}
-            
-            Error:\n
-            {error['error']}
-            """
-        # Set up a parser + inject instructions into the prompt template.
-        parser = JsonOutputParser(pydantic_object=SQL)
-
+        parser = PydanticOutputParser(pydantic_object=TableCheck)
         prompt = PromptTemplate(
-            template=TEXT_TO_SQL_PROMPT,
+            template="You are a data analys. You received user query: {user_prompt}.\nDoes the table {schema_name}.{table_name} contain the data that might be relevant to answer the users query? Bellow is some data from the table: \n {data_sample}. \n {format_instructions}.",
             input_variables=["user_prompt"],
-            partial_variables={
-                "dialect": self.db.dialect,
-                "table_info": self.relevant_tables,
-                "top_k": 100,  # TODO this should be from config
-                "schema_name": "sample_data",  # TODO this should be from config
-                "feedback": feedback,
-                "format_instructions": parser.get_format_instructions()
-            },
+            partial_variables={"schema_name": schema_name,
+                               "table_name": table_name,
+                               "data_sample": result,
+                               "format_instructions": parser.get_format_instructions()
+                               }
         )
 
-        response = {}
+        #prompt_as_string = prompt.format(user_prompt=self.user_prompt)
+        #print(prompt_as_string)
 
-        table_chain = prompt | self.llm | parser
-        try:
-            response = table_chain.invoke({"user_prompt": self.user_prompt})
-        except Exception as e:
-            logging.error(f"[Node: SQL][get_sql_primary]\n Error parsing response: {e}")
-            try:
-                response['SQL_Code'] = self.parse_sql_from_string(str(e))
-            except Exception as e:
-                logging.error(f"[Node: SQL][get_sql_primary]\n Error extracting SQL: {e}")
-                return False
-
-        logging.info(f"[Node: SQL][get_sql_primary]Response:\n{response}")
+        response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
 
         return response
 
+    def prep_llm_invoke(self, prompt, parser, is_history: bool = False):
 
-    def get_sql_failover(self, last_error: dict = None) -> str:
-        """
-        This is a failover function to extract SQL from LLM response, in case more structured approach does not work. Converts a user prompt into an SQL query using specified tables.
+        prompt_as_txt = self._format_prompt(prompt, is_history)
+        self._log_prompt(prompt_as_txt, is_history)
 
-        Returns:
-            str: The constructed SQL query.
-        """
-
-        system = TEXT_TO_SQL_PROMPT
-        prompt = ChatPromptTemplate.from_messages(
-            [("system", system), ("human", "{input}")]
-        ).partial(dialect=self.db.dialect)
-
-        def parse_final_answer(output: str) -> str:
-            extractor = CodeExtractor()
-            extracted_code = extractor.extract_code('sql', output)
-            return extracted_code
-
+        """Invoke the LLM with a given prompt and parser."""
         try:
-            query_chain = create_sql_query_chain(self.llm, self.db, prompt=prompt) | parse_final_answer
-            query = query_chain.invoke({
-                "question": self.user_prompt,
-                "table_info": self.relevant_tables,
-                'top_k': 100,
-                "schema_name": "sample_data"
-            })
-        except:
-            query_chain = create_sql_query_chain(self.llm, self.db, prompt=prompt)
-            query = query_chain.invoke({
-                "question": self.user_prompt,
-                "table_info": self.relevant_tables,
-                'top_k': 100,
-                "schema_name": "sample_data"
-            })
-        finally:
-            logging.info(f"[Node: SQL][SQL]: {query}")
-
-        return query
-
-
-    def convert_to_df(self, result):
-        """
-        Converts result of running SQL to dataframe.
-        :param result:
-        :return:
-        """
-        try:
-            # check if we need to import Decimal lib
-            if 'Decimal(' in result:
-                from decimal import Decimal #TODO, this should not be necessary, but cannot figure out a better way
-
-            if ' datetime.' in result:
-                import datetime #TODO, this should not be necessary, but cannot figure out a better way
-
-            result_df = pd.DataFrame(eval(result))
-            return result_df
+            response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
+            self.logger.info(f"Assistant:\n{response}")
+            return response
         except Exception as e:
-            logging.error(f"Could not convert query result to dataframe: {e}")
-            # return empty data frame
-            return pd.DataFrame()
+            self.logger.error(f"LLM response error: {str(e)}")
+            return self._handle_llm_failure(e)
 
-    def execute_sql(self, sql: str, convert_to_df=True) -> (bool, pd.DataFrame or str):
-        """
-        Executes an SQL query and optionally converts the result to a DataFrame.
-        This method now returns a tuple indicating success and either the DataFrame or error message.
+    def _handle_llm_failure(self, exception):
+        result = self._extract_error_details(exception)
+        if result:
+            return result
+        return self._attempt_llm_recovery(exception, result)
 
-        Args:
-            sql (str): The SQL query to execute.
-            convert_to_df (bool): Whether to convert the result to a DataFrame.
-
-        Returns:
-            tuple: (success (bool), DataFrame or error message (str))
-        """
+    def _extract_error_details(self, exception):
+        extractor = CodeExtractor()
         try:
-            result = self.db.run(sql, include_columns=True)
+            success, result = extractor.CodeAndDictionaryExtractor(str(exception))
+            if success and result:
+                return result
+            return None
+        except Exception as e:
+            self.logger.error(f"LLM code extractor error: {str(e)}")
+            return None
+
+    def _attempt_llm_recovery(self, exception, result):
+        a = AnalitiqLLM()
+        try:
+            response = a.llm_fix_json(str(exception), result)
+            response_dict = json.loads(response)
+            return response_dict
+        except Exception as e:
+            self.logger.error(f"Could not extract dictionary from response: {str(e)}")
+            raise RuntimeError("Failed to recover from LLM error.") from e
+
+    def get_sql_from_llm(self, iteration_num: int) -> str:
+        """Generate SQL from LLM based on the user prompt and handle retries with error logging."""
+        parser = JsonOutputParser(pydantic_object=SQL)
+
+        if iteration_num > 0:
+            chat_hist = remove_bracket_contents(self._get_chat_hist(1))
+            prompt = PromptTemplate(
+                template=FIX_RESPONSE,
+                input_variables=["user_prompt"],
+                partial_variables={
+                    "chat_hist": chat_hist,
+                    "format_instructions": parser.get_format_instructions()
+                }
+            )
+
+            is_hist = True
+        else:
+            prompt = PromptTemplate(
+                template=TEXT_TO_SQL_PROMPT,
+                input_variables=["user_prompt"],
+                partial_variables={
+                    "dialect": self.db.dialect,
+                    "table_info": self.relevant_tables,
+                    "top_k": 100,
+                    "schema_name": 'sample_data',
+                    "format_instructions": parser.get_format_instructions()
+                }
+            )
+            is_hist = False
+
+        try:
+            response = self.prep_llm_invoke(prompt, parser, is_hist)
+            if not response.get('SQL_Code'):
+                raise ValueError("Human:\nNo SQL Code returned")
+            return response
+        except Exception as e:
+            self.logger.error(f"Human:\nError getting LLM response. {str(e)}")
+            if iteration_num < 5:
+                return self.get_sql_from_llm(iteration_num + 1)
+            else:
+                raise RuntimeError("Human:\nMaximum retry attempts reached for SQL generation.")
+
+    def execute_sql(self, sql: str, convert_to_df=True):
+        """Execute SQL and log the process, handling errors and retries."""
+        try:
             if convert_to_df:
-                return True, self.convert_to_df(result)
+                inst = GlobalConfig()
+                engine = inst.get_db_engine()
+                result = pd.read_sql(sql, engine)
+                self.logger.info("Human:\nSQL executed successfully, converted to DataFrame.")
+            else:
+                result = self.db.run(sql, include_columns=True)
+                self.logger.info("Human:\nSQL executed successfully.")
+
             return True, result
         except Exception as e:
-            logging.error(f"Error executing SQL: {e}")
+            self.logger.error(f"Human:\nError executing SQL. {str(e)}")
             return False, str(e)
 
-    def get_sql_from_llm(self, error: dict = {}, iters: int = 5):
-        """
-        Parses and processes the response from a Large Language Model (LLM).
+    def _get_chat_hist(self, num_sections: int = 5):
+        with open(self.get_log_file_path(), 'r') as file:
+            content = file.read()
 
-        This function is designed to interpret the JSON response from an LLM, extracting relevant information and converting it into a structured format that can be used by other parts of the application. It handles specific response formats and converts them into a more usable or readable form.
+        start_tag = '[[PROMPT_WITH_CHAT_HISTORY_START]]'
+        end_tag = '[[PROMPT_WITH_CHAT_HISTORY_END]]'
 
-        Args:
-            error (dict): Error that has been passed from previous iteration.
-            iters (dict): Number of iterations to run.
+        # Define the pattern to find text between tags
+        pattern = re.compile(re.escape(start_tag) + '.*?' + re.escape(end_tag), re.DOTALL)
 
-        Returns:
-            dict: A dictionary containing the processed and simplified version of the LLM's response. The structure of this dictionary will depend on the specific requirements of the application.
+        # Remove the text between tags
+        modified_content = re.sub(pattern, '', content)
 
-        Raises:
-            ValueError: If the response does not contain expected keys or is in an unexpected format.
-            TypeError: If the input is not a dictionary as expected.
+        return modified_content
 
-        """
+    def get_db_docs(self):
+        project_name = GlobalConfig().get_project_name()
+        profile = GlobalConfig().profile_configs['vector_dbs']
+        vector_db_client = GlobalConfig().get_vdb_client(profile) # We do not need to init the VDB, until we need to use it
 
-        for attempt in range(iters):  # Loop up to x times
-            logging.info(f"[Node: SQL][Attempt {attempt}]")
+        #print(response)
+        response = vector_db_client.get_many_like("document_name", db_docs_name)
+        if not response:
+            self.logger.info(f"[VectorDB] No DB schema objects returned.")
 
-            # first, we try the usual way to generate the SQL
-            try:
-                # Generate an SQL query, passing the last error if one occurred
-                llm_response = self.get_sql_primary(error)
-                return llm_response
-            except Exception as e:
-                # Log and prepare the error for the next attempt
-                logging.error(f"[Node: SQL][SQL Error]: {e}")
-                error = {'error': e}  # Set the error for the next iteration
+        # Initialize an empty string to hold the formatted content
+        document_dict = {}
+        formatted_documents_string = ""
 
-        for attempt in range(iters):  # Loop up to x times
-
-            # first, we try the usual way to generate the SQL
-            try:
-                # Generate an SQL query, passing the last error if one occurred
-                llm_response = self.get_sql_failover(error)
-            except Exception as e:
-                # Log and prepare the error for the next attempt
-                logging.error(f"[Node: SQL] Cannot generate SQL from LLM: {e}")
-                error = {'error': e}  # Set the error for the next iteration
-
-            error = {'response': llm_response}
-
-            try:
-                # Attempt to parse the SQL query as JSON
-                result = json.loads(llm_response)
-                logging.info(f"[Node: SQL] Successfully parsed JSON:", result)
-
-            except json.JSONDecodeError as e:
-                # Log and prepare the error for the next attempt
-                logging.error(f"[Node: SQL] Cannot load SQL: {e}")
-                error = {'error': e}  # Set the error for the next iteration
-            except Exception as general_error:
-                # Handle any other types of exceptions that might occur
-                logging.error(f"Unexpected error: {general_error}")
-                error = {'error': general_error}  # Set the error for the next iteration
-
-        # If the loop completes without a successful parse, handle the failure case
-        logging.error(f"Failed to parse JSON after many attempts: {llm_response}")
-        return None  # Or raise an Exception, depending on your error handling strategy
-
-    def iterate_sql_get_and_exec(self, iters: int = 5):
-        attempts = 0
-        error = {}
-        while attempts < iters:
-            # Generate an SQL query from the user's prompt using the identified relevant tables
-            llm_response = self.get_sql_from_llm(error)
-
-            success, result = self.execute_sql(llm_response['SQL_Code'])
-
-            if success:
-                self.response_sql.set_content(llm_response['SQL_Code'], 'sql')
-                self.response_sql.set_metadata({'text': llm_response['Explanation']})
-                logging.info(f"[Node: SQL][SQL Success][Iteration {attempts}]: {result}")
-                return result
+        for obj in response.objects:
+            document_name = obj.properties['document_name']
+            document_content = obj.properties['content']
+            # Check if the document_name already exists in the dictionary
+            if document_name in document_dict:
+                # Append the content to the existing list
+                document_dict[document_name].append(document_content)
             else:
-                # Log the error and attempt to fix the SQL
-                logging.info(f"[Node: SQL][SQL Error][Iteration {attempts}]: {result}")
-                error = {'response': llm_response['SQL_Code'], 'error': result}
-                attempts += 1
+                # Create a new list with the content
+                document_dict[document_name] = [document_content]
 
-        # return empty dataframe
-        return pd.DataFrame()
+            # Use the dictionary to print the formatted document contents
 
-    def run(self, user_prompt: str, **kwargs) -> BaseResponse:
+        for document_name, content_list in document_dict.items():
+            formatted_content = "\n".join(content_list)
+            formatted_documents_string += f"Document name: {document_name}\nDocument content:\n{formatted_content}\n\n"
+
+        response = self.llm.extract_info_from_db_schema(self.user_prompt, formatted_documents_string)
+        self.logger.info(f"LLM: {response}")
+        self.response.add_text_to_metadata(response)
+
+        if response == 'None':
+            return None
+
+        return response
+
+    def run(self):
         """Executes the full process from interpreting a user prompt to SQL query generation and execution.
 
-        Args:
-            user_prompt (str): The user's input prompt intended to generate a SQL query.
+       Args:
+           user_prompt (str): The user's input prompt intended to generate a SQL query.
 
-        Returns:
-            Response: An object containing the query result set as a DataFrame in the content attribute
-                      and additional metadata such as executed SQL and relevant tables.
-        """
-        self.user_prompt = user_prompt
+       Returns:
+           Response: An object containing the query result set as a DataFrame in the content attribute
+                     and additional metadata such as executed SQL and relevant tables.
+       """
+        self.logger.info(f"Human:\n{self.user_prompt}")
+        docs = self.get_db_docs()
 
         # Identify relevant tables based on the user's prompt
-        self.get_relevant_tables()
+        self.get_relevant_tables(docs)
 
-        # Execute the generated SQL query and receive the result as a DataFrame
-        result_df = self.iterate_sql_get_and_exec(5)
+        """Process the prompt to generate and execute SQL, handling all logging and retries."""
+        try:
+            response = self.get_sql_from_llm(0)
+            sql = response['SQL_Code']
+        except RuntimeError as e:
+            return str(e)
 
-        # Check if the DataFrame is empty, return empty string instead
+        for _ in range(max_iterations):
+            success, result = self.execute_sql(sql)
+            if success:
+                self.response.set_content(result, 'dataframe')
+                self.response.add_text_to_metadata(f"{response['Explanation']}\n```\n{sql}\n```")
+                break  # terminate the loop on successful execution of SQL
+            else:
+                try:
+                    # here we artificially set iteration to be at 1 to let the system know that this is post error run and trigger chat history.
+                    response = self.get_sql_from_llm(1)
+                    sql = response['SQL_Code']
+                except RuntimeError as e:
+                    self.response.add_text_to_metadata(str(e))
 
-        if result_df.empty:
-            self.response_df.set_content(None, 'text')
-        else:
-            # remove empty rows
-            result_df.dropna(how='any', axis=0, inplace=True)
-            # remove empty columns
-            result_df.dropna(how='any', axis=0, inplace=True)
-
-
-            self.response_df.set_content(result_df, 'dataframe')
-
-        # Save the response to memory
-        memory = BaseMemory()
-        memory.log_service_message(self.response_df)
-        memory.save_to_file()
-
-        return [self.response_df, self.response_sql]
+        return self.response
 

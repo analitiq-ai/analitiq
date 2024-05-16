@@ -1,6 +1,8 @@
 import time
 import logging
 import re
+import yaml
+from typing import Dict, Any
 
 def retry(max_retries, wait_time):
     """
@@ -65,6 +67,24 @@ def extract_hints(text):
 
     return cleaned_prompt, hints
 
+def load_yaml(file_path: str) -> Dict[str, Any]:
+    """
+    Loads the configuration file.
+
+    Parameters:
+    - config_path (str): The path to the configuration YAML file.
+
+    Returns:
+    - List[Type]: A list of instantiated service classes.
+    """
+    # Create a Path object for the file you want to check
+    if file_path.exists():
+        with open(file_path, 'r') as f:
+            configs = yaml.safe_load(f)
+    else:
+        raise FileNotFoundError(f"The file does not exist: {file_path}")
+
+    return configs
 
 def flatten(lst):
     """
@@ -86,3 +106,6 @@ def flatten(lst):
         output.append(lst)
 
     return output
+
+def remove_bracket_contents(text):
+    return re.sub(r'\[\[.*?\]\]', '', text)

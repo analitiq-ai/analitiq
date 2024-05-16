@@ -3,6 +3,7 @@ import logging
 import weaviate
 from weaviate.util import generate_uuid5  # Used for generating a deterministic UUID based on input
 import weaviate.classes as wvc
+from weaviate.classes.query import Filter
 from typing import List, Optional
 from pydantic import BaseModel
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
@@ -176,43 +177,32 @@ class WeaviateVS():
 
         print(f"Loaded chunks: {chunks_loaded}")
 
-    def load_file(self, file_path: str):
+    def load(self, _path: str, _ext: str = None):
         """
+        Loads a file or directory into Weaviate.
+        Example:
+        wc=WeaviateVS(host, api_key, project_name)
+        wc.load('/Users/me/Documents/Projects/hello/test.yml')
 
-
-        Parameters:
-            file_path: The path to the file to be processed.
-
-
+        :param _path: The path to the file or directory.
+        :param _ext: (optional) The file extension to filter files when loading a directory. Defaults to None.
+        :return: None
         """
-        allowed_extensions = ['py','yaml','yml','sql','txt','md','pdf']  # List of allowed file extensions
+        allowed_extensions = ['py', 'yaml', 'yml', 'sql', 'txt', 'md', 'pdf']  # List of allowed file extensions
+
         # Check if the file exists
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"The file {file_path} does not exist.")
+        if not os.path.exists(_path):
+            raise FileNotFoundError(f"The path {_path} does not exist.")
 
+        if os.path.isdir(_path):
+            self.chunk_load_file_or_directory(_path, _ext)
+        else:
             # Check if the file extension is allowed
-        file_ext = os.path.splitext(file_path)[1][1:]  # Extract the file extension without the dot
-        if file_ext not in allowed_extensions:
-            raise ValueError(f"The file extension .{file_ext} is not allowed. Allowed extensions: {allowed_extensions}")
+            file_ext = os.path.splitext(_path)[1][1:]  # Extract the file extension without the dot
+            if file_ext not in allowed_extensions:
+                raise ValueError(f"The file extension .{file_ext} is not allowed. Allowed extensions: {allowed_extensions}")
 
-        self.chunk_load_file_or_directory(file_path, file_ext)
-
-
-    def load_dir(self, dir_path: str, file_ext: str):
-        """
-        Load files from a specified directory and process them into chunks for database insertion.
-
-        Parameters:
-            dir_path: Path to the directory containing files to be processed.
-            file_ext: File extension of the files to be processed.
-
-        Raises:
-            ValueError: If the directory path does not exist or is not a directory.
-        """
-        if not os.path.exists(dir_path) or not os.path.isdir(dir_path):
-            raise ValueError(f"The path {dir_path} is not a valid directory.")
-
-        self.chunk_load_file_or_directory(dir_path, file_ext)
+        self.chunk_load_file_or_directory(_path, file_ext)
 
     def group_by_document_and_source(self, response):
         """
@@ -252,6 +242,8 @@ class WeaviateVS():
     def kw_search(self, project_name: str, query: str, limit: int = 3) -> dict:
         """
         Perform a keyword search in the Weaviate database.
+        Example:
+            response = vector_db_client.kw_search("project_name", "text to search")
 
         Parameters:
             project_name: the nane of the project. All documents must belong to some project.
@@ -277,3 +269,43 @@ class WeaviateVS():
 
         logging.info(f"Weaviate search result: {response}")
         return response
+
+    def delete_many_like(self, property_name: str, property_value: str):
+        """
+        Delete multiple documents from the collection where the given property value is similar.
+
+        :param property_name: The name of the property to filter by.
+        :param property_value: The value of the property to match.
+        :return: True if the documents are successfully deleted, False otherwise.
+        """
+        try:
+            self.collection.data.delete_many(
+                where=Filter.by_property(property_name).like(f"{property_value}*")
+            )
+            return True
+        except:
+            return False
+        finally:
+            self.client.close()  # Close client gracefully
+
+    def get_many_like(self, property_name: str, property_value: str):
+        """
+        Retrieve objects from the collection that have a property whose value matches the given pattern.
+        Example:
+        response = vector_db_client.get_many_like("document_name", "schema")
+
+        :param property_name: The name of the property used for filtering.
+        :param property_value: The value used as a pattern to match against the property value.
+        :return: A list of objects that have a property matching the pattern.
+        :rtype: list or None
+        """
+        try:
+            response = self.collection.query.fetch_objects(
+                filters=Filter.by_property("source").like(f"*{property_value}*")
+            )
+            return response
+        except Exception as e:
+            print(e)
+            return None
+        finally:
+            self.client.close()  # Close client gracefully
