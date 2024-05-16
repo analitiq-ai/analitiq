@@ -19,6 +19,16 @@ Response format instructions:
 {format_instructions}
 """
 
+EXTRACT_INFO_FROM_DB_SCHEMA = """
+You are a data analyst and your role is to examine user query and database schema.
+From the database schema, determine what information may be necessary to answer user query.
+Extract the necessary information and provide it in your response.
+Always qualify tables with the name of the schema they reside in.
+If nothing in the database schema can be used to address users query or you are unable extract relevant information, return the word "None" in your reponse.
+User query: {user_query}.
+Database schema: {db_schema}
+"""
+
 SERVICE_SELECTION = """
 You are an experienced Data Analyst. 
 You received a user query "{user_prompt}".
@@ -125,4 +135,19 @@ In pursuing a response to that query, could you combine the following steps toge
 2. {Task2}.
 
 {format_instructions}
+"""
+
+FIX_JSON = """
+Please convert this string into a proper JSON format.
+Use double quotes to define JSON object keys and string boundaries. 
+Apply incorrect escaping of double quotes inside the string values of the JSON.
+Provide back only the corrected JSON.
+Do not maintain formatting inside the corrected JSON.
+Remove special characters in string data in JSON that perform control functions rather than represent printable information.
+
+Error:
+{error}
+
+String:
+{string}
 """

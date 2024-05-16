@@ -43,4 +43,25 @@ class BaseResponse:
         self.content_format = msg_format
 
     def set_metadata(self, metadata: dict):
+        """
+        Update the metadata of an object with the given metadata.
+
+        :param metadata: A dictionary containing the metadata to be updated.
+        :type metadata: dict
+        :return: None
+        """
         self.metadata.update(metadata)
+
+    def add_text_to_metadata(self, text):
+        """
+        :param text: The text to be added to the metadata dictionary.
+        :return: None
+
+        Add the given text to the existing value of the 'text' key in the metadata dictionary. If the 'text' key does not exist in the metadata dictionary, create a new key-value pair with the
+        * 'text' key and the given text value.
+        """
+        key = "text"
+        if key in self.metadata:
+            self.metadata[key] += "\n" + text
+        else:
+            self.metadata[key] = text

@@ -1,5 +1,5 @@
 import re
-
+import json
 
 class CodeExtractor:
     """
@@ -38,4 +38,18 @@ class CodeExtractor:
         else:
             return ""  # Return an empty string if no matching code block is found
 
+    def CodeAndDictionaryExtractor(self, input_string):
+        # Extract everything between the first { and the last }
 
+        match = re.search(r'\{.*\}', input_string, re.DOTALL)
+        if match:
+            substring = match.group(0)
+            # Remove newlines and tabs
+            cleaned_string = substring.replace("\\n", " ").replace("\\t", " ")
+            try:
+                result_dict = json.loads(cleaned_string)
+                return True, result_dict
+            except json.JSONDecodeError as e:
+                return False, str(e)
+        else:
+            return False, "No matching pattern found."

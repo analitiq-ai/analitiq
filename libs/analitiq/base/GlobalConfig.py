@@ -1,11 +1,10 @@
 import logging
 from typing import Dict, Any
-import yaml
 from pathlib import Path
 from langchain_community.utilities import SQLDatabase
 from analitiq.base.ProfileLoader import ProfileLoader
 from analitiq.base.ServicesLoader import ServicesLoader
-import os
+from analitiq.utils.general import load_yaml
 
 
 class GlobalConfig:
@@ -29,8 +28,8 @@ class GlobalConfig:
         """
         if not self._initialized:
 
-            self.core_config = self.load_yaml(Path('analitiq/core_config.yml')) #this is analitiq project.yml
-            self.project_config = self.load_yaml(Path('project.yml')) #this is the users project.yml
+            self.core_config = load_yaml(Path('analitiq/core_config.yml')) #this is analitiq project.yml
+            self.project_config = load_yaml(Path('project.yml')) #this is the users project.yml
 
             # Load and validate the Profile configuration
             profile_loader = ProfileLoader(file_path='profiles.yml')
@@ -54,40 +53,6 @@ class GlobalConfig:
             self.database = None
             #self.database = self.set_database()  # Placeholder for database instance
             self._initialized = True
-
-            # Check if the log directory exists
-            if not os.path.exists(self.project_config['config']['general']['log_dir']):
-                # If it doesn't exist, create it
-                os.makedirs(self.project_config['config']['general']['log_dir'])
-
-        logging.basicConfig(
-            filename='logs/latest_run.log'
-            ,encoding='utf-8'
-            ,filemode='w'
-            ,level=logging.INFO
-            ,format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])'
-            ,datefmt='%d/%m/%Y %I:%M:%S %p'
-        )
-
-
-    def load_yaml(self, file_path: str) -> Dict[str, Any]:
-        """
-        Loads the configuration file.
-
-        Parameters:
-        - config_path (str): The path to the configuration YAML file.
-
-        Returns:
-        - List[Type]: A list of instantiated service classes.
-        """
-        # Create a Path object for the file you want to check
-        if file_path.exists():
-            with open(file_path, 'r') as f:
-                configs = yaml.safe_load(f)
-        else:
-            raise FileNotFoundError(f"The file does not exist: {file_path}")
-
-        return configs
 
     def set_llm(self, profile):
         if profile.type == 'openai':
@@ -152,6 +117,9 @@ class GlobalConfig:
 
     def get_session_uuid_file(self):
         return self.project_config['config']['general']['session_uuid_file']
+
+    def get_db_schema(self):
+        return self.profile_configs['databases']['dbschema']
 
     def get_chat_log_dir(self):
         return self.project_config['config']['general']['chat_log_dir']

@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Any
 from analitiq.base.GlobalConfig import GlobalConfig
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.base.BaseResponse import BaseResponse
@@ -16,7 +16,9 @@ from analitiq.llm.prompt import (
     TASK_LIST,
     REFINE_TASK_LIST,
     SUMMARISE_REQUEST,
-    COMBINE_TASK_PAIR
+    COMBINE_TASK_PAIR,
+    FIX_JSON,
+    EXTRACT_INFO_FROM_DB_SCHEMA
 )
 
 
@@ -103,6 +105,31 @@ class AnalitiqLLM:
         self.llm = GlobalConfig().get_llm()
         self.memory = BaseMemory()
         self.response = BaseResponse(self.__class__.__name__)
+
+    def llm_invoke(self, user_prompt: str, prompt: Any, parser: Any):
+        """
+        Invokes a call to LLM with user_prompt, constructed_prompt and parser
+
+        :param user_prompt: A string representing the user's prompt to be passed to the table chain.
+        :param prompt: An object representing the prompt to be passed to the table chain.
+        :param parser: An object representing the parser to be passed to the table chain.
+        :return: The response returned from the table chain after invoking with the provided parameters.
+        """
+        table_chain = prompt | self.llm | parser
+        response = table_chain.invoke({"user_prompt": user_prompt})
+
+        return response
+
+    def extract_info_from_db_schema(self, user_query, formatted_documents_string):
+        prompt = PromptTemplate(
+            template=EXTRACT_INFO_FROM_DB_SCHEMA,
+            input_variables=["user_query"],
+            partial_variables={"db_schema": formatted_documents_string}
+        )
+        table_chain = prompt | self.llm
+        response = table_chain.invoke({"user_query": user_query})
+
+        return response
 
     def save_response(self, response: str):
 
@@ -246,5 +273,18 @@ class AnalitiqLLM:
         response = table_chain.invoke({"user_prompt": user_prompt})
 
         self.save_response(response)
+
+        return response
+
+    def llm_fix_json(self, text, error):
+        prompt = PromptTemplate(
+            template=FIX_JSON,
+            input_variables=["string"],
+            partial_variables={
+                "error": error
+            }
+        )
+        table_chain = prompt | self.llm
+        response = table_chain.invoke({"string": text})
 
         return response
