@@ -188,7 +188,7 @@ class Analitiq():
 
         if not prompt_clear_response.Clear:
             self.response.set_content(prompt_clear_response.Feedback)
-            return self.response
+            return {"Analitiq": self.response}
 
         # add the refined prompts by the model.
         self.prompts['refined'] = prompt_clear_response.Query
@@ -208,7 +208,7 @@ class Analitiq():
         # Check if the list contains exactly one item
         if len(selected_services) == 0:
             self.response.set_content("No services selected.")
-            return self.response
+            return {"Analitiq": self.response}
 
         # Initialize the execution graph with the context
         graph = Graph(self.services)
