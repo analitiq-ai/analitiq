@@ -15,6 +15,7 @@ from analitiq.services.sql.schema import Table, Column, Tables, SQL, TableCheck
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.output_parsers import PydanticOutputParser
+from sqlalchemy.exc import DatabaseError
 
 from analitiq.services.sql.prompt import (
     RETURN_RELEVANT_TABLE_NAMES,
@@ -279,23 +280,6 @@ class Sql:
             else:
                 raise RuntimeError("Human:\nMaximum retry attempts reached for SQL generation.")
 
-    def execute_sql(self, sql: str, convert_to_df=True):
-        """Execute SQL and log the process, handling errors and retries."""
-        try:
-            if convert_to_df:
-                inst = GlobalConfig()
-                engine = inst.get_db_engine()
-                result = pd.read_sql(sql, engine)
-                self.logger.info("Human:\nSQL executed successfully, converted to DataFrame.")
-            else:
-                result = self.db.run(sql, include_columns=True)
-                self.logger.info("Human:\nSQL executed successfully.")
-
-            return True, result
-        except Exception as e:
-            self.logger.error(f"Human:\nError executing SQL. {str(e)}")
-            return False, str(e)
-
     def _get_chat_hist(self, num_sections: int = 5):
         with open(self.get_log_file_path(), 'r') as file:
             content = file.read()
@@ -351,6 +335,29 @@ class Sql:
 
         return response
 
+    def execute_sql(self, sql: str, convert_to_df=True):
+        """Execute SQL and log the process, handling errors and retries."""
+        try:
+            if convert_to_df:
+                inst = GlobalConfig()
+                engine = inst.get_db_engine()
+                result = pd.read_sql(sql, engine)
+                if result.empty:
+                    self.logger.info(f"Human:\nSQL executed successfully, but result is empty")
+                    return True, result
+
+                self.logger.info(f"Human:\nSQL executed successfully, converted to DataFrame. {result}")
+                return True, result
+
+            else:
+                result = self.db.run(sql, include_columns=True)
+                self.logger.info("Human:\nSQL executed successfully.")
+
+            return True, result
+        except DatabaseError as e:
+            self.logger.error(f"Human:\nError executing SQL. {str(e)}")
+            return False, str(e)
+
     def run(self):
         """Executes the full process from interpreting a user prompt to SQL query generation and execution.
 
@@ -378,7 +385,10 @@ class Sql:
             success, result = self.execute_sql(sql)
             if success:
                 self.response.set_content(result, 'dataframe')
-                self.response.add_text_to_metadata(f"{response['Explanation']}\n```\n{sql}\n```")
+                if result.empty:
+                    self.response.add_text_to_metadata("\nThe query produced no result. Please review your query and SQL generated based on it and fine-tune your instructions.")
+                else:
+                    self.response.add_text_to_metadata(f"{response['Explanation']}\n```\n{sql}\n```")
                 break  # terminate the loop on successful execution of SQL
             else:
                 try:
