@@ -129,22 +129,22 @@ class ServicesLoader:
         """
 
         verified_services = {}
-        if not config['services']:
-            logging.info("No services in config.")
-            return {}
 
-        for service in config['services']:
-            logging.info(f"Loading service {service['name']}")
+        if 'services' not in config:
+            logging.info("No custom services found in Project config.")
+        else:
+            for service in config['services']:
+                logging.info(f"Loading service {service['name']}")
 
-            try:
-                service_class = self.load_service_class(service, loaded_services)
-            except (FileNotFoundError, ValueError, AttributeError, ImportError) as e:
-                # Log and display the error without breaking the execution
-                logging.error(e)
-                print(e)  # Displaying the error to the end user
-            else:
-                verified_services[service['name']] = service
-                verified_services[service['name']]['class_inst'] = service_class
+                try:
+                    service_class = self.load_service_class(service, loaded_services)
+                except (FileNotFoundError, ValueError, AttributeError, ImportError) as e:
+                    # Log and display the error without breaking the execution
+                    logging.error(e)
+                    print(e)  # Displaying the error to the end user
+                else:
+                    verified_services[service['name']] = service
+                    verified_services[service['name']]['class_inst'] = service_class
 
         return verified_services
 

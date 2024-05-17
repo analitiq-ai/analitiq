@@ -19,7 +19,7 @@ class Search_docs:
         self.response = BaseResponse(self.__class__.__name__)
 
     def run(self):
-        project_name = GlobalConfig().get_project_name()
+        project_name = GlobalConfig().get_project_config_param("profile")
         profile = GlobalConfig().profile_configs['vector_dbs']
         self.client = GlobalConfig().get_vdb_client(profile) # We do not need to init the VDB, until we need to use it
 

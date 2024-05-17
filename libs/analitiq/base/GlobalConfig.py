@@ -46,7 +46,7 @@ class GlobalConfig:
             self.services.update(serv_loader.load_services_from_config(self.project_config, self.services))
 
             # get the available services from the defined directory
-            logging.info(f"\n[Service][Available]\n{self.services}")
+            logging.info(f"[Service][Available]\n{self.services}")
 
             self.llm = self.set_llm(self.profile_configs['llms'])  # Placeholder for llm instance
             self.db_engine = None
@@ -111,7 +111,7 @@ class GlobalConfig:
         if profile.type in ['weaviate']:
             from analitiq.storage.weaviate.weaviate_vs import WeaviateVS
             logging.info(f"VectorDB is set to {profile.type}")
-            return WeaviateVS(profile.host, profile.api_key, self.get_project_name())
+            return WeaviateVS(profile.host, profile.api_key, self.get_project_config_param("profile"))
         else:
             print(f"Unsupported Vector DB type {profile.type}")
 
@@ -124,8 +124,8 @@ class GlobalConfig:
     def get_chat_log_dir(self):
         return self.project_config['config']['general']['chat_log_dir']
 
-    def get_project_name(self):
-        return self.project_config['name']
+    def get_project_config_param(self, param_name: str):
+        return self.project_config[param_name]
 
     def get_config_general_param(self, param_name):
         """

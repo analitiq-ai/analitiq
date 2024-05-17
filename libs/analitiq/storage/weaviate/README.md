@@ -15,7 +15,7 @@ project_name = "my_project"
 
 wc=WeaviateVS(project_name)
 FILE_PATH = './project/My_Project/sql'
-wc.load_directory(FILE_PATH, 'sql')
+wc.load(FILE_PATH, 'sql')
 ```
 
 Loading one file into your Weaviate vectore store and indexing it for search

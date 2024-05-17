@@ -86,7 +86,7 @@ class Sql:
         if is_history:
             self.logger.info(f"[[PROMPT_WITH_CHAT_HISTORY_START]]\n\n{prompt_as_txt}\n\n[[PROMPT_WITH_CHAT_HISTORY_END]]")
         else:
-            self.logger.info(f"Human:\n{prompt_as_txt}")
+            self.logger.info(f"Human: {prompt_as_txt}")
 
     def get_ddl(self) -> List[str]:
         """Retrieves a list of usable table names from the database.
@@ -273,14 +273,14 @@ class Sql:
         try:
             response = self.prep_llm_invoke(prompt, parser, is_hist)
             if not response.get('SQL_Code'):
-                raise ValueError("Human:\nNo SQL Code returned")
+                raise ValueError("Human: No SQL Code returned")
             return response
         except Exception as e:
-            self.logger.error(f"Human:\nError getting LLM response. {str(e)}")
+            self.logger.error(f"Human: Error getting LLM response. {str(e)}")
             if iteration_num < 5:
                 return self.get_sql_from_llm(iteration_num + 1)
             else:
-                raise RuntimeError("Human:\nMaximum retry attempts reached for SQL generation.")
+                raise RuntimeError("Human: Maximum retry attempts reached for SQL generation.")
 
     def _get_chat_hist(self, num_sections: int = 5):
         with open(self.get_log_file_path(), 'r') as file:
@@ -298,7 +298,6 @@ class Sql:
         return modified_content
 
     def get_db_docs(self):
-        project_name = GlobalConfig().get_project_name()
         profile = GlobalConfig().profile_configs['vector_dbs']
         vector_db_client = GlobalConfig().get_vdb_client(profile) # We do not need to init the VDB, until we need to use it
 
@@ -345,19 +344,19 @@ class Sql:
                 engine = inst.get_db_engine()
                 result = pd.read_sql(sql, engine)
                 if result.empty:
-                    self.logger.info(f"Human:\nSQL executed successfully, but result is empty")
+                    self.logger.info(f"Human: SQL executed successfully, but result is empty")
                     return True, result
 
-                self.logger.info(f"Human:\nSQL executed successfully, converted to DataFrame. {result}")
+                self.logger.info(f"Human: SQL executed successfully.\n{sql}\nConverted to DataFrame. {result}")
                 return True, result
 
             else:
                 result = self.db.run(sql, include_columns=True)
-                self.logger.info("Human:\nSQL executed successfully.")
+                self.logger.info("Human: SQL executed successfully.\n{sql}")
 
             return True, result
         except DatabaseError as e:
-            self.logger.error(f"Human:\nError executing SQL. {str(e)}")
+            self.logger.error(f"Human: Error executing SQL.\n{str(e)}")
             return False, str(e)
 
     def run(self):
@@ -370,7 +369,7 @@ class Sql:
            Response: An object containing the query result set as a DataFrame in the content attribute
                      and additional metadata such as executed SQL and relevant tables.
        """
-        self.logger.info(f"Human:\n{self.user_prompt}")
+        self.logger.info(f"Human: {self.user_prompt}")
         docs = self.get_db_docs()
 
         # Identify relevant tables based on the user's prompt

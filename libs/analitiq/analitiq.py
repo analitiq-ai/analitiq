@@ -111,7 +111,7 @@ class Analitiq():
         response = self.llm.llm_is_prompt_clear(user_prompt, self.avail_services_str)
 
         # Update feedback with the latest exception
-        #feedback = f"\nCheck your output and make sure it conforms to instructions! Your previous response created an error:\n{str(e)}"
+        #feedback = f"Check your output and make sure it conforms to instructions! Your previous response created an error:\n{str(e)}"
 
         return response
 
@@ -173,7 +173,7 @@ class Analitiq():
         if user_prompt.lower() == 'help':
             return HELP_RESPONSE + '\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
 
-        logging.info(f"\nUser query: {user_prompt}")
+        logging.info(f"User query: {user_prompt}")
 
         # check if there are user hints in the prompt
         self.prompts['original'], self.prompts['hints'] = extract_hints(user_prompt)
@@ -195,14 +195,14 @@ class Analitiq():
         self.prompts['feedback'] = prompt_clear_response.Feedback
         user_prompt = self.prompts['refined']
 
-        logging.info(f"\nRefined prompt context: {self.prompts}")
+        logging.info(f"Refined prompt context: {self.prompts}")
 
         selected_services = self.llm.llm_select_services(self.prompts, self.avail_services_str)
 
         # Convert list of objects into a dictionary where name is the key and description is the value
         selected_services = {service.Action: {'Action': service.Action, 'ActionInput': service.ActionInput, 'Instructions': service.Instructions, 'DependsOn': service.DependsOn} for service in selected_services}
 
-        logging.info(f"\n[Services][Selected]:\n{selected_services}")
+        logging.info(f"[Services][Selected]:\n{selected_services}")
 
         # Building node dependency
         # Check if the list contains exactly one item

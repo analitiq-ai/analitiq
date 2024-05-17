@@ -95,8 +95,9 @@ class Configuration(BaseModel):
 
 class ProfileLoader:
     """
-    ConfigLoader is responsible for loading project configuration from a YAML file
-    and dynamically importing the specified services.
+    Initializes the ProfileLoader with the provided file path.
+
+    :param file_path: The path to the configuration file.
     """
 
     def __init__(self, file_path: str):
@@ -107,18 +108,26 @@ class ProfileLoader:
         #self.file_path = home_directory / file_path
         self.file_path = Path(file_path)
 
-    def load_and_validate_config(self, profile_name) -> Configuration:
+    def load_and_validate_config(self, load_profile_name: str) -> Configuration:
+        """
+        Loads a profile specified in the configuration file
+
+        :param load_profile_name: the name of the profile to load and validate the configuration for
+        :return: the specified configurations for the loaded profile
+        """
         with open(self.file_path, 'r') as file:
             profiles = yaml.safe_load(file)
 
         validated_profiles = {}
         for profile_name, config in profiles.items():
-            try:
-                validated_config = Configuration(**profiles[profile_name])
-                specified_configs = validated_config.validate_and_load()
-                logging.info(f"Configuration for profile '{profile_name}' loaded and validated successfully.")
-            except ValidationError as e:
-                print(f"Validation error for profile '{profile_name}':", e)
+            # skip profiles that user does not want to load
+            if load_profile_name == profile_name:
+                try:
+                    validated_config = Configuration(**profiles[profile_name])
+                    specified_configs = validated_config.validate_and_load()
+                    logging.info(f"Configuration for profile '{profile_name}' loaded and validated successfully.")
+                except ValidationError as e:
+                    print(f"Validation error for profile '{profile_name}':", e)
 
         return specified_configs
 

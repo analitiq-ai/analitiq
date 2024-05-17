@@ -1,6 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
 import inspect
+import json
 
 class InvalidServiceNameException(Exception):
     """Exception raised for invalid service names."""
@@ -112,7 +113,7 @@ class Graph:
                 # Execute all ready nodes
                 for node in ready_nodes:
                     if node.name not in executed_nodes:  # Check if node has been executed
-                        logging.info(f"\n\n==== RUNNING SERVICE: {node.name}\n Prompt: {node.instructions} \n Inputs: {str(node_outputs)}")  # Print the current node being executed
+                        logging.info(f"==== RUNNING SERVICE: {node.name}\n Prompt: {node.instructions} \n Inputs: {str(node_outputs)}")  # Print the current node being executed
 
                         future = executor.submit(self.run_service, node, services[node.name]['class_inst'], node.instructions, node_outputs)
                         futures_to_nodes[future] = node
@@ -160,14 +161,15 @@ class Graph:
 
     def get_dependency_tree(self):
         """Prints the dependency tree of the graph."""
-        def print_tree(node, level=0):
-            indent = "  " * level  # Indentation to represent tree structure
-            logging.info(f"{indent}- {node.name}")
+        def create_tree(node, level=0):
+            tree = {'name': node.name, 'level': level, 'consumers': []}
             for consumer in node.consumers:
-                print_tree(consumer, level + 1)
+                tree['consumers'].append(create_tree(consumer, level + 1))
+            return tree
 
         # Start from nodes without dependencies and print the tree
         root_nodes = [node for node in self.nodes.values() if not node.dependencies]
-        logging.info("Node Dependency Tree:")
-        for node in root_nodes:
-            print_tree(node)
+        trees = [create_tree(node) for node in root_nodes]
+        logging.info("Node Dependency Trees:")
+        for tree in trees:
+            logging.info(json.dumps(tree, indent=2))
