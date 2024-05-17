@@ -177,7 +177,7 @@ class WeaviateVS():
 
         print(f"Loaded chunks: {chunks_loaded}")
 
-    def load(self, _path: str, _ext: str = None):
+    def load(self, _path: str, file_ext: str = None):
         """
         Loads a file or directory into Weaviate.
         Example:
@@ -185,7 +185,7 @@ class WeaviateVS():
         wc.load('/Users/me/Documents/Projects/hello/test.yml')
 
         :param _path: The path to the file or directory.
-        :param _ext: (optional) The file extension to filter files when loading a directory. Defaults to None.
+        :param file_ext: (optional) The file extension to filter files when loading a directory. Defaults to None.
         :return: None
         """
         allowed_extensions = ['py', 'yaml', 'yml', 'sql', 'txt', 'md', 'pdf']  # List of allowed file extensions
@@ -195,12 +195,15 @@ class WeaviateVS():
             raise FileNotFoundError(f"The path {_path} does not exist.")
 
         if os.path.isdir(_path):
-            self.chunk_load_file_or_directory(_path, _ext)
+            if file_ext not in allowed_extensions:
+                raise ValueError(f"The file extension .{file_ext} is not allowed. Allowed extensions: {allowed_extensions}")
+                return False
         else:
             # Check if the file extension is allowed
             file_ext = os.path.splitext(_path)[1][1:]  # Extract the file extension without the dot
             if file_ext not in allowed_extensions:
                 raise ValueError(f"The file extension .{file_ext} is not allowed. Allowed extensions: {allowed_extensions}")
+                return False
 
         self.chunk_load_file_or_directory(_path, file_ext)
 

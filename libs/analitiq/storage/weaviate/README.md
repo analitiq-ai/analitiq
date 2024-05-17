@@ -28,7 +28,7 @@ api_key = "1234567890"
 
 wc=WeaviateVS(host, api_key, project_name)
 FILE_PATH = './project/My_Project/my_file.sql'
-wc.load_file(FILE_PATH)
+wc.load(FILE_PATH)
 ```
 
 ## Searching for data
