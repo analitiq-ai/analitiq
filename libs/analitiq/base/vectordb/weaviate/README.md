@@ -4,31 +4,47 @@ This Python module demonstrates how to interact with a Weaviate vector database,
 
 ## Usage Examples
 
+You may need to add directory for Analitiq to your Python path.
+Here is an example:
+```python
+import os
+import sys
+# Get the home directory
+home_directory = os.environ['HOME']
+# Dynamically construct the path
+dynamic_path = f'{home_directory}/Documents/Projects/analitiq/libs/'
+sys.path.insert(0, dynamic_path)
+```
+
 Loading all SQL files from a directory into your Weaviate vectore store and indexing them for search
 
 ```python
 from analitiq.storage.weaviate.weaviate_vs import WeaviateVS
 import os
-os.environ["WEAVIATE_URL"] = "https://xxxxxxx.weaviate.network"
-os.environ["WEAVIATE_API_KEY"] = "1234567890"
-project_name = "my_project"
+params = {
+    "project_name": "my_project",
+    "host": "https://XXXXXXX.weaviate.network",
+    "api_key": "XXXXXX"
+}
 
-wc=WeaviateVS(project_name)
+wc=WeaviateVS(params)
 FILE_PATH = './project/My_Project/sql'
-wc.load_directory(FILE_PATH, 'sql')
+wc.load(FILE_PATH, 'sql')
 ```
 
 Loading one file into your Weaviate vectore store and indexing it for search
 
 ```python
 from analitiq.storage.weaviate.weaviate_vs import WeaviateVS
-project_name = "my_project"
-host = "https://xxxxxxx.weaviate.network"
-api_key = "1234567890"
+params = {
+    "project_name": "my_project",
+    "host": "https://XXXXXXX.weaviate.network",
+    "api_key": "XXXXXX"
+}
 
-wc=WeaviateVS(host, api_key, project_name)
+wc=WeaviateVS(params)
 FILE_PATH = './project/My_Project/my_file.sql'
-wc.load_file(FILE_PATH)
+wc.load(FILE_PATH)
 ```
 
 ## Searching for data

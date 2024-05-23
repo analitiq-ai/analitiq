@@ -4,11 +4,8 @@ import pandas as pd
 import os
 import re
 from typing import List
-from analitiq.utils import db_utils
 from analitiq.utils.general import *
 from analitiq.base.BaseResponse import BaseResponse
-from analitiq.base.GlobalConfig import GlobalConfig
-from analitiq.llm.BaseLlm import AnalitiqLLM
 from analitiq.utils.code_extractor import CodeExtractor
 
 from analitiq.services.sql.schema import Table, Column, Tables, SQL, TableCheck
@@ -26,7 +23,9 @@ from analitiq.services.sql.prompt import (
 
 # Maximum iterations for all loops to LLM
 max_iterations = 5
-db_docs_name = "schema" # this is the identifier of the name of the DB schema doc
+db_docs_name = "schema"  # this is the identifier of the name of the DB schema doc
+context_max_tokens = 100000
+chunk_overlap = 200
 
 class Sql:
     """Handles SQL query generation and execution against database. Useful when user would like to query data.
@@ -49,10 +48,12 @@ class Sql:
 
     """Class to generate and execute SQL queries using prompts submitted to an LLM, with logging and retries."""
 
-    def __init__(self, user_prompt):
-        self.user_prompt = user_prompt
-        self.db = GlobalConfig().get_database()
-        self.llm = AnalitiqLLM()
+    def __init__(self, db, llm, vdb=None):
+        self.user_prompt: str = None
+        self.db = db
+        self.db_schema = db.get_db_schemas()
+        self.llm = llm
+        self.vdb = vdb
 
         self.relevant_tables = ""
         self.response = BaseResponse(self.__class__.__name__)
@@ -86,9 +87,9 @@ class Sql:
         if is_history:
             self.logger.info(f"[[PROMPT_WITH_CHAT_HISTORY_START]]\n\n{prompt_as_txt}\n\n[[PROMPT_WITH_CHAT_HISTORY_END]]")
         else:
-            self.logger.info(f"Human:\n{prompt_as_txt}")
+            self.logger.info(f"Human: {prompt_as_txt}")
 
-    def get_ddl(self) -> List[str]:
+    def get_ddl(self, docs) -> List[str]:
         """Retrieves a list of usable table names from the database.
 
         Returns:
@@ -109,19 +110,34 @@ class Sql:
         """
 
         # Fetch all schemas (If your database supports schemas)
-        ddl = db_utils.get_schemas_and_tabes(GlobalConfig().get_db_engine())
+        ddl = self.db.get_schemas_and_tables([self.db_schema])
+        result = split_list_of_ddl(ddl, 5000)
 
-        return ddl
+        if len(result) > 1:
+            responses = []
+            for i, chunk in enumerate(result):
+                combined_text = ', '.join(chunk)
+                response = self.llm.extract_info_from_db_ddl(self.user_prompt, chunk, docs)
+                if 'NOT_FOUND' in response:
+                    continue
+
+                responses.append(response)
+
+            response = self.llm.summ_info_from_db_ddl(self.user_prompt, '. '.join(responses))
+
+            return response
+
+        return ', '.join(ddl)
 
     def get_relevant_tables(self, docs: str = None) -> List[str]:
         """
-        Determines tables relevant to the given user prompt using AI.
+        Determines tables from the docs relevant to the given user prompt using AI.
 
         Returns:
             List[Table]: A list of relevant Table objects.
         """
-        ddl = self.get_ddl()
-        docs = ''
+        ddl = self.get_ddl(docs)
+
         if docs:
             docs = f"Database Documentation:\n{docs}\n"
         else:
@@ -138,6 +154,7 @@ class Sql:
         )
 
         response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
+
 
         #self.logger.info(f"Assistant:\nList of tables believed to be relevant - {response.to_json()}")
 
@@ -191,7 +208,6 @@ class Sql:
         )
 
         #prompt_as_string = prompt.format(user_prompt=self.user_prompt)
-        #print(prompt_as_string)
 
         response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
 
@@ -264,7 +280,7 @@ class Sql:
                     "dialect": self.db.dialect,
                     "table_info": self.relevant_tables,
                     "top_k": 100,
-                    "schema_name": 'sample_data',
+                    "schema_name": self.db_schema,
                     "format_instructions": parser.get_format_instructions()
                 }
             )
@@ -273,14 +289,14 @@ class Sql:
         try:
             response = self.prep_llm_invoke(prompt, parser, is_hist)
             if not response.get('SQL_Code'):
-                raise ValueError("Human:\nNo SQL Code returned")
+                raise ValueError("Human: No SQL Code returned")
             return response
         except Exception as e:
-            self.logger.error(f"Human:\nError getting LLM response. {str(e)}")
+            self.logger.error(f"Human: Error getting LLM response. {str(e)}")
             if iteration_num < 5:
                 return self.get_sql_from_llm(iteration_num + 1)
             else:
-                raise RuntimeError("Human:\nMaximum retry attempts reached for SQL generation.")
+                raise RuntimeError("Human: Maximum retry attempts reached for SQL generation.")
 
     def _get_chat_hist(self, num_sections: int = 5):
         with open(self.get_log_file_path(), 'r') as file:
@@ -298,12 +314,7 @@ class Sql:
         return modified_content
 
     def get_db_docs(self):
-        project_name = GlobalConfig().get_project_name()
-        profile = GlobalConfig().profile_configs['vector_dbs']
-        vector_db_client = GlobalConfig().get_vdb_client(profile) # We do not need to init the VDB, until we need to use it
-
-        #print(response)
-        response = vector_db_client.get_many_like("document_name", db_docs_name)
+        response = self.vdb.get_many_like("document_name", db_docs_name)
         if not response:
             self.logger.info(f"[VectorDB] No DB schema objects returned.")
 
@@ -328,7 +339,7 @@ class Sql:
             formatted_content = "\n".join(content_list)
             formatted_documents_string += f"Document name: {document_name}\nDocument content:\n{formatted_content}\n\n"
 
-        response = self.llm.extract_info_from_db_schema(self.user_prompt, formatted_documents_string)
+        response = self.llm.extract_info_from_db_docs(self.user_prompt, formatted_documents_string)
         self.logger.info(f"LLM: {response}")
         self.response.add_text_to_metadata(response)
 
@@ -339,28 +350,34 @@ class Sql:
 
     def execute_sql(self, sql: str, convert_to_df=True):
         """Execute SQL and log the process, handling errors and retries."""
+        self.logger.info({sql})
         try:
             if convert_to_df:
-                inst = GlobalConfig()
-                engine = inst.get_db_engine()
-                result = pd.read_sql(sql, engine)
+                result = pd.read_sql(sql, self.db.db_engine)
                 if result.empty:
-                    self.logger.info(f"Human:\nSQL executed successfully, but result is empty")
-                    return True, result
-
-                self.logger.info(f"Human:\nSQL executed successfully, converted to DataFrame. {result}")
-                return True, result
-
+                    self.logger.info(f"Human: SQL executed successfully, but result is empty.")
+                else:
+                    self.logger.info(f"Human: SQL executed successfully.\nConverted to DataFrame. {result}")
             else:
                 result = self.db.run(sql, include_columns=True)
-                self.logger.info("Human:\nSQL executed successfully.")
+                self.logger.info("Human: SQL executed successfully.")
 
+            self.response.add_text_to_metadata(f"```\n{sql}\n```")
             return True, result
         except DatabaseError as e:
-            self.logger.error(f"Human:\nError executing SQL. {str(e)}")
+            self.logger.error(f"Human: Error executing SQL.\n{str(e)}")
             return False, str(e)
 
-    def run(self):
+    def _set_result(self, result: pd.DataFrame, sql: str = None, explanation: str = None):
+        self.response.set_content(result, 'dataframe')
+        if result.empty:
+            self.response.add_text_to_metadata("\nThe query produced no result. Please review your query and SQL generated based on it and fine-tune your instructions.")
+        else:
+            self.response.add_text_to_metadata(f"\n{explanation}")
+            if sql:
+                self.response.add_text_to_metadata(f"\n```\n{sql}\n```")
+
+    def run(self, user_prompt: str = None):
         """Executes the full process from interpreting a user prompt to SQL query generation and execution.
 
        Args:
@@ -370,8 +387,19 @@ class Sql:
            Response: An object containing the query result set as a DataFrame in the content attribute
                      and additional metadata such as executed SQL and relevant tables.
        """
-        self.logger.info(f"Human:\n{self.user_prompt}")
+        self.user_prompt = user_prompt
+        self.logger.info(f"Human: {user_prompt}")
         docs = self.get_db_docs()
+
+        # we check if DB doc already has SQL as some LLMs tend to do that.
+        if "```" in docs:
+            extractor = CodeExtractor()
+            sql = extractor.extract_code(docs, 'sql')
+            if sql:
+                success, result = self.execute_sql(sql)
+                if success:
+                    self._set_result(result, None, docs)  # Since SQL already is in the document reponse, we do not need to add it to the response.
+                    return self.response
 
         # Identify relevant tables based on the user's prompt
         self.get_relevant_tables(docs)
@@ -386,11 +414,7 @@ class Sql:
         for _ in range(max_iterations):
             success, result = self.execute_sql(sql)
             if success:
-                self.response.set_content(result, 'dataframe')
-                if result.empty:
-                    self.response.add_text_to_metadata("\nThe query produced no result. Please review your query and SQL generated based on it and fine-tune your instructions.")
-                else:
-                    self.response.add_text_to_metadata(f"{response['Explanation']}\n```\n{sql}\n```")
+                self._set_result(result, sql, response['Explanation'])
                 break  # terminate the loop on successful execution of SQL
             else:
                 try:

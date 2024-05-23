@@ -31,14 +31,61 @@ metadata={
 
 ## Example Usage
 
+You may need to add directory for Analitiq to your Python path.
+Here is an example:
 ```python
-from analitiq.services.sql.sql import Sql
+import os
+import sys
+# Get the home directory
+home_directory = os.environ['HOME']
+# Dynamically construct the path
+dynamic_path = f'{home_directory}/Documents/Projects/analitiq/libs/'
+sys.path.insert(0, dynamic_path)
+```
+We need 3 things for SQL service to work with:
+1. Database
+2. Large Language Model
+3. VectorDB (for searching documentation for better SQL results)
 
-instance = Sql()
-response = instance.run("Who are our top 10 customers? Give me chart")
-print(response)
+```python
+from sql import Sql
+from analitiq.base.BaseDb import BaseDb
+from analitiq.base.llm.BaseLlm import BaseLlm
+from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateVS
 
-print(response.content)  # DataFrame as JSON
-print(response.metadata)  # Executed SQL and relevant tables
+user_prompt = "Please give me revenues by month."
+
+db_params = {'name': 'prod_dw'
+    , 'type': 'redshift'
+    , 'host': 'xxxx'
+    , 'user': 'smy_user'
+    , 'password': '1234455'
+    , 'port': 5439
+    , 'dbname': 'my_db'
+    , 'dbschemas': ['schema1', 'schema2']
+    , 'threads': 4
+    , 'keepalives_idle': 240
+    , 'connect_timeout': 10}
+db = BaseDb(db_params)
+
+llm_params = {'type': 'bedrock'
+    , 'name': 'aws_llm'
+    , 'api_key': None
+    , 'temperature': 0.0
+    , 'llm_model_name': 'anthropic.claude-v2'
+    , 'credentials_profile_name': 'my_profile'
+    , 'provider': 'anthropic'
+    , 'aws_access_key_id': 'xxxxxx'
+    , 'aws_secret_access_key': 'xxxxxxx'
+    , 'region_name': 'eu-central-1'}
+llm = BaseLlm(llm_params)
+
+vdb = WeaviateVS('https://12345.weaviate.network', 'xxxxxxx', 'my_project')
+
+# Example of using the SQLGenerator class
+sql_gen = Sql("Please give me revenues by month.", db, llm, vector_db=vdb)
+result = sql_gen.run()
+print(result)
+
 ```
 

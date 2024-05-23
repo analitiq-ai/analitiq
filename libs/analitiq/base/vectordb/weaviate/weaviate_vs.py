@@ -68,7 +68,7 @@ class WeaviateVS():
     A class for interacting with a Weaviate vector database, including loading documents and performing searches.
     """
 
-    def __init__(self, host, api_key, project_name):
+    def __init__(self, params):
         """
         Initializes a new instance of the class, setting up a connection to a Weaviate cluster and ensuring
         a collection with the specified name exists within that cluster.
@@ -95,8 +95,9 @@ class WeaviateVS():
           within the Weaviate cluster.
         """
         self.client = weaviate.connect_to_wcs(
-            cluster_url=host, auth_credentials=weaviate.auth.AuthApiKey(api_key)
+            cluster_url=params['host'], auth_credentials=weaviate.auth.AuthApiKey(params['api_key'])
         )
+        project_name = params['collection_name']
 
         # Create collection if it does not exist in Weaviate.
         if not self.client.collections.exists(project_name):
@@ -177,7 +178,7 @@ class WeaviateVS():
 
         print(f"Loaded chunks: {chunks_loaded}")
 
-    def load(self, _path: str, _ext: str = None):
+    def load(self, _path: str, file_ext: str = None):
         """
         Loads a file or directory into Weaviate.
         Example:
@@ -185,7 +186,7 @@ class WeaviateVS():
         wc.load('/Users/me/Documents/Projects/hello/test.yml')
 
         :param _path: The path to the file or directory.
-        :param _ext: (optional) The file extension to filter files when loading a directory. Defaults to None.
+        :param file_ext: (optional) The file extension to filter files when loading a directory. Defaults to None.
         :return: None
         """
         allowed_extensions = ['py', 'yaml', 'yml', 'sql', 'txt', 'md', 'pdf']  # List of allowed file extensions
@@ -195,12 +196,15 @@ class WeaviateVS():
             raise FileNotFoundError(f"The path {_path} does not exist.")
 
         if os.path.isdir(_path):
-            self.chunk_load_file_or_directory(_path, _ext)
+            if file_ext not in allowed_extensions:
+                raise ValueError(f"The file extension .{file_ext} is not allowed. Allowed extensions: {allowed_extensions}")
+                return False
         else:
             # Check if the file extension is allowed
             file_ext = os.path.splitext(_path)[1][1:]  # Extract the file extension without the dot
             if file_ext not in allowed_extensions:
                 raise ValueError(f"The file extension .{file_ext} is not allowed. Allowed extensions: {allowed_extensions}")
+                return False
 
         self.chunk_load_file_or_directory(_path, file_ext)
 
@@ -239,14 +243,13 @@ class WeaviateVS():
         return grouped_data
 
     @search_only
-    def kw_search(self, project_name: str, query: str, limit: int = 3) -> dict:
+    def kw_search(self, query: str, limit: int = 3) -> dict:
         """
         Perform a keyword search in the Weaviate database.
         Example:
             response = vector_db_client.kw_search("project_name", "text to search")
 
         Parameters:
-            project_name: the nane of the project. All documents must belong to some project.
             query: The search query string.
             limit: The maximum number of search results to return.
 
@@ -260,7 +263,7 @@ class WeaviateVS():
                 query=query,
                 query_properties=["content"],
                 limit=limit,
-                filters=wvc.query.Filter.by_property("project_name").equal(project_name)
+                filters=wvc.query.Filter.by_property("project_name").equal(self.project_name)
             )
         except Exception as e:
             logging.error(f"Weaviate error {e}")

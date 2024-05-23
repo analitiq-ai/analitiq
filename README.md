@@ -10,6 +10,15 @@ Analitiq currently supports the following LLM models
 Analitiq currently integrates with the following vectorDBs
 - Weaviate
 - ChromaDB
+
+## What Analitiq needs to work
+Since Analitiq is a framework to help data people manage data using LLMs, it requires at the least:
+1. Access to LLM
+2. Access to Database
+
+As an extra bonus and to make things even smarter, it could also use:
+3. Access to Vector Database with documentation.
+
 ## Quick Start
 1. Clone the repo
 2. Set up `profiles.yml` in root directory. The file `profiles.yml` has all of your sensitive info, such as your API keys and DB credentials, so treat it with respect. Under `uses` you can define which connections should be used for the current deployment. 
@@ -85,6 +94,91 @@ services:
     outputs: "javascript that is used by the frontend to visualize data"
 ```
 5. Run the example file `example.py` (located in the root directory.)
+
+## Configuration files
+
+There are 2 configuration files:
+1. profiles.yaml - this file has all the secrets and connections needed to connect to LLMs, VectorDBs, Databases. Because you may have different production and development environments, profiles.yaml allows you to define multiple profiles (and multiple credentials).
+2. project.yaml - this file has the parameters needed for your particular project, including what profile to use. You can define the profile in `profile` parameter. 
+Once you have your project deployed, you can specify which profile to be used by that particular project in `project.yaml`. 
+
+Let's look at some examples. Let's say when I run Analitiq locally, I want to use OpenAI. And when I upload it to production server, I want to use Bedrock.
+
+I will set up my connections in profile.py
+```yaml
+prod:
+  connections:
+    databases:
+      - name: prod_db
+        type: postgres
+        host: xxxx
+        user: xxxx
+        password: xxxx
+        port: 5432
+        dbname: postgres
+        dbschema: sample_data
+        threads: 4
+        keepalives_idle: 240 # default 240 seconds
+        connect_timeout: 10 # default 10 seconds
+        # search_path: public # optional, not recommended
+    
+    llms:
+      - name: aws_llm
+        type: bedrock
+        credentials_profile_name: bedrock
+        region_name: eu-central-1
+        provider: anthropic
+        llm_model_name: anthropic.claude-v2
+        temperature: 0.0
+        aws_access_key_id: xxxxx
+        aws_secret_access_key: xxxxx
+  usage:
+    databases: prod_db
+    llms: aws_llm
+
+local:
+  connections:
+    databases:
+      - name: local_db
+        type: postgres
+        host: xxxx
+        user: xxxx
+        password: xxxx
+        port: 5432
+        dbname: postgres
+        dbschema: sample_data
+        threads: 4
+        keepalives_idle: 240 # default 240 seconds
+        connect_timeout: 10 # default 10 seconds
+        # search_path: public # optional, not recommended
+
+    llms:
+      - name: openai_llm
+        type: openai
+        api_key: xxxx
+        temperature: 0.0
+        llm_model_name: gpt-3.5-turbo
+  usage:
+    databases: local_db
+    llms: openai_llm
+```
+
+on my local machine, I would have `project.py` file with the following configuration
+```yaml
+name: 'analitiq'
+version: '0.1'
+profile: 'local'
+config_version: 2
+```
+and the production server will have `project.py` file with the following configuration
+```yaml
+name: 'analitiq'
+version: '0.1'
+profile: 'prod'
+config_version: 2
+```
+
+Now, I can move the project files between my prod environment and local and Analitiq will use different configuration to switch automagically.
 
 ## UI
 The app interface can be extended with a UI, such as streamlit app.

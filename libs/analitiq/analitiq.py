@@ -1,13 +1,13 @@
 import logging
 import os
 import sys
-from pathlib import Path
 from analitiq.base.BaseMemory import BaseMemory
-from analitiq.llm.BaseLlm import AnalitiqLLM
+from analitiq.base.BaseDb import BaseDb
+from analitiq.base.llm.BaseLlm import BaseLlm
+from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateVS
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.general import load_yaml, extract_hints
 from analitiq.base.GlobalConfig import GlobalConfig
-
 from analitiq.base.Graph import Graph, Node
 from analitiq.base.BaseSession import BaseSession
 
@@ -18,24 +18,22 @@ from analitiq.prompt import (
 # import langchain
 # langchain.debug = True
 
-core_config = load_yaml(Path('analitiq/core_config.yml')) #this is analitiq project.yml
-project_config = load_yaml(Path('project.yml')) #this is the users project.yml
 sys.path.append("/analitiq")
 
 # Check if the log directory exists
-if not os.path.exists(project_config['config']['general']['log_dir']):
+if not os.path.exists(GlobalConfig().get_log_dir()):
     # If it doesn't exist, create it
-    os.makedirs(project_config['config']['general']['log_dir'])
-print()
+    os.makedirs(GlobalConfig().get_log_dir())
 
 logging.basicConfig(
-    filename=f"{project_config['config']['general']['log_dir']}/{project_config['config']['general']['latest_run_filename']}"
+    filename=f"{GlobalConfig().get_log_dir()}/{GlobalConfig().get_log_filename()}"
     ,encoding='utf-8'
     ,filemode='w'
     ,level=logging.INFO
     ,format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])'
     ,datefmt='%d/%m/%Y %I:%M:%S %p'
 )
+
 
 class Analitiq():
 
@@ -44,10 +42,19 @@ class Analitiq():
         self.prompts is a dictionary that will have 1. original prompt as by user and refined prompt by LLM.
         :param user_prompt:
         """
+        self.db_params = GlobalConfig().profile_configs['databases'].model_dump()
+        self.db = BaseDb(self.db_params)
+
+        self.llm_params = GlobalConfig().profile_configs['llms'].model_dump()
+        self.llm = BaseLlm(self.llm_params)
+
+        self.vdb_params = GlobalConfig().profile_configs['vector_dbs'].model_dump()
+        self.vdb = WeaviateVS(self.vdb_params)
+
         self.memory = BaseMemory()
         self.services = GlobalConfig().services
         self.avail_services_str = self.get_available_services_str(self.services)
-        self.llm = AnalitiqLLM()
+
         self.prompts = {'original': user_prompt}
         self.response = BaseResponse(self.__class__.__name__)
 
@@ -111,7 +118,7 @@ class Analitiq():
         response = self.llm.llm_is_prompt_clear(user_prompt, self.avail_services_str)
 
         # Update feedback with the latest exception
-        #feedback = f"\nCheck your output and make sure it conforms to instructions! Your previous response created an error:\n{str(e)}"
+        #feedback = f"Check your output and make sure it conforms to instructions! Your previous response created an error:\n{str(e)}"
 
         return response
 
@@ -173,7 +180,7 @@ class Analitiq():
         if user_prompt.lower() == 'help':
             return HELP_RESPONSE + '\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
 
-        logging.info(f"\nUser query: {user_prompt}")
+        logging.info(f"User query: {user_prompt}")
 
         # check if there are user hints in the prompt
         self.prompts['original'], self.prompts['hints'] = extract_hints(user_prompt)
@@ -195,14 +202,14 @@ class Analitiq():
         self.prompts['feedback'] = prompt_clear_response.Feedback
         user_prompt = self.prompts['refined']
 
-        logging.info(f"\nRefined prompt context: {self.prompts}")
+        logging.info(f"Refined prompt context: {self.prompts}")
 
         selected_services = self.llm.llm_select_services(self.prompts, self.avail_services_str)
 
         # Convert list of objects into a dictionary where name is the key and description is the value
         selected_services = {service.Action: {'Action': service.Action, 'ActionInput': service.ActionInput, 'Instructions': service.Instructions, 'DependsOn': service.DependsOn} for service in selected_services}
 
-        logging.info(f"\n[Services][Selected]:\n{selected_services}")
+        logging.info(f"[Services][Selected]:\n{selected_services}")
 
         # Building node dependency
         # Check if the list contains exactly one item
@@ -211,7 +218,7 @@ class Analitiq():
             return {"Analitiq": self.response}
 
         # Initialize the execution graph with the context
-        graph = Graph(self.services)
+        graph = Graph(self.services, self.db, self.llm, self.vdb)
 
         for service, details in selected_services.items():
             graph.add_node(service, details)
