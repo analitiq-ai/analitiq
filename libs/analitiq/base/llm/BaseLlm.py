@@ -1,16 +1,12 @@
 from typing import List, Optional, Any
-from analitiq.base.GlobalConfig import GlobalConfig
-from analitiq.base.BaseMemory import BaseMemory
-from analitiq.base.BaseResponse import BaseResponse
-from analitiq.utils.code_extractor import CodeExtractor
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
-import json
+import logging
 
 from langchain_core.pydantic_v1 import BaseModel, Field, validator
 from enum import Enum
 
-from analitiq.llm.prompt import (
+from analitiq.base.llm.prompt import (
     PROMPT_CLARIFICATION,
     SERVICE_SELECTION,
     TASK_LIST,
@@ -18,7 +14,10 @@ from analitiq.llm.prompt import (
     SUMMARISE_REQUEST,
     COMBINE_TASK_PAIR,
     FIX_JSON,
-    EXTRACT_INFO_FROM_DB_SCHEMA
+    EXTRACT_INFO_FROM_DB_DOCS,
+    EXTRACT_INFO_FROM_DB_DDL,
+    SUMMARISE_DDL,
+    SUMMARIZE_DOCUMENT_CHUNKS
 )
 
 
@@ -99,12 +98,44 @@ def get_prompt_extra_info(prompts):
     return user_prompt, extra_info
 
 
-class AnalitiqLLM:
+class BaseLlm:
 
-    def __init__(self):
-        self.llm = GlobalConfig().get_llm()
-        self.memory = BaseMemory()
-        self.response = BaseResponse(self.__class__.__name__)
+    def __init__(self, params):
+        self.llm_params = params
+        self.llm = self._set_llm(params)
+
+    def _set_llm(self, params):
+        if params['type'] == 'openai':
+            from langchain_openai import ChatOpenAI
+            logging.info(f"LLM is set to {params['type']}")
+            return ChatOpenAI(openai_api_key=params['api_key'], temperature=params['temperature'], model_name=params['llm_model_name'])
+        elif params['type'] == 'mistral':
+            from langchain_mistralai.chat_models import ChatMistralAI
+            logging.info(f"LLM is set to {params['type']}")
+
+            return ChatMistralAI(mistral_api_key=params['llm_api_key'])
+
+        elif params['type'] == 'bedrock':
+            from langchain_aws import BedrockLLM
+            import boto3
+
+            logging.info(f"LLM is set to {params['type']}")
+            client = boto3.client("bedrock-runtime",
+                                  aws_access_key_id=params['aws_access_key_id'],
+                                  aws_secret_access_key=params['aws_secret_access_key'],
+                                  region_name=params['region_name']
+                                  )
+            return BedrockLLM(
+                client=client,
+                region_name=params['region_name'],
+                provider=params['provider'],
+                model_id=params['llm_model_name'],
+                model_kwargs={"temperature": params['temperature'], "max_tokens_to_sample": 10000},
+                streaming=False
+            )
+
+    def get_llm(self):
+        return self.llm
 
     def llm_invoke(self, user_prompt: str, prompt: Any, parser: Any):
         """
@@ -120,9 +151,9 @@ class AnalitiqLLM:
 
         return response
 
-    def extract_info_from_db_schema(self, user_query, formatted_documents_string):
+    def extract_info_from_db_docs(self, user_query, formatted_documents_string):
         prompt = PromptTemplate(
-            template=EXTRACT_INFO_FROM_DB_SCHEMA,
+            template=EXTRACT_INFO_FROM_DB_DOCS,
             input_variables=["user_query"],
             partial_variables={"db_schema": formatted_documents_string}
         )
@@ -131,13 +162,32 @@ class AnalitiqLLM:
 
         return response
 
-    def save_response(self, response: str):
+    def extract_info_from_db_ddl(self, user_query: str, ddl: str, docs: str = None):
 
-        # Package the result and metadata into a Response object
-        self.response.set_content(str(response))
+        if docs is not None:
+            docs = f"\nHere is some documentation about tables that you might find useful:\n{docs}"
 
-        self.memory.log_service_message(self.response)
-        self.memory.save_to_file()
+        prompt = PromptTemplate(
+            template=EXTRACT_INFO_FROM_DB_DDL,
+            input_variables=["user_query"],
+            partial_variables={"db_ddl": ddl, "db_docs": docs}
+        )
+        table_chain = prompt | self.llm
+        response = table_chain.invoke({"user_query": user_query})
+
+        return response
+
+    def summ_info_from_db_ddl(self, user_query: str, responses: str):
+
+        prompt = PromptTemplate(
+            template=SUMMARISE_DDL,
+            input_variables=["user_query"],
+            partial_variables={"responses": responses}
+        )
+        table_chain = prompt | self.llm
+        response = table_chain.invoke({"user_query": user_query})
+
+        return response
 
 
     def llm_summ_user_prompts(self, user_prompt: str, user_prompt_hist: str):
@@ -156,8 +206,6 @@ class AnalitiqLLM:
         )
         table_chain = prompt | self.llm
         response = table_chain.invoke({"user_prompt_hist": user_prompt_hist +"\n"+ user_prompt})
-
-        self.save_response(response)
 
         return response
 
@@ -181,7 +229,18 @@ class AnalitiqLLM:
                                             , "format_instructions": parser.get_format_instructions()}
                                         )
 
-        #self.save_response(response)
+        return response
+
+    def llm_summ_docs(self, user_prompt: str, formatted_documents_string: str):
+
+        prompt = PromptTemplate(
+            template=SUMMARIZE_DOCUMENT_CHUNKS,
+            input_variables=["user_query"],
+            partial_variables={"documents": formatted_documents_string},
+        )
+
+        table_chain = prompt | self.llm
+        response = table_chain.invoke({"user_query": user_prompt})
 
         return response
 
@@ -212,7 +271,6 @@ class AnalitiqLLM:
         table_chain = prompt | self.llm | parser
         response = table_chain.invoke({"user_prompt": prompts['refined']})
 
-        self.save_response(response.ServiceList)
         return response.ServiceList
 
     def llm_create_task_list(self, prompts: dict, avail_services_str):
@@ -242,7 +300,6 @@ class AnalitiqLLM:
         table_chain = prompt | self.llm | parser
         response = table_chain.invoke({"user_prompt": user_prompt})
 
-        self.save_response(str(response.TaskList))
         return response.TaskList
 
     def llm_refine_task_list(self, user_prompt: str, tasks_list: str):
@@ -258,8 +315,6 @@ class AnalitiqLLM:
         Next, it creates a table_chain using the PromptTemplate, the 'llm' method, and the PydanticOutputParser. It then invokes the table_chain by passing the 'user_prompt' parameter as a dictionary
         *.
 
-        The response returned by the table_chain is saved using the 'save_response' method.
-
         Finally, the method returns the response.
         """
         parser = PydanticOutputParser(pydantic_object=Tasks)
@@ -271,8 +326,6 @@ class AnalitiqLLM:
 
         table_chain = prompt | self.llm | parser
         response = table_chain.invoke({"user_prompt": user_prompt})
-
-        self.save_response(response)
 
         return response
 

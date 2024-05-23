@@ -107,5 +107,49 @@ def flatten(lst):
 
     return output
 
+
 def remove_bracket_contents(text):
     return re.sub(r'\[\[.*?\]\]', '', text)
+
+
+def split_list_of_ddl(ddl_list, max_chunk: int = 5000, seperator: str = ','):
+    """
+    Split List of DDL
+
+    Split the given list of DDL (Data Definition Language) statements into chunks of columns without exceeding a maximum chunk size.
+
+    :param ddl_list: The list of DDL statements to be split.
+    :param max_chunk: The maximum size (in characters) of each chunk. Default is 5000.
+    :param seperator: The separator used to combine the DDL statements into one large text string. Default is ','.
+    :return: A list of chunks, each containing a subset of the columns.
+
+    """
+    # Combine all items into one large text string
+    combined_text = seperator.join(ddl_list)
+
+    # Split the combined text by commas to get individual columns
+    columns = [col.strip() for col in combined_text.split(seperator)]
+
+    # Create chunks of columns without exceeding max_chunk size
+    chunks = []
+    current_chunk = []
+    current_chunk_size = 0
+
+    for col in columns:
+        col_length = len(col)
+
+        # If adding this column exceeds max_chunk, start a new chunk
+        if current_chunk_size + col_length > max_chunk:
+            chunks.append(current_chunk)
+            current_chunk = []
+            current_chunk_size = 0
+
+        # Add the column to the current chunk
+        current_chunk.append(col)
+        current_chunk_size += col_length
+
+    # Add the last chunk if it's not empty
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    return chunks

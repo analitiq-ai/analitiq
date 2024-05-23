@@ -1,10 +1,7 @@
 import logging
-import os
 import yaml
-import importlib.util
-import re
-from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, validator, ValidationError, model_validator
+from typing import List, Optional
+from pydantic import BaseModel, validator, ValidationError
 from pathlib import Path
 
 
@@ -16,7 +13,7 @@ class DatabaseConnection(BaseModel):
     password: str
     port: int
     dbname: str
-    dbschema: Optional[str] = None
+    dbschemas: Optional[List] = None
     threads: Optional[int] = 4
     keepalives_idle: Optional[int] = 240
     connect_timeout: Optional[int] = 10
@@ -48,6 +45,7 @@ class LLMConnection(BaseModel):
 class VectorDBConnection(BaseModel):
     type: str
     name: str
+    collection_name: str
     host: str
     api_key: str
 
@@ -75,7 +73,7 @@ class Configuration(BaseModel):
 
     def validate_and_load(self):
         # Validates usage against connections and loads the specified configs
-        usage_dict = self.usage.dict(exclude_none=True)  # exclude_none=True to skip optional fields that are not set
+        usage_dict = self.usage.model_dump(exclude_none=True)  # exclude_none=True to skip optional fields that are not set
         specified_configs = {}
         for category, name in usage_dict.items():
             # Correctly access the connections based on the category
@@ -100,30 +98,26 @@ class ProfileLoader:
     :param file_path: The path to the configuration file.
     """
 
-    def __init__(self, file_path: str):
+    def __init__(self, profile_config):
         """
         Initializes the ProjectLoader with an empty list of services and a dictionary for profiles.
         """
-        #home_directory = Path.home()
-        #self.file_path = home_directory / file_path
-        self.file_path = Path(file_path)
+        self.profile_config = profile_config
 
-    def load_and_validate_config(self, load_profile_name: str) -> Configuration:
+    def _validate_config(self, load_profile_name: str) -> Configuration:
         """
-        Loads a profile specified in the configuration file
+        Validate profile configuration
 
         :param load_profile_name: the name of the profile to load and validate the configuration for
         :return: the specified configurations for the loaded profile
         """
-        with open(self.file_path, 'r') as file:
-            profiles = yaml.safe_load(file)
 
         validated_profiles = {}
-        for profile_name, config in profiles.items():
+        for profile_name, config in self.profile_config.items():
             # skip profiles that user does not want to load
             if load_profile_name == profile_name:
                 try:
-                    validated_config = Configuration(**profiles[profile_name])
+                    validated_config = Configuration(**self.profile_config[profile_name])
                     specified_configs = validated_config.validate_and_load()
                     logging.info(f"Configuration for profile '{profile_name}' loaded and validated successfully.")
                 except ValidationError as e:

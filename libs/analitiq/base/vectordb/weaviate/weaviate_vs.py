@@ -68,7 +68,7 @@ class WeaviateVS():
     A class for interacting with a Weaviate vector database, including loading documents and performing searches.
     """
 
-    def __init__(self, host, api_key, project_name):
+    def __init__(self, params):
         """
         Initializes a new instance of the class, setting up a connection to a Weaviate cluster and ensuring
         a collection with the specified name exists within that cluster.
@@ -95,8 +95,9 @@ class WeaviateVS():
           within the Weaviate cluster.
         """
         self.client = weaviate.connect_to_wcs(
-            cluster_url=host, auth_credentials=weaviate.auth.AuthApiKey(api_key)
+            cluster_url=params['host'], auth_credentials=weaviate.auth.AuthApiKey(params['api_key'])
         )
+        project_name = params['collection_name']
 
         # Create collection if it does not exist in Weaviate.
         if not self.client.collections.exists(project_name):
@@ -242,14 +243,13 @@ class WeaviateVS():
         return grouped_data
 
     @search_only
-    def kw_search(self, project_name: str, query: str, limit: int = 3) -> dict:
+    def kw_search(self, query: str, limit: int = 3) -> dict:
         """
         Perform a keyword search in the Weaviate database.
         Example:
             response = vector_db_client.kw_search("project_name", "text to search")
 
         Parameters:
-            project_name: the nane of the project. All documents must belong to some project.
             query: The search query string.
             limit: The maximum number of search results to return.
 
@@ -263,7 +263,7 @@ class WeaviateVS():
                 query=query,
                 query_properties=["content"],
                 limit=limit,
-                filters=wvc.query.Filter.by_property("project_name").equal(project_name)
+                filters=wvc.query.Filter.by_property("project_name").equal(self.project_name)
             )
         except Exception as e:
             logging.error(f"Weaviate error {e}")

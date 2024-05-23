@@ -47,15 +47,20 @@ class Node:
 class Graph:
     """Manages the execution graph of services based on their dependencies."""
 
-    def __init__(self, available_services):
+    def __init__(self, available_services, db, llm, vdb):
         """
-        Initializes the graph with a shared database engine.
+        Initialize the class instance.
 
-        Args:
-            db_engine: The database engine available to all services in the graph.
+        :param available_services: A list of available services.
+        :param db: The database instance.
+        :param llm: The large language model instance.
+        :param vdb: The vector database instance.
         """
         self.available_services = available_services
         self.nodes = {}
+        self.db = db
+        self.llm = llm
+        self.vdb = vdb
 
     def add_node(self, service, details):
         """
@@ -140,8 +145,28 @@ class Graph:
         """Instantiates and runs a node's service, passing necessary parameters."""
         # Assuming dynamic loading if necessary or direct instantiation
 
+        # Get the signature of the __init__ method
+        init_signature = inspect.signature(service_class.__init__)
+
+        # Get the parameters of the __init__ method
+        init_params = init_signature.parameters
+
+        # Prepare parameters
+        params = {}
+
+        for name, param in init_params.items():
+            #print(f"Parameter: {name} - Default: {param.default}")
+            if name == 'db':
+                params['db'] = self.db
+
+            elif name == 'llm':
+                params['llm'] = self.llm
+
+            elif name == 'vdb':
+                params['vdb'] = self.vdb
+
         # here we pass the prompt
-        service_instance = service_class(user_prompt)
+        service_instance = service_class(**params)
 
         # Prepare parameters
         params = {}

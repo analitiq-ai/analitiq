@@ -1,29 +1,22 @@
 import logging
 from analitiq.base.BaseResponse import BaseResponse
-from analitiq.base.GlobalConfig import GlobalConfig
-from langchain.prompts import PromptTemplate
-from analitiq.services.search_vc.prompt import (
-    SUMMARIZE_DOCUMENT_CHUNKS
-)
 
 
-class Search_docs:
+class SearchVdb:
     """
     This class represents a service to search internal documentation for information.
     """
 
-    def __init__(self, user_prompt) -> None:
-        self.llm = GlobalConfig().get_llm()
-        self.client = None
-        self.user_prompt = user_prompt
+    def __init__(self, llm, vdb) -> None:
+        self.llm = llm
+        self.client = vdb
+        self.user_prompt: str = None
         self.response = BaseResponse(self.__class__.__name__)
 
-    def run(self):
-        project_name = GlobalConfig().get_project_config_param("profile")
-        profile = GlobalConfig().profile_configs['vector_dbs']
-        self.client = GlobalConfig().get_vdb_client(profile) # We do not need to init the VDB, until we need to use it
+    def run(self, user_prompt):
+        self.user_prompt = user_prompt
 
-        response = self.client.kw_search(project_name, self.user_prompt)
+        response = self.client.kw_search(user_prompt)
 
         try:
             docs = response.objects
@@ -41,14 +34,8 @@ class Search_docs:
             # Append the document name and content to the formatted string with the desired formatting
             formatted_documents_string += f"Document name: {o.properties['document_name']}\nDocument content:\n{o.properties['content']}\n\n"
 
-        prompt = PromptTemplate(
-            template=SUMMARIZE_DOCUMENT_CHUNKS,
-            input_variables=["user_prompt"],
-            partial_variables={"query": self.user_prompt, "documents": formatted_documents_string},
-        )
+        ai_response = self.llm.llm_summ_docs(user_prompt, formatted_documents_string)
 
-        table_chain = prompt | self.llm
-        ai_response = table_chain.invoke({"user_prompt": self.user_prompt})
         self.response.set_content(ai_response)
         self.response.set_metadata({"documents": ', '.join(document_name_list)})
 

@@ -135,7 +135,7 @@ six==1.16.0
 sniffio==1.3.0
 soupsieve==2.5
 SQLAlchemy==2
-#sqlalchemy-redshift==0.8.14
+sqlalchemy-redshift==0.8.14
 starlette==0.27.0
 stringcase==1.2.0
 sympy==1.12
@@ -183,3 +183,4 @@ langchain
 langchain-openai==0.1.3
 langchain_mistralai==0.1.2
 langchain-aws==0.1.2
+redshift_connector==2.1.1

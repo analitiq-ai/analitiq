@@ -14,8 +14,8 @@ services:
 
   - name: SearchDocs
     description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?"
-    path: "analitiq/services/search_vc/search_docs.py"
-    class: "Search_docs"
+    path: "analitiq/services/search_vdb/search_vdb.py"
+    class: "SearchVdb"
     method: "run"
     inputs: "text"
     outputs: "text"

@@ -10,7 +10,7 @@ class CodeExtractor:
         extract_code: Extracts the code block that matches a given language identifier.
     """
 
-    def extract_code(self, code: str, text: str) -> str:
+    def extract_code(self, text: str, code: str) -> str:
         """
         Extracts a code block from the provided text, based on the specified language.
 
@@ -31,15 +31,31 @@ class CodeExtractor:
 
         # Pattern to match code blocks that start with the specified code identifier
         pattern = rf"```{code}\n(.*?)```"
-        match = re.search(pattern, text, re.DOTALL)
+        try:
+            match = re.search(pattern, text, re.DOTALL)
+        except Exception as e:
+            self.logger.error(f"Error extracting SQL from text: {str(e)}")
 
-        if match:
+        if match and len(match.group(1).strip()) > 5:
             return match.group(1).strip()
         else:
-            return ""  # Return an empty string if no matching code block is found
+            return None  # Return an empty string if no matching code block is found
 
     def CodeAndDictionaryExtractor(self, input_string):
-        # Extract everything between the first { and the last }
+        """
+        :param input_string: a string containing the input data
+        :return: a tuple indicating success of extraction and the extracted dictionary or an error message
+
+        This method extracts the content between the first '{' and the last '}' in the given input string. It first searches for a substring enclosed in curly braces using regular expression
+        * pattern matching. The extracted substring is then cleaned by replacing newline and tab characters with a space.
+
+        If the cleaned substring can be successfully parsed as a JSON dictionary, the method returns a tuple with the first element being True indicating successful extraction, and the second
+        * element being the parsed dictionary. If the parsing fails, the method returns a tuple with the first element being False indicating extraction failure, and the second element being
+        * the error message.
+
+        If no matching pattern is found in the input string, the method returns a tuple with the first element being False, and the second element being a "No matching pattern found." error
+        * message.
+        """
 
         match = re.search(r'\{.*\}', input_string, re.DOTALL)
         if match:
