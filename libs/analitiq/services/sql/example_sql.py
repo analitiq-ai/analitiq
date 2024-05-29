@@ -12,7 +12,7 @@ sys.path.insert(0, dynamic_path)
 from sql import Sql
 from analitiq.base.BaseDb import BaseDb
 from analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateVS
+from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateHandler
 
 db_params = {'name': 'prod_dw'
     , 'type': 'redshift'
@@ -45,7 +45,7 @@ params = {
     "api_key": "xxxxx"
 }
 
-vdb = WeaviateVS(params)
+vdb = WeaviateHandler(params)
 
 # Example of using the SQLGenerator class
 service = Sql(db, llm, vdb=vdb)

@@ -51,7 +51,7 @@ We need 3 things for SQL service to work with:
 from sql import Sql
 from analitiq.base.BaseDb import BaseDb
 from analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateVS
+from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateHandler
 
 user_prompt = "Please give me revenues by month."
 
@@ -80,7 +80,7 @@ llm_params = {'type': 'bedrock'
     , 'region_name': 'eu-central-1'}
 llm = BaseLlm(llm_params)
 
-vdb = WeaviateVS('https://12345.weaviate.network', 'xxxxxxx', 'my_project')
+vdb = WeaviateHandler('https://12345.weaviate.network', 'xxxxxxx', 'my_project')
 
 # Example of using the SQLGenerator class
 sql_gen = Sql("Please give me revenues by month.", db, llm, vector_db=vdb)

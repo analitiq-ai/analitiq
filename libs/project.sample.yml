@@ -5,6 +5,8 @@ config_version: 2
 
 config:
   general:
+    log_dir: "logs" # this is where we save our chat logs.
+    latest_run_filename: "latest_run.log" # this is the log file for the latest run.
     chat_log_dir: "chats" # this is where we save our chat logs.
     services_dir: "custom_services"
     session_uuid_file: 'session_uuid.txt' # Where session identifier is being recorded. When session is reset, it is like beginning of a new chat topic and new log file will be created.
@@ -12,12 +14,3 @@ config:
   vectordb:
     doc_chunk_size: 2000
     doc_chunk_overlap: 200
-
-services:
-  - name: ChartService
-    description: "Use this service to generate script for APEX charts to visualize data"
-    path: "custom_services/chart/chart.py"
-    class: "Chart"
-    method: "run"
-    inputs: "dataframe as serialized json"
-    outputs: "javascript that is used by the frontend to visualize data"

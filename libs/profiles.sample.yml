@@ -31,6 +31,7 @@ test:
     vector_dbs:
       - name: prod_vdb
         type: weaviate
+        collection_name: my_collection
         host: example.com
         api_key: xxxxx
 

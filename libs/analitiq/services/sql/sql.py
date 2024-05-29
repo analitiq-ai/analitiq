@@ -314,6 +314,11 @@ class Sql:
         return modified_content
 
     def get_db_docs(self):
+
+        # If connection to vectorDB did not initialise, return None
+        if not self.vdb:
+            return None
+
         response = self.vdb.get_many_like("document_name", db_docs_name)
         if not response:
             self.logger.info(f"[VectorDB] No DB schema objects returned.")
@@ -391,15 +396,16 @@ class Sql:
         self.logger.info(f"Human: {user_prompt}")
         docs = self.get_db_docs()
 
-        # we check if DB doc already has SQL as some LLMs tend to do that.
-        if "```" in docs:
-            extractor = CodeExtractor()
-            sql = extractor.extract_code(docs, 'sql')
-            if sql:
-                success, result = self.execute_sql(sql)
-                if success:
-                    self._set_result(result, None, docs)  # Since SQL already is in the document reponse, we do not need to add it to the response.
-                    return self.response
+        if docs:
+            # we check if DB doc already has SQL as some LLMs tend to do that.
+            if "```" in docs:
+                extractor = CodeExtractor()
+                sql = extractor.extract_code(docs, 'sql')
+                if sql:
+                    success, result = self.execute_sql(sql)
+                    if success:
+                        self._set_result(result, None, docs)  # Since SQL already is in the document reponse, we do not need to add it to the response.
+                        return self.response
 
         # Identify relevant tables based on the user's prompt
         self.get_relevant_tables(docs)

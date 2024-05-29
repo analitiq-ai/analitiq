@@ -4,7 +4,6 @@ import sys
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.base.BaseDb import BaseDb
 from analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateVS
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.general import load_yaml, extract_hints
 from analitiq.base.GlobalConfig import GlobalConfig
@@ -24,9 +23,10 @@ sys.path.append("/analitiq")
 if not os.path.exists(GlobalConfig().get_log_dir()):
     # If it doesn't exist, create it
     os.makedirs(GlobalConfig().get_log_dir())
+print(f"{GlobalConfig().get_log_dir()}/{GlobalConfig().get_log_filename()}")
 
 logging.basicConfig(
-    filename=f"{GlobalConfig().get_log_dir()}/{GlobalConfig().get_log_filename()}"
+    filename=f"latest_run.log"
     ,encoding='utf-8'
     ,filemode='w'
     ,level=logging.INFO
@@ -49,7 +49,7 @@ class Analitiq():
         self.llm = BaseLlm(self.llm_params)
 
         self.vdb_params = GlobalConfig().profile_configs['vector_dbs'].model_dump()
-        self.vdb = WeaviateVS(self.vdb_params)
+        self.vdb = self._get_vdb_handler(self.vdb_params)
 
         self.memory = BaseMemory()
         self.services = GlobalConfig().services
@@ -57,6 +57,25 @@ class Analitiq():
 
         self.prompts = {'original': user_prompt}
         self.response = BaseResponse(self.__class__.__name__)
+
+    @staticmethod
+    def _get_vdb_handler(vdb_params):
+        db_type = vdb_params['type']
+
+        if db_type == 'weaviate':
+            from .vectordb.weaviate import WeaviateHandler
+            handler = WeaviateHandler(vdb_params)
+        elif db_type == 'chromadb':
+            from .vectordb.chromadb import ChromaHandler
+            handler = ChromaHandler(vdb_params)
+        else:
+            raise ValueError(f"Unsupported database type: {db_type}")
+
+        if handler.connected:
+            return handler
+        else:
+            logging.error("Failed to establish a connection to the Weaviate database.")
+            return None
 
     def get_available_services_str(self, avail_services):
         """

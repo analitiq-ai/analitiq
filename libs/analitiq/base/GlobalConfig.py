@@ -48,8 +48,8 @@ class GlobalConfig:
     def load_config(self, file_path: str):
         try:
             path = Path(file_path).resolve()
-            print(f"Trying to load config from: {path}")
             _config = load_yaml(Path(file_path))
+            print(f"Loaded config: {path}")
             return _config
         except Exception as e:
             print(f"{file_path} not in home directory")
@@ -63,7 +63,7 @@ class GlobalConfig:
 
     def get_vdb_client(self, profile):
         if profile.type in ['weaviate']:
-            from analitiq.storage.weaviate.weaviate_vs import WeaviateVS
+            from analitiq.storage.weaviate.weaviate_vs import WeaviateHandler
             logging.info(f"VectorDB is set to {profile.type}")
             return
         else:

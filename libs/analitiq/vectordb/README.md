@@ -19,7 +19,7 @@ sys.path.insert(0, dynamic_path)
 Loading all SQL files from a directory into your Weaviate vectore store and indexing them for search
 
 ```python
-from analitiq.storage.weaviate.weaviate_vs import WeaviateVS
+from analitiq.storage.weaviate.weaviate_vs import WeaviateHandler
 import os
 params = {
     "project_name": "my_project",
@@ -27,7 +27,7 @@ params = {
     "api_key": "XXXXXX"
 }
 
-wc=WeaviateVS(params)
+wc=WeaviateHandler(params)
 FILE_PATH = './project/My_Project/sql'
 wc.load(FILE_PATH, 'sql')
 ```
@@ -35,14 +35,14 @@ wc.load(FILE_PATH, 'sql')
 Loading one file into your Weaviate vectore store and indexing it for search
 
 ```python
-from analitiq.storage.weaviate.weaviate_vs import WeaviateVS
+from analitiq.storage.weaviate.weaviate_vs import WeaviateHandler
 params = {
     "project_name": "my_project",
     "host": "https://XXXXXXX.weaviate.network",
     "api_key": "XXXXXX"
 }
 
-wc=WeaviateVS(params)
+wc=WeaviateHandler(params)
 FILE_PATH = './project/My_Project/my_file.sql'
 wc.load(FILE_PATH)
 ```
