@@ -19,7 +19,7 @@ sys.path.insert(0, dynamic_path)
 Loading all SQL files from a directory into your Weaviate vectore store and indexing them for search
 
 ```python
-from analitiq.storage.weaviate.weaviate_vs import WeaviateHandler
+from analitiq.vectordb.weaviate import WeaviateHandler
 import os
 params = {
     "project_name": "my_project",
@@ -27,24 +27,24 @@ params = {
     "api_key": "XXXXXX"
 }
 
-wc=WeaviateHandler(params)
+vdb=WeaviateHandler(params)
 FILE_PATH = './project/My_Project/sql'
-wc.load(FILE_PATH, 'sql')
+vdb.load(FILE_PATH, 'sql')
 ```
 
 Loading one file into your Weaviate vectore store and indexing it for search
 
 ```python
-from analitiq.storage.weaviate.weaviate_vs import WeaviateHandler
+from analitiq.vectordb.weaviate import WeaviateHandler
 params = {
     "project_name": "my_project",
     "host": "https://XXXXXXX.weaviate.network",
     "api_key": "XXXXXX"
 }
 
-wc=WeaviateHandler(params)
+vdb=WeaviateHandler(params)
 FILE_PATH = './project/My_Project/my_file.sql'
-wc.load(FILE_PATH)
+vdb.load(FILE_PATH)
 ```
 
 ## Searching for data
@@ -55,8 +55,7 @@ The `kw_search` method performs a keyword search in the database and returns a l
 
 Usage Example:
 ```python
-service = SearchService()
-search_results = service.kw_search("climate change", limit=5)
+search_results = vdb.kw_search("climate change", limit=5)
 ```
 Returned Data Format:
 The method returns a dictionary containing the search results. Each item in the dictionary represents a document matching the query.
@@ -80,7 +79,7 @@ The `kw_search_grouped` method extends the keyword search functionality by group
 
 Usage Example:
 ```python
-grouped_results = service.kw_search_grouped("sustainable energy", limit=5)
+grouped_results = vdb.kw_search_grouped("sustainable energy", limit=5)
 ```
 Returned Data Format:
 This method returns a dictionary where each key is a tuple of (document_name, source), and the value is a list of documents that belong to that document name and source.
@@ -97,6 +96,3 @@ This method returns a dictionary where each key is a tuple of (document_name, so
 }
 ```
 These functionalities aim to provide an efficient and flexible way to search and analyze documents in our database. Whether you need a straightforward list of search results or a grouped view based on specific attributes, the `SearchService` class caters to both requirements seamlessly.
-
-
-

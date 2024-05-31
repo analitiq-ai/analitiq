@@ -5,7 +5,6 @@ from pathlib import Path
 from analitiq.base.ProfileLoader import ProfileLoader
 from analitiq.base.ServicesLoader import ServicesLoader
 from analitiq.utils.general import load_yaml
-from langchain_community.utilities import SQLDatabase
 
 class GlobalConfig:
     _instance = None
@@ -61,37 +60,9 @@ class GlobalConfig:
     def get_log_filename(self):
         return self.project_config['config']['general']['latest_run_filename']
 
-    def get_vdb_client(self, profile):
-        if profile.type in ['weaviate']:
-            from analitiq.storage.weaviate.weaviate_vs import WeaviateHandler
-            logging.info(f"VectorDB is set to {profile.type}")
-            return
-        else:
-            print(f"Unsupported Vector DB type {profile.type}")
-
     def get_session_uuid_file(self):
         return self.project_config['config']['general']['session_uuid_file']
 
     def get_chat_log_dir(self):
         return self.project_config['config']['general']['chat_log_dir']
-
-    def get_project_config_param(self, param_name: str):
-        return self.project_config[param_name]
-
-    def get_config_general_param(self, param_name):
-        """
-        Returns value of a configuration parameter from General configuration
-        :param param_name:
-        :return:
-        """
-        return self.project_config['config']['general'][param_name]
-
-    def get_config_vectordb_param(self, param_name):
-        """
-        Returns value of a configuration parameter from vectordb configuration
-        :param param_name:
-        :return:
-        """
-        return self.project_config['config']['vectordb'][param_name]
-
 

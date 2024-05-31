@@ -4,6 +4,8 @@ import weaviate
 from weaviate.util import generate_uuid5
 from weaviate.auth import AuthApiKey
 from weaviate.classes.query import Filter
+from weaviate.classes.config import Configure
+from weaviate.classes.tenants import Tenant
 from typing import Optional
 from .base_handler import BaseVDBHandler
 from ..utils.document_processor import DocumentChunkLoader
@@ -78,7 +80,13 @@ class WeaviateHandler(BaseVDBHandler):
         super().__init__(params)
         if not self.try_connect():
             self.connected = False
-        self.collection = None
+            self.collection = None
+        else:
+            multi_collection = self.client.collections.get(self.collection_name)
+            # Get collection specific to the required tenant
+            self.collection = multi_collection.with_tenant(self.collection_name)
+
+        self.chunk_processor = DocumentChunkLoader(self.collection_name)
 
     def connect(self):
         """
@@ -88,11 +96,26 @@ class WeaviateHandler(BaseVDBHandler):
             cluster_url=self.params['host'], auth_credentials=AuthApiKey(self.params['api_key'])
         )
 
-        if not self.client.collections.exists(self.project_name):
-            self.client.collections.create(self.project_name)
-            logging.info(f"Collection created {self.project_name}")
-        self.collection = self.client.collections.get(self.project_name)
-        logging.info(f"Vector DB Collection name: {self.project_name}")
+        if not self.client.collections.exists(self.collection_name):
+            self.create_collection()
+            logging.info(f"Collection created {self.collection_name}")
+        else:
+            logging.info(f"Existing VDB Collection name: {self.collection_name}")
+
+    def create_collection(self):
+
+        self.client.collections.create(self.collection_name,
+                                       # Enable multi-tenancy on the new collection
+                                       multi_tenancy_config=Configure.multi_tenancy(enabled=True))
+
+        self.collection = self.client.collections.get(self.collection_name)
+
+        # Add a tenant to the collection. Right now the tenant is the same as the collection. In the future, this could be users
+        self.collection.tenants.create(
+            tenants=[
+                Tenant(name=self.collection_name)
+            ]
+        )
 
     def close(self):
         """
@@ -108,7 +131,6 @@ class WeaviateHandler(BaseVDBHandler):
 
         chunks = [
             Chunk(
-                project_name=self.project_name,
                 content=chunk.page_content,
                 source=chunk.metadata['source'],
                 document_type=extension,
@@ -117,13 +139,13 @@ class WeaviateHandler(BaseVDBHandler):
                 chunk_num_char=len(chunk.page_content)
             ) for chunk in documents_chunks
             ]
-        return chunks
 
         chunks_loaded = 0
+
         with self.collection.batch.dynamic() as batch:
             for chunk in chunks:
-                uuid = generate_uuid5(chunk.dict())
-                batch.add_object(properties=chunk.dict(), uuid=uuid)
+                uuid = generate_uuid5(chunk.model_dump())
+                batch.add_object(properties=chunk.model_dump(), uuid=uuid)
                 chunks_loaded += 1
 
         self.close()
@@ -172,8 +194,7 @@ class WeaviateHandler(BaseVDBHandler):
             response = self.collection.query.bm25(
                 query=query,
                 query_properties=["content"],
-                limit=limit,
-                filters=Filter.by_property("project_name").equal(self.project_name)
+                limit=limit
             )
         except Exception as e:
             logging.error(f"Weaviate error {e}")
@@ -221,5 +242,15 @@ class WeaviateHandler(BaseVDBHandler):
         except Exception as e:
             logging.error(f"Error retrieving documents: {e}")
             return None
+        finally:
+            self.close()
+
+    def delete_collection(self, collection_name: str):
+        # delete collection - THIS WILL DELETE THE COLLECTION AND ALL ITS DATA
+        try:
+            self.client.collections.delete(collection_name)
+            return True
+        except Exception:
+            return False
         finally:
             self.close()

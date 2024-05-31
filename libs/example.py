@@ -1,7 +1,7 @@
 
 from analitiq.analitiq import Analitiq
 
-user_prompt = "Count for me number of policies by month for the last 12 months"
+user_prompt = "Where in SQL code do we apply transformations to the Ireland policies?"
 
 a = Analitiq(user_prompt)
 services_responses = a.run(user_prompt)

@@ -8,7 +8,8 @@ class BaseVDBHandler:
 
     def __init__(self, params):
         self.params = params
-        self.project_name = params['collection_name']
+
+        self.collection_name = params['collection_name']
         self.client = None
         self.connected = False
 
@@ -32,7 +33,15 @@ class BaseVDBHandler:
             self.connect()
             self.connected = True
         except Exception as e:
-            logging.error(f"{self.params['type']} connection failed: {e}")
+            logging.error({e})
             self.connected = False
             return None
         return self
+
+    def delete_collection(self):
+        """
+        Deletes the entire collection.
+
+        :return: None
+        """
+        raise NotImplementedError("Delete collection method not implemented.")

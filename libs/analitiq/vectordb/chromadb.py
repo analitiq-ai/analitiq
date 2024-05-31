@@ -1,10 +1,24 @@
 import logging
+import chromadb
+import os
 from chromadb.api import ClientAPI
 from typing import List, Optional
 from schemas.vector_store import VectoreStoreCollection
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
+
+
+def get_vector_store():
+    vector_store = chromadb.HttpClient(
+        host=os.getenv("CHROMA_DB_HOST"),
+        port=os.getenv("CHROMA_DB_PORT")
+    )
+    try:
+        yield vector_store
+    finally:
+        del vector_store
+
 
 class ChromaHandler:
 
