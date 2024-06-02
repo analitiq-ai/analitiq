@@ -22,9 +22,9 @@ class GlobalConfig:
         """
         if not self._initialized:
 
-            self.core_config = self.load_config('analitiq/core_config.yml')  # this is analitiq project.yml
-            self.project_config = self.load_config('project.yml')  # this is the users project.yml
-            self.profiles = self.load_config('profiles.yml')  # this is the users project.yml
+            self.core_config = self.load_config('libs/analitiq/core_config.yml')  # this is analitiq project.yml
+            self.project_config = self.load_config('libs/project.yml')  # this is the users project.yml
+            self.profiles = self.load_config('libs/profiles.yml')  # this is the users profiles.yml
 
             # Load and validate the Profile configuration
             profile_loader = ProfileLoader(self.profiles)

@@ -6,7 +6,6 @@ langchain_core==0.2.1
 langchain_mistralai==0.1.7
 langchain_openai==0.1.7
 langchain_text_splitters==0.2.0
-pandas==1.4.2
 PyYAML==6.0.1
 SQLAlchemy==1.4.52
 sqlalchemy-redshift==0.8.14
