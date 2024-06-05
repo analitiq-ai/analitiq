@@ -21,28 +21,28 @@ class GlobalConfig:
         """
         if not self._initialized:
 
-            self.core_config = self.load_config('analitiq/core_config.yml')  # this is analitiq project.yml
             self.project_config = self.load_config('project.yml')  # this is the users project.yml
-            self.profiles = self.load_config('profiles.yml')  # this is the users project.yml
-
-            # Load and validate the Profile configuration
-            profile_loader = ProfileLoader(self.profiles)
-            self.profile_configs = profile_loader._validate_config(self.project_config['profile'])
+            self.profiles: Dict = None
+            self.profile_configs: Dict = None
 
             # Load Services
-            self.services: Dict[str, Any] = {} #this is where project services from the YAML will be stored
             serv_loader = ServicesLoader()
 
-            # load core services
-            self.services.update(serv_loader.load_services_from_config(self.core_config, self.services))
-
-            # load custom services created by users, if they exist
-            self.services.update(serv_loader.load_services_from_config(self.project_config, self.services))
+            # This is where project services from the YAML will be stored
+            self.services: Dict[str, Any] = serv_loader.load_services_from_config(self.project_config)
 
             # get the available services from the defined directory
             logging.info(f"[Service][Available]\n{self.services}")
 
             self._initialized = True
+
+    def load_profiles(self):
+        if not self.profiles:
+            self.profiles = self.load_config('profiles.yml')  # this is the users project.yml
+
+            # Load and validate the Profile configuration
+            profile_loader = ProfileLoader(self.profiles)
+            self.profile_configs = profile_loader._validate_config(self.project_config['profile'])
 
     def load_config(self, file_path: str):
         try:

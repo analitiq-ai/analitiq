@@ -10,22 +10,22 @@ dynamic_path = f'{home_directory}/Documents/Projects/analitiq/libs/'
 sys.path.insert(0, dynamic_path)
 
 from sql import Sql
-from analitiq.base.BaseDb import BaseDb
+from analitiq.base.Database import DatabaseWrapper
 from analitiq.base.llm.BaseLlm import BaseLlm
 from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateHandler
 
 db_params = {'name': 'prod_dw'
     , 'type': 'redshift'
     , 'host': 'xxxx'
-    , 'user': 'xxxx'
+    , 'username': 'xxxx'
     , 'password': 'xxxx'
     , 'port': 5439
-    , 'dbname': 'xxxx'
-    , 'dbschemas': ['xxx', 'xxx']
+    , 'db_name': 'xxxx'
+    , 'db_schemas': ['xxx', 'xxx']
     , 'threads': 4
     , 'keepalives_idle': 240
     , 'connect_timeout': 10}
-db = BaseDb(db_params)
+db = DatabaseWrapper(db_params)
 
 llm_params = {'type': 'bedrock'
     , 'name': 'aws_llm'

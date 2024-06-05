@@ -4,7 +4,7 @@ import pandas as pd
 import os
 import re
 from typing import List
-from analitiq.utils.general import *
+from analitiq.utils.general import split_list_of_ddl
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.code_extractor import CodeExtractor
 
@@ -51,7 +51,6 @@ class Sql:
     def __init__(self, db, llm, vdb=None):
         self.user_prompt: str = None
         self.db = db
-        self.db_schema = db.get_db_schemas()
         self.llm = llm
         self.vdb = vdb
 
@@ -110,7 +109,8 @@ class Sql:
         """
 
         # Fetch all schemas (If your database supports schemas)
-        ddl = self.db.get_schemas_and_tables([self.db_schema])
+        ddl = self.db.get_schemas_and_tables(self.db.params['db_schemas'])
+
         result = split_list_of_ddl(ddl, 5000)
 
         if len(result) > 1:
@@ -124,7 +124,6 @@ class Sql:
                 responses.append(response)
 
             response = self.llm.summ_info_from_db_ddl(self.user_prompt, '. '.join(responses))
-
             return response
 
         return ', '.join(ddl)
@@ -156,7 +155,7 @@ class Sql:
         response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
 
 
-        #self.logger.info(f"Assistant:\nList of tables believed to be relevant - {response.to_json()}")
+        self.logger.info(f"Assistant:\nList of tables believed to be relevant - {response.to_json()}")
 
         schema_dict = {}
         # Organize tables by schema
@@ -194,7 +193,7 @@ class Sql:
         limit = 5
 
         sql = f"SELECT * FROM {schema_name}.{table_name} LIMIT {limit}"
-        result = self.db.run(sql, include_columns=True)
+        result = self.db.db.run(sql, include_columns=True)
 
         parser = PydanticOutputParser(pydantic_object=TableCheck)
         prompt = PromptTemplate(
