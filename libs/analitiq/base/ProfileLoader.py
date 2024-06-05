@@ -9,11 +9,11 @@ class DatabaseConnection(BaseModel):
     name: str
     type: str
     host: str
-    user: str
+    username: str
     password: str
     port: int
-    dbname: str
-    dbschemas: Optional[List] = None
+    db_name: str
+    db_schemas: Optional[List] = None
     threads: Optional[int] = 4
     keepalives_idle: Optional[int] = 240
     connect_timeout: Optional[int] = 10
@@ -112,6 +112,7 @@ class ProfileLoader:
         :return: the specified configurations for the loaded profile
         """
 
+        specified_configs = None
         validated_profiles = {}
         for profile_name, config in self.profile_config.items():
             # skip profiles that user does not want to load

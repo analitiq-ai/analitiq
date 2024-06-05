@@ -1,9 +1,9 @@
 
-from analitiq.analitiq import Analitiq
+from analitiq.main import Analitiq
 
-user_prompt = "Count for me number of policies by month for the last 12 months"
+user_prompt = "Give me our top 10 customers by revenue."
 
-a = Analitiq(user_prompt)
+a = Analitiq()
 services_responses = a.run(user_prompt)
 print(services_responses)
 for service, response in services_responses.items():

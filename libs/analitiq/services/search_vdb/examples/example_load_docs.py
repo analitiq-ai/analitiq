@@ -10,7 +10,7 @@ home_directory = os.environ['HOME']
 dynamic_path = f'{home_directory}/Documents/Projects/analitiq/libs/'
 sys.path.insert(0, dynamic_path)
 
-from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateVS
+from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateHandler
 
 params = {
     "collection_name": "my_collection",
@@ -19,6 +19,6 @@ params = {
 }
 
 
-wc=WeaviateVS(params)
+wc=WeaviateHandler(params)
 FILE_PATH = '/xxx/xxx/xxx/xxx/xxx/test_schema.yml'
 wc.load(FILE_PATH)

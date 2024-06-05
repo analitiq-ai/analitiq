@@ -49,24 +49,24 @@ We need 3 things for SQL service to work with:
 
 ```python
 from sql import Sql
-from analitiq.base.BaseDb import BaseDb
+from analitiq.base.Database import DatabaseWrapper
 from analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateVS
+from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateHandler
 
 user_prompt = "Please give me revenues by month."
 
 db_params = {'name': 'prod_dw'
     , 'type': 'redshift'
     , 'host': 'xxxx'
-    , 'user': 'smy_user'
+    , 'username': 'smy_user'
     , 'password': '1234455'
     , 'port': 5439
-    , 'dbname': 'my_db'
-    , 'dbschemas': ['schema1', 'schema2']
+    , 'db_name': 'my_db'
+    , 'db_schemas': ['schema1', 'schema2']
     , 'threads': 4
     , 'keepalives_idle': 240
     , 'connect_timeout': 10}
-db = BaseDb(db_params)
+db = DatabaseWrapper(db_params)
 
 llm_params = {'type': 'bedrock'
     , 'name': 'aws_llm'
@@ -80,7 +80,7 @@ llm_params = {'type': 'bedrock'
     , 'region_name': 'eu-central-1'}
 llm = BaseLlm(llm_params)
 
-vdb = WeaviateVS('https://12345.weaviate.network', 'xxxxxxx', 'my_project')
+vdb = WeaviateHandler('https://12345.weaviate.network', 'xxxxxxx', 'my_project')
 
 # Example of using the SQLGenerator class
 sql_gen = Sql("Please give me revenues by month.", db, llm, vector_db=vdb)
