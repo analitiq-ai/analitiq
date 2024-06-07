@@ -1,4 +1,4 @@
-import logging
+from analitiq.logger import logger
 
 
 class BaseVDBHandler:
@@ -33,7 +33,7 @@ class BaseVDBHandler:
             self.connect()
             self.connected = True
         except Exception as e:
-            logging.error({e})
+            logger.error({e})
             self.connected = False
             return None
         return self

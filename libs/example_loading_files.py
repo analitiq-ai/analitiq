@@ -1,9 +1,9 @@
 from analitiq.vectordb.weaviate import WeaviateHandler
 
 params = {
-    "collection_name": "my_collection",
-    "host": "https://xxxx.xxxx.gcp.weaviate.cloud",
-    "api_key": "xxxxx"
+    "collection_name": "bikmo",
+    "host": "https://cgde46retuswar6uiwfva.c0-1.europe-west3.gcp.weaviate.cloud",
+    "api_key": "7j8EFvegyKRqO1szJzMoLz63B3JKekGxp4io"
 }
 
 vdb = WeaviateHandler(params)
@@ -24,7 +24,7 @@ Loading a single file
 Search for results
 """
 
-result = vdb.kw_search("revenue")
+result = vdb.kw_search("bike")
 print(result)
 
 """

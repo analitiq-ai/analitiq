@@ -1,7 +1,6 @@
-import logging
-import os
 import sys
 from typing import Dict
+from analitiq.logger import logger
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.base.Database import DatabaseWrapper
 from analitiq.base.llm.BaseLlm import BaseLlm
@@ -12,17 +11,9 @@ from analitiq.base.Graph import Graph, Node
 from analitiq.base.BaseSession import BaseSession
 
 HELP_RESPONSE = """
-    I am a Synthetic Data Analyst and I have access to the following services.
-    You can ask me a data related question and I will use the services at my disposal to answer it.
-    You can give me hints inside double square brackets [[]]
-    
-    For example, you can help me to complete steps in a particular order with:
-    [[Action: Step1 -> Step2]]
-    
-    To force me to use certain services, type
-    [[Tools: Step1 -> Step2]]
-    
-    Services at my disposal:
+    Analitiq is an AI assistant that can examine your SQL files and database structure and answer common questions about your data.
+    Please note that DB query is currently in beta and is disabled on this instance.
+    Services that are currently connected:
 """
 
 # import langchain
@@ -30,49 +21,46 @@ HELP_RESPONSE = """
 
 sys.path.append("/analitiq")
 
-logging.basicConfig(
-    filename=f"logs/latest_run.log"  # TODO for some reason, when this is parametarized, logs stop working
-    , encoding='utf-8'
-    , filemode='w'
-    , level=logging.INFO
-    , format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])'
-    , datefmt='%d/%m/%Y %I:%M:%S %p'
-)
 
+#  db_params: Dict = None, llm_params: Dict = None, vdb_params: Dict = None
 class Analitiq():
 
-    def __init__(self, db_params: Dict = None, llm_params: Dict = None, vdb_params: Dict = None):
+    def __init__(self, params: Dict = None):
         """
 
         """
         self.response = BaseResponse(self.__class__.__name__)
+
         self.db: DatabaseWrapper() = None
         self.llm: BaseLlm() = None
         self.vdb = None
 
-        if not db_params:
+        if not params or not params.get('db_params'):
             GlobalConfig().load_profiles()
             self.db_params = GlobalConfig().profile_configs['databases'].model_dump()
         else:
-            self.db_params = db_params
+            self.db_params = params['db_params']
 
-        if not llm_params:
+        if not params or not params.get('llm_params'):
             GlobalConfig().load_profiles()
             self.llm_params = GlobalConfig().profile_configs['llms'].model_dump()
         else:
-            self.llm_params = llm_params
+            self.llm_params = params['llm_params']
 
-        if not vdb_params:
+        if not params or not params.get('vdb_params'):
             GlobalConfig().load_profiles()
             self.vdb_params = GlobalConfig().profile_configs['vector_dbs'].model_dump()
         else:
-            self.vdb_params = vdb_params
+            self.vdb_params = params['vdb_params']
 
         self.memory = BaseMemory()
         self.services = GlobalConfig().services
         self.avail_services_str = self.get_available_services_str(self.services)
 
-        self.prompts = {'original': ''}
+        self.prompts = {'original': '',
+                        'refined': '',
+                        'feedback': ''
+                        }
 
     def load_connections(self):
         failures = 0
@@ -109,7 +97,7 @@ class Analitiq():
         if handler.connected:
             return handler
         else:
-            logging.error("Failed to establish a connection to the vector database.")
+            logger.error("Failed to establish a connection to the vector database.")
             raise Exception("Failed to establish a connection to the vector Database")
 
     def get_available_services_str(self, avail_services):
@@ -145,29 +133,29 @@ class Analitiq():
         try:
             response = self.llm.llm_is_prompt_clear(user_prompt, self.avail_services_str)
         except Exception as e:
-            logging.error(f"[Analitiq] Exception: '{e}'. Needs explanation:\n{str(response)}")
+            logger.error(f"[Analitiq] Exception: '{e}'. Needs explanation:\n{str(response)}")
 
         # is LLM is clear with prompt, we return results
         if response.Clear:
             return response
 
         # Log that the model needs clarification
-        logging.info(f"[Analitiq] Prompt not clear: '{user_prompt}'. Needs explanation:\n{str(response)}")
+        logger.info(f"[Analitiq] Prompt not clear: '{user_prompt}'. Needs explanation:\n{str(response)}")
 
         # we try to get Chat history for more context to the LLM
         try:
             chat_hist = self.get_chat_hist(user_prompt, msg_lookback)
         except Exception as e:
-            logging.error(f"[Analitiq] Error retrieving chat history: {e}")
+            logger.error(f"[Analitiq] Error retrieving chat history: {e}")
             return response
 
         # if response is not clear and there is no chat history, we exit with False
         if not chat_hist:
-            logging.info(f"[Analitiq] No chat history found.")
+            logger.info(f"[Analitiq] No chat history found.")
             return response
 
         # if there is chat history, we add it to the prompt to give LLM more context.
-        logging.info(f"[Analitiq] Chat history: '{chat_hist}'")
+        logger.info(f"[Analitiq] Chat history: '{chat_hist}'")
         user_prompt = chat_hist + "\n" + user_prompt
         response = self.llm.llm_is_prompt_clear(user_prompt, self.avail_services_str)
 
@@ -216,10 +204,12 @@ class Analitiq():
 
             response = self.llm.llm_summ_user_prompts(user_prompt, user_prompt_w_hist)
 
-            logging.info(f"[Prompt][Change From]: {user_prompt_w_hist}\n[Prompt][Change To]: {response}")
+            logger.info(f"[Prompt][Change From]: {user_prompt_w_hist}\n[Prompt][Change To]: {response}")
 
         return response
 
+    def return_response(self):
+        return {"Analitiq": self.response}
 
     def run(self, user_prompt):
         """
@@ -232,14 +222,21 @@ class Analitiq():
 
         # First, we check if user typed Help. If so, we can skiop the rest of the logic, for now
         if user_prompt.lower() == 'help':
-            return HELP_RESPONSE + '\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
+            text = HELP_RESPONSE + '\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
+            self.response.set_content(text)
+            return self.return_response()
+        elif user_prompt.lower() == 'fail':
+            logger.error("[[TAG]]:RESPONSE_FAIL")
+            text = "I apologise for poor response. It has been logged for review by developers."
+            self.response.set_content(text)
+            return self.return_response()
 
-        logging.info(f"User query: {user_prompt}")
+        logger.info(f"User query: {user_prompt}")
 
         # Here we load DB, LLM amd VDB. If there are errors, we exit.
         load_errors = self.load_connections()
         if load_errors > 0:
-            return {"Analitiq": self.response}
+            return self.return_response()
 
         # check if there are user hints in the prompt
         self.prompts['original'], self.prompts['hints'] = extract_hints(user_prompt)
@@ -251,36 +248,41 @@ class Analitiq():
 
         # Step 1 - Is the task clear? IF not and there is no history to fall back on, exit with feedback.
         # because it is the first try of using LLM, we need to wrap it in TRY
+        """
+        
         try:
             prompt_clear_response = self.is_prompt_clear(self.prompts['original'])
         except Exception as e:
             self.response.set_content("Error")
             self.response.add_text_to_metadata(f"{e}")
-            return {"Analitiq": self.response}
-
+            return self.return_response()
+        
         if not prompt_clear_response.Clear:
             self.response.set_content(prompt_clear_response.Feedback)
-            return {"Analitiq": self.response}
-
+            return self.return_response()
+        
         # add the refined prompts by the model.
         self.prompts['refined'] = prompt_clear_response.Query
         self.prompts['feedback'] = prompt_clear_response.Feedback
         user_prompt = self.prompts['refined']
+        
+        logger.info(f"Refined prompt context: {self.prompts}")
+        """
 
-        logging.info(f"Refined prompt context: {self.prompts}")
+        self.prompts['refined'] = self.prompts['original']
 
         selected_services = self.llm.llm_select_services(self.prompts, self.avail_services_str)
 
         # Convert list of objects into a dictionary where name is the key and description is the value
         selected_services = {service.Action: {'Action': service.Action, 'ActionInput': service.ActionInput, 'Instructions': service.Instructions, 'DependsOn': service.DependsOn} for service in selected_services}
 
-        logging.info(f"[Services][Selected]:\n{selected_services}")
+        logger.info(f"[Services][Selected]: {selected_services}")
 
         # Building node dependency
         # Check if the list contains exactly one item
         if len(selected_services) == 0:
             self.response.set_content("No services selected.")
-            return {"Analitiq": self.response}
+            return self.return_response()
 
         # Initialize the execution graph with the context
         graph = Graph(self.services, self.db, self.llm, self.vdb)
