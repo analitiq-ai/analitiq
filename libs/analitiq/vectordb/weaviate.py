@@ -1,5 +1,12 @@
+
+
+
+
+
+
+
 import os
-import logging
+from analitiq.logger import logger
 import weaviate
 from weaviate.util import generate_uuid5
 from weaviate.auth import AuthApiKey
@@ -98,9 +105,9 @@ class WeaviateHandler(BaseVDBHandler):
 
         if not self.client.collections.exists(self.collection_name):
             self.create_collection()
-            logging.info(f"Collection created {self.collection_name}")
+            logger.info(f"Collection created {self.collection_name}")
         else:
-            logging.info(f"Existing VDB Collection name: {self.collection_name}")
+            logger.info(f"Existing VDB Collection name: {self.collection_name}")
 
     def create_collection(self):
 
@@ -197,11 +204,11 @@ class WeaviateHandler(BaseVDBHandler):
                 limit=limit
             )
         except Exception as e:
-            logging.error(f"Weaviate error {e}")
+            logger.error(f"Weaviate error {e}")
         finally:
             self.close()
 
-        logging.info(f"Weaviate search result: {response}")
+        logger.info(f"Weaviate search result: {response}")
         return response
 
     def delete_many_like(self, property_name: str, property_value: str):
@@ -218,7 +225,7 @@ class WeaviateHandler(BaseVDBHandler):
             )
             return True
         except Exception as e:
-            logging.error(f"Error deleting documents: {e}")
+            logger.error(f"Error deleting documents: {e}")
             return False
         finally:
             self.close()
@@ -240,7 +247,7 @@ class WeaviateHandler(BaseVDBHandler):
             )
             return response
         except Exception as e:
-            logging.error(f"Error retrieving documents: {e}")
+            logger.error(f"Error retrieving documents: {e}")
             return None
         finally:
             self.close()

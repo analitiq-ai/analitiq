@@ -19,7 +19,7 @@ classifiers= [
 packages = [{include= "datastorm"}]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.9"
 google-cloud-datastore = "^1.9"
 
 [tool.poetry.dev-dependencies]

@@ -1,4 +1,4 @@
-import logging
+from analitiq.logger import logger
 import yaml
 from typing import List, Optional
 from pydantic import BaseModel, validator, ValidationError
@@ -120,7 +120,7 @@ class ProfileLoader:
                 try:
                     validated_config = Configuration(**self.profile_config[profile_name])
                     specified_configs = validated_config.validate_and_load()
-                    logging.info(f"Configuration for profile '{profile_name}' loaded and validated successfully.")
+                    logger.info(f"Configuration for profile '{profile_name}' loaded and validated successfully.")
                 except ValidationError as e:
                     print(f"Validation error for profile '{profile_name}':", e)
 

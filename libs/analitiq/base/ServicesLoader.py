@@ -1,4 +1,4 @@
-import logging
+from analitiq.logger import logger
 import os
 import importlib.util
 import re
@@ -76,7 +76,7 @@ class ServicesLoader:
         except Exception as e:
             msg = f"Error loading service '{class_name}': {e}"
             raise ImportError(msg)
-            logging.error(msg)
+            logger.error(msg)
             return
         else:
             # Retrieve the class from the module using the constructed class name
@@ -128,16 +128,17 @@ class ServicesLoader:
         verified_services = {}
 
         if 'services' not in config:
-            logging.info("No custom services found in Project config.")
+            logger.info("No Services found in Project config.")
+            raise KeyError("No Services found in Project config.")
         else:
             for service in config['services']:
-                logging.info(f"Loading service {service['name']}")
+                logger.info(f"Loading service {service['name']}")
 
                 try:
                     service_class = self.load_service_class(service)
                 except (FileNotFoundError, ValueError, AttributeError, ImportError) as e:
                     # Log and display the error without breaking the execution
-                    logging.error(e)
+                    logger.error(e)
                     print(e)  # Displaying the error to the end user
                 else:
                     verified_services[service['name']] = service

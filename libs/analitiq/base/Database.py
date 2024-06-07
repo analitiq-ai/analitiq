@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.engine.url import URL
 from functools import lru_cache
 from langchain_community.utilities import SQLDatabase
-import logging
+#from analitiq.logger import logger
 from typing import List, Dict
 
 CACHE_SIZE = 64

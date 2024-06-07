@@ -1,4 +1,4 @@
-import logging
+from analitiq.logger import logger
 from analitiq.base.BaseResponse import BaseResponse
 
 
@@ -21,7 +21,7 @@ class SearchVdb:
         try:
             docs = response.objects
         except Exception as e:
-            logging.error(f"[Bode: Vector Search] Error: No objects returned")
+            logger.error(f"[Bode: Vector Search] Error: No objects returned")
             self.response.set_content('Search failed')
             return self.response
 

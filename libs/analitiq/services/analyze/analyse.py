@@ -1,4 +1,4 @@
-import logging
+from analitiq.logger import logger
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.base.GlobalConfig import GlobalConfig
 from langchain.prompts import PromptTemplate
@@ -49,7 +49,7 @@ class Analyze():
 
         table_chain = prompt | self.llm | parser
         llm_response = table_chain.invoke({"user_prompt": user_prompt})
-        logging.info(f"Response {llm_response}")
+        logger.info(f"Response {llm_response}")
 
         # Package the result and metadata into a Response object
         self.response.set_content(f"Summary: {llm_response.Summary}\nObservations: {llm_response.Observations}\nAnomalies: {llm_response.Anomalies}\n ")
