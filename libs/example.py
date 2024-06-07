@@ -9,3 +9,5 @@ print(services_responses)
 for service, response in services_responses.items():
     if response:
         response.print_details()
+
+
