@@ -1,12 +1,9 @@
-import logging
+from analitiq.logger import logger
 import chromadb
 import os
 from chromadb.api import ClientAPI
 from typing import List, Optional
 from schemas.vector_store import VectoreStoreCollection
-
-# Set up logging
-logging.basicConfig(level=logging.INFO)
 
 
 def get_vector_store():
@@ -66,7 +63,7 @@ class ChromaHandler:
             response = collection.delete(ids=[document_uuid])
             return response
         except Exception as e:
-            logging.error(f"Error deleting document: {e}")
+            logger.error(f"Error deleting document: {e}")
             return False
 
     def get_document_by_metadata(client: ClientAPI, collection_name: str, metadata: object) -> Optional[list[VectoreStoreCollection]]:
@@ -85,7 +82,7 @@ class ChromaHandler:
             collection = client.get_or_create_collection(collection_name)
             return collection.get(where=metadata, include=["metadatas"])
         except Exception as e:
-            logging.error(f"Error getting document by metadata: {e}")
+            logger.error(f"Error getting document by metadata: {e}")
             return None
 
     def get_document_by_id(client: ClientAPI, collection_name: str, document_uuid: str) -> Optional[VectoreStoreCollection]:
@@ -104,7 +101,7 @@ class ChromaHandler:
             collection = client.get_or_create_collection(collection_name)
             return collection.get(ids=[document_uuid])
         except Exception as e:
-            logging.error(f"Error getting document by ID: {e}")
+            logger.error(f"Error getting document by ID: {e}")
             return None
 
     def get_all_documents(client: ClientAPI, collection_name: str) -> list[VectoreStoreCollection]:
