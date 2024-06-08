@@ -2,7 +2,10 @@ import unittest
 from unittest.mock import MagicMock
 from libs.analitiq.base.Database import DatabaseWrapper
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> c7c08acdbcba4904187810782f616754c92535a6
 class TestDatabaseWrapper(unittest.TestCase):
     def setUp(self):
         # Mocking the parameters dictionary for the database connection
@@ -12,7 +15,11 @@ class TestDatabaseWrapper(unittest.TestCase):
             "password": "root",
             "host": "localhost",
             "port": "5432",
+<<<<<<< HEAD
             "dbname": "app",
+=======
+            "dbname": "analitiq",
+>>>>>>> c7c08acdbcba4904187810782f616754c92535a6
             "db_schemas": ["schema1", "schema2"]
         }
 

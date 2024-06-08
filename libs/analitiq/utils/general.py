@@ -1,5 +1,5 @@
 import time
-import logging
+from analitiq.logger import logger
 import re
 import yaml
 from typing import Dict, Any
@@ -22,12 +22,12 @@ def retry(max_retries, wait_time):
                     result = func(*args, **kwargs, feedback=feedback) # Pass feedback to the function
                     return result
                 except Exception as e:
-                    logging.error(f"Retry {retries + 1} for {func.__name__} failed due to {e}")
+                    logger.error(f"Retry {retries + 1} for {func.__name__} failed due to {e}")
                     feedback = f"\nCheck your output and make sure it conforms to instructions! Your previous response created an error:\n{str(e)}"  # Update feedback with the latest exception
                     retries += 1
                     time.sleep(wait_time)
             else:
-                logging.info(f"Max retries of function {func} exceeded")
+                logger.info(f"Max retries of function {func} exceeded")
                 raise Exception(f"Max retries of function {func} exceeded")
         return wrapper
     return decorator

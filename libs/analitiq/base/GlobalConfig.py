@@ -1,4 +1,4 @@
-import logging
+from analitiq.logger import logger
 from typing import Dict, Any
 from pathlib import Path
 
@@ -32,7 +32,7 @@ class GlobalConfig:
             self.services: Dict[str, Any] = serv_loader.load_services_from_config(self.project_config)
 
             # get the available services from the defined directory
-            logging.info(f"[Service][Available]\n{self.services}")
+            logger.info(f"[Services][Available] {self.services}")
 
             self._initialized = True
 
@@ -48,11 +48,11 @@ class GlobalConfig:
         try:
             path = Path(file_path).resolve()
             _config = load_yaml(Path(file_path))
-            print(f"Loaded config: {path}")
+            logger.info(f"Loaded config: {path}")
             return _config
         except Exception as e:
-            print(f"{file_path} not in home directory")
-            exit()
+            logger.info(f"{file_path} not in home directory")
+            raise e
 
     def get_log_dir(self):
         return self.project_config['config']['general']['log_dir']
