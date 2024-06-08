@@ -1,10 +1,3 @@
-
-
-
-
-
-
-
 import os
 from analitiq.logger import logger
 import weaviate
@@ -21,12 +14,10 @@ from pydantic import BaseModel
 
 def search_only(func):
     """
-    A decorator that ensures the function returns only search results.
+    :param func: the function to be wrapped
+    :return: the result of the original function
 
-    Usage:
-        @search_only
-        def some_search_function(...):
-            ...
+    This method wraps the given function and returns a wrapper function. The wrapper function calls the original function with the given parameters and returns the result.
     """
     def wrapper(*args, **kwargs):
         # Call the original function
@@ -36,12 +27,8 @@ def search_only(func):
 
 def search_grouped(func):
     """
-    A decorator that modifies a search function to return results grouped by document and source.
-
-    Usage:
-        @grouped_search
-        def some_search_function(...):
-            ...
+    :param func: The function to be wrapped and executed.
+    :return: The result of calling the original function after grouping the response.
     """
     def wrapper(*args, **kwargs):
         # Call the original function
@@ -53,17 +40,22 @@ def search_grouped(func):
 
 
 class Chunk(BaseModel):
-    """
-    Represents a chunk of a document with metadata for insertion into a Weaviate database.
+    """Represents a chunk of text in a document.
 
-    Attributes:
-        project_name: The name of the project the document belongs to.
-        document_name: The name of the document.
-        document_type: The type of the document, e.g., 'txt', 'pdf'.
-        content: The actual content of the chunk.
-        source: The source path of the document.
-        document_num_char: The number of characters in the original document.
-        chunk_num_char: The number of characters in the chunk.
+    :param project_name: The name of the project the chunk belongs to.
+    :type project_name: str
+    :param document_name: The name of the document the chunk belongs to.
+    :type document_name: str
+    :param document_type: The type of the document. (optional)
+    :type document_type: str, optional
+    :param content: The content of the chunk.
+    :type content: str
+    :param source: The source of the chunk.
+    :type source: str
+    :param document_num_char: The number of characters in the document.
+    :type document_num_char: int
+    :param chunk_num_char: The number of characters in the chunk.
+    :type chunk_num_char: int
     """
     project_name: str = None
     document_name: str = None
@@ -76,7 +68,21 @@ class Chunk(BaseModel):
 
 class WeaviateHandler(BaseVDBHandler):
     """
-    A class for interacting with a Weaviate vector database, including loading documents and performing searches.
+    :class: WeaviateHandler(BaseVDBHandler)
+
+    Class for handling interactions with a Weaviate cluster and managing a collection within the cluster.
+
+    .. automethod:: __init__
+    .. automethod:: connect
+    .. automethod:: create_collection
+    .. automethod:: close
+    .. automethod:: _chunk_load_file_or_directory
+    .. automethod:: load
+    .. automethod:: _group_by_document_and_source
+    .. automethod:: kw_search
+    .. automethod:: delete_many_like
+    .. automethod:: get_many_like
+    .. automethod:: delete_collection
     """
 
     def __init__(self, params):
