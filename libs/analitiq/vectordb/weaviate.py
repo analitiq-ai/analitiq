@@ -1,5 +1,5 @@
 import os
-from analitiq.logger import logger
+from ..logger import logger
 import weaviate
 from weaviate.util import generate_uuid5
 from weaviate.auth import AuthApiKey
@@ -91,6 +91,7 @@ class WeaviateHandler(BaseVDBHandler):
         a collection with the specified name exists within that cluster.
         """
         super().__init__(params)
+        self.logger = logger
         if not self.try_connect():
             self.connected = False
             self.collection = None
