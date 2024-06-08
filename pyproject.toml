@@ -19,8 +19,10 @@ classifiers= [
 packages = [{include= "datastorm"}]
 
 [tool.poetry.dependencies]
-python = "^3.6"
+python = "^3.9"
 google-cloud-datastore = "^1.9"
+sqlalchemy = "^2.0.30"
+langchain-community = "^0.2.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
@@ -34,3 +36,9 @@ bump2version = "^0.5.11"
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
+
+
+[tool.pytest.ini_options]
+pythonpath = [
+  ".", "libs",
+]
