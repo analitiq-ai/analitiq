@@ -24,7 +24,7 @@ class Tables(BaseModel):
         return self.json()
 
 class SQL(BaseModel):
-    SQL_Code: str = Field(description="Only SQL code goes in here.")
+    SQL_Code: str = Field(description="Only SQL code goes in here. Don't add '\'")
     Explanation: str = Field(description="Any text or explanation other than SQL code.")
 
 

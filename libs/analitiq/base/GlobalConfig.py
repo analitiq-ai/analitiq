@@ -53,13 +53,16 @@ class GlobalConfig:
             return _config
         except Exception as e:
             print(f"{file_path} not in home directory")
+            print(e)
             exit()
 
     def get_log_dir(self):
-        return self.project_config['config']['general']['log_dir']
+        print(self.project_config['config']['general'])
+        return self.project_config['config']['general']['chat_log_dir']
 
     def get_log_filename(self):
-        return self.project_config['config']['general']['latest_run_filename']
+        return self.project_config['config']['general']['session_uuid_file']
+        # return self.project_config['config']['general']['latest_run_filename']
 
     def get_vdb_client(self, profile):
         if profile.type in ['weaviate']:

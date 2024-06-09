@@ -2,20 +2,36 @@ name: 'analitiq'
 version: '0.1'
 data_warehouse: 'bikmo'
 config-version: 2
-
+# Added some dummy services.
 services:
   - name: QueryDatabase
     description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales."
-    path: "analitiq/services/sql/sql.py"
+    path: "libs/analitiq/services/sql/sql.py"
     class: "Sql"
     method: "run"
-    inputs:
+    inputs: "text"
     outputs: "dataframe converted into json"
 
   - name: SearchDocs
     description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?"
-    path: "analitiq/services/search_vdb/search_vdb.py"
+    path: "libs/analitiq/services/search_vdb/search_vdb.py"
     class: "SearchVdb"
+    method: "run"
+    inputs: "text"
+    outputs: "text"
+# Added two fake services, you can remove them later
+
+  - name: DataManager
+    description: "This service is to run pre-configured data pipelines like DAGs ETL"
+    path: "libs/analitiq/services/datamanager/DataManager.py"
+    class: "ManageData"
+    method: "run"
+    inputs: "text"
+    outputs: "text"
+  - name: GeneralKnowledger
+    description: "THis service is to find general knowledge information not found on the SearchDocs"
+    path: "libs/analitiq/services/generalknowledger/Get_Knowledge.py"
+    class: "Get_Knowledge"
     method: "run"
     inputs: "text"
     outputs: "text"

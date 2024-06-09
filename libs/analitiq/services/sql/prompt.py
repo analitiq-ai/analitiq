@@ -38,7 +38,7 @@ Return the names of all the SQL tables and columns that might be relevant to ans
 Do not return empty table names or empty column names.
 Do not return table names and column names that do not exist in the Database Structure provided to you.
 {db_docs}
-Database Structure:\n
+Database Structure:
 {ddl}
 
 {format_instructions}
@@ -48,6 +48,7 @@ FIX_SQL = """
 You are an SQL expert with specialty in {dialect}.
 The following SQL generates an error. 
 Please examine this SQL, fix it so it can be executed and return it back.
+
 
 sql:
 {sql}

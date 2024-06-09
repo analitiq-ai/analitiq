@@ -1,0 +1,12 @@
+{
+  "generate_answer": {
+    "lm": null,
+    "traces": [],
+    "train": [],
+    "demos": [],
+    "signature_instructions": "You are an experienced Data Analyst. You received the following user query: \"{query}\".\n    Do not repeat the query in your answer\n\n    Your task is to create an action list based on the available services provided. Please ensure that:\n\n    The list of actions is minimized to only what is necessary to fulfill the user's query.\n    Actions are not duplicated unless required for the workflow.\n    Actions are combined where possible to streamline the process.\n    Each action is linked to one of the available services.\n    For each action, provide an action input and detailed instructions.\n\n\n    Available Services:\n    ",
+    "signature_prefix": "Selected Service:",
+    "extended_signature_instructions": "Analyze the given user query \"{query}\" and generate a streamlined action list using the available services. Ensure the list is concise, non-repetitive, and combines actions where possible. Each action will be linked to a specific service, with an action input and detailed instructions provided.",
+    "extended_signature_prefix": "Action List:\"\n\nExample:\n\nBasic Instruction: You are an experienced Data Analyst. You received the following user query: \"Find the average sales for each product category in the last quarter.\"\n\nProposed Instruction: Analyze the given user query \"Find the average sales for each product category in the last quarter\" and generate a streamlined action list using the available services.\n\nProposed Prefix For Output Field: \"Action List:\"\n\nAction List:\n1. Action: Query the sales data for the last quarter\n   Service: Data Query Service\n   Action Input: \"Select sales, product_category, date from sales_data where date >= 'YYYY-Q1-01' and date <= 'YYYY-Q4-30'\"\n\n2. Action: Group the sales data by product category\n   Service: Data Manipulation Service\n   Action Input: \"GROUP BY product_category\"\n\n3. Action: Calculate the average sales for each product category\n   Service: Data Analysis Service\n   Action Input: \"AVG(sales)\"\n\n4. Action: Return the results\n   Service: Data Query Service\n   Action Input: \"SELECT product_category, AVG(sales) as average_sales FROM (<grouped_data>) GROUP BY product_category"
+  }
+}

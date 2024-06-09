@@ -17,16 +17,18 @@ from analitiq.base.llm.BaseLlm import BaseLlm
 from custom_services.chart.chart import Chart
 import pandas as pd
 
-llm_params = {'type': 'bedrock'
-    , 'name': 'aws_llm'
-    , 'api_key': None
-    , 'temperature': 0.0
-    , 'llm_model_name': 'anthropic.claude-v2'
-    , 'credentials_profile_name': 'bedrock'
-    , 'provider': 'anthropic'
-    , 'aws_access_key_id': 'xxxx'
-    , 'aws_secret_access_key': 'xxxxx'
-    , 'region_name': 'eu-central-1'}
+# llm_params = {'type': 'bedrock'
+#     , 'name': 'aws_llm'
+#     , 'api_key': None
+#     , 'temperature': 0.0
+#     , 'llm_model_name': 'anthropic.claude-v2'
+#     , 'credentials_profile_name': 'bedrock'
+#     , 'provider': 'anthropic'
+#     , 'aws_access_key_id': 'xxxx'
+#     , 'aws_secret_access_key': 'xxxxx'
+#     , 'region_name': 'eu-central-1'}
+llm_params = {'name':'dev_llm', 'type':'Mistral','api_key':'UZoQY2BpxuZVkKjYWqagHGLZvvr8uzju'
+              ,}
 llm = BaseLlm(llm_params)
 
 inst = Chart(llm)
