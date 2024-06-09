@@ -1,4 +1,4 @@
-import logging
+from analitiq.logger import logger
 import os
 import importlib.util
 import re
@@ -37,7 +37,8 @@ class ServicesLoader:
 
         return inputs, outputs
 
-    def load_service_class(self, service_config: dict, loaded_services: dict = {}) -> bool:
+    @staticmethod
+    def load_service_class(service_config: dict) -> bool:
 
         """
         This class runs checks on a service:
@@ -64,10 +65,6 @@ class ServicesLoader:
         if not os.path.exists(service_path):
             raise FileNotFoundError(f"The specified service file does not exist: {service_path}")
 
-        if service_config['name'] in loaded_services:
-            # If the service name already exists, raise an exception
-            raise ValueError(f"Duplicate service name detected: {service_config['name']}")
-
         if not re.match("^[a-zA-Z0-9_-]+$", service_config['name']):
             raise ValueError(f"Invalid service name: {service_config['name']}")
 
@@ -79,7 +76,7 @@ class ServicesLoader:
         except Exception as e:
             msg = f"Error loading service '{class_name}': {e}"
             raise ImportError(msg)
-            logging.error(msg)
+            logger.error(msg)
             return
         else:
             # Retrieve the class from the module using the constructed class name
@@ -93,7 +90,7 @@ class ServicesLoader:
 
         return service_class
 
-    def load_services_from_config(self, config: dict, loaded_services: dict = {}) -> dict:
+    def load_services_from_config(self, config: dict) -> dict:
         """
         Loads all services defined in the configuration file.
 
@@ -131,16 +128,17 @@ class ServicesLoader:
         verified_services = {}
 
         if 'services' not in config:
-            logging.info("No custom services found in Project config.")
+            logger.info("No Services found in Project config.")
+            raise KeyError("No Services found in Project config.")
         else:
             for service in config['services']:
-                logging.info(f"Loading service {service['name']}")
+                logger.info(f"Loading service {service['name']}")
 
                 try:
-                    service_class = self.load_service_class(service, loaded_services)
+                    service_class = self.load_service_class(service)
                 except (FileNotFoundError, ValueError, AttributeError, ImportError) as e:
                     # Log and display the error without breaking the execution
-                    logging.error(e)
+                    logger.error(e)
                     print(e)  # Displaying the error to the end user
                 else:
                     verified_services[service['name']] = service

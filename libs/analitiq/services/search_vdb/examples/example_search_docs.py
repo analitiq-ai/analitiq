@@ -12,7 +12,7 @@ sys.path.insert(0, dynamic_path)
 
 from analitiq.services.search_vdb.search_vdb import SearchVdb
 from analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateVS
+from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateHandler
 
 user_prompt = "Please give me revenues by month."
 
@@ -34,7 +34,7 @@ params = {
     "api_key": "xxxxx"
 }
 
-vdb = WeaviateVS(params)
+vdb = WeaviateHandler(params)
 
 # Example of using the SQLGenerator class
 service = SearchVdb(llm, vdb=vdb)

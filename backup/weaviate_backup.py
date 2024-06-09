@@ -63,7 +63,7 @@ class Chunk(BaseModel):
     chunk_num_char: int
 
 
-class WeaviateVS():
+class WeaviateHandler():
     """
     A class for interacting with a Weaviate vector database, including loading documents and performing searches.
     """
@@ -182,7 +182,7 @@ class WeaviateVS():
         """
         Loads a file or directory into Weaviate.
         Example:
-        wc=WeaviateVS(host, api_key, project_name)
+        wc=WeaviateHandler(host, api_key, project_name)
         wc.load('/Users/me/Documents/Projects/hello/test.yml')
 
         :param _path: The path to the file or directory.

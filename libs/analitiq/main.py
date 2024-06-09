@@ -1,62 +1,104 @@
-import logging
-import os
 import sys
+from typing import Dict
+from analitiq.logger import logger
 from analitiq.base.BaseMemory import BaseMemory
-from analitiq.base.BaseDb import BaseDb
+from analitiq.base.Database import DatabaseWrapper
 from analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateVS
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.general import load_yaml, extract_hints
 from analitiq.base.GlobalConfig import GlobalConfig
 from analitiq.base.Graph import Graph, Node
 from analitiq.base.BaseSession import BaseSession
 
-from analitiq.prompt import (
-    HELP_RESPONSE
-)
+HELP_RESPONSE = """
+    Analitiq is an AI assistant that can examine your SQL files and database structure and answer common questions about your data.
+    Please note that DB query is currently in beta and is disabled on this instance.
+    Services that are currently connected:
+"""
 
 # import langchain
 # langchain.debug = True
 
 sys.path.append("/analitiq")
 
-# Check if the log directory exists
-if not os.path.exists(GlobalConfig().get_log_dir()):
-    # If it doesn't exist, create it
-    os.makedirs(GlobalConfig().get_log_dir())
 
-logging.basicConfig(
-    filename=f"{GlobalConfig().get_log_dir()}/{GlobalConfig().get_log_filename()}"
-    ,encoding='utf-8'
-    ,filemode='w'
-    ,level=logging.INFO
-    ,format='%(levelname)s (%(asctime)s): %(message)s (Line: %(lineno)d [%(filename)s])'
-    ,datefmt='%d/%m/%Y %I:%M:%S %p'
-)
-
-
+#  db_params: Dict = None, llm_params: Dict = None, vdb_params: Dict = None
 class Analitiq():
 
-    def __init__(self, user_prompt):
+    def __init__(self, params: Dict = None):
         """
-        self.prompts is a dictionary that will have 1. original prompt as by user and refined prompt by LLM.
-        :param user_prompt:
+
         """
-        self.db_params = GlobalConfig().profile_configs['databases'].model_dump()
-        self.db = BaseDb(self.db_params)
+        self.response = BaseResponse(self.__class__.__name__)
 
-        self.llm_params = GlobalConfig().profile_configs['llms'].model_dump()
-        self.llm = BaseLlm(self.llm_params)
+        self.db: DatabaseWrapper() = None
+        self.llm: BaseLlm() = None
+        self.vdb = None
 
-        self.vdb_params = GlobalConfig().profile_configs['vector_dbs'].model_dump()
-        self.vdb = WeaviateVS(self.vdb_params)
+        if not params or not params.get('db_params'):
+            GlobalConfig().load_profiles()
+            self.db_params = GlobalConfig().profile_configs['databases'].model_dump()
+        else:
+            self.db_params = params['db_params']
+
+        if not params or not params.get('llm_params'):
+            GlobalConfig().load_profiles()
+            self.llm_params = GlobalConfig().profile_configs['llms'].model_dump()
+        else:
+            self.llm_params = params['llm_params']
+
+        if not params or not params.get('vdb_params'):
+            GlobalConfig().load_profiles()
+            self.vdb_params = GlobalConfig().profile_configs['vector_dbs'].model_dump()
+        else:
+            self.vdb_params = params['vdb_params']
 
         self.memory = BaseMemory()
         self.services = GlobalConfig().services
         self.avail_services_str = self.get_available_services_str(self.services)
 
-        self.prompts = {'original': user_prompt}
-        self.response = BaseResponse(self.__class__.__name__)
+        self.prompts = {'original': '',
+                        'refined': '',
+                        'feedback': ''
+                        }
+
+    def load_connections(self):
+        failures = 0
+        tasks = [
+            ('db', DatabaseWrapper, self.db_params, "Unable to connect to the Database"),
+            ('llm', BaseLlm, self.llm_params, "Unable to set LLM"),
+            ('vdb', self._get_vdb_handler, self.vdb_params, "Unable to connect to the Vector Database")
+        ]
+        for attr, task, params, error_msg in tasks:
+            try:
+                setattr(self, attr, task(params))
+            except Exception as e:
+                self.response.set_content("Error...")
+                self.response.add_text_to_metadata(f"{error_msg}: {e}")
+                failures += 1
+        return failures
+
+    @staticmethod
+    def _get_vdb_handler(vdb_params):
+        db_type = vdb_params['type']
+
+        if db_type == 'weaviate':
+            from .vectordb.weaviate import WeaviateHandler
+            try:
+                handler = WeaviateHandler(vdb_params)
+            except Exception as e:
+                raise Exception(f"Failed to connect to the vector database: {e}{handler}")
+        elif db_type == 'chromadb':
+            from .vectordb.chromadb import ChromaHandler
+            handler = ChromaHandler(vdb_params)
+        else:
+            raise ValueError(f"Unsupported database type: {db_type}")
+
+        if handler.connected:
+            return handler
+        else:
+            logger.error("Failed to establish a connection to the vector database.")
+            raise Exception("Failed to establish a connection to the vector Database")
 
     def get_available_services_str(self, avail_services):
         """
@@ -87,37 +129,45 @@ class Analitiq():
         :param feedback: Feedback to the LLM model after failed runs to help the model fix an issue.
         :return:
         """
+<<<<<<< HEAD:libs/analitiq/analitiq.py
         response="temp_val"
+=======
+        response = None
+>>>>>>> c7c08acdbcba4904187810782f616754c92535a6:libs/analitiq/main.py
         try:
             response = self.llm.llm_is_prompt_clear(user_prompt, self.avail_services_str)
             if response.Clear:
                 return response
 
         except Exception as e:
+<<<<<<< HEAD:libs/analitiq/analitiq.py
             logging.error(f"[Analitiq] Exception: '{e}'. Needs explanation:\n{str(e)}")
             # logging.error(f"[Analitiq] Exception: '{e}'. Needs explanation:\n{str(response)}")
+=======
+            logger.error(f"[Analitiq] Exception: '{e}'. Needs explanation:\n{str(response)}")
+>>>>>>> c7c08acdbcba4904187810782f616754c92535a6:libs/analitiq/main.py
 
         # is LLM is clear with prompt, we return results
         # if response.Clear:
         #     return response
 
         # Log that the model needs clarification
-        logging.info(f"[Analitiq] Prompt not clear: '{user_prompt}'. Needs explanation:\n{str(response)}")
+        logger.info(f"[Analitiq] Prompt not clear: '{user_prompt}'. Needs explanation:\n{str(response)}")
 
         # we try to get Chat history for more context to the LLM
         try:
             chat_hist = self.get_chat_hist(user_prompt, msg_lookback)
         except Exception as e:
-            logging.error(f"[Analitiq] Error retrieving chat history: {e}")
+            logger.error(f"[Analitiq] Error retrieving chat history: {e}")
             return response
 
         # if response is not clear and there is no chat history, we exit with False
         if not chat_hist:
-            logging.info(f"[Analitiq] No chat history found.")
+            logger.info(f"[Analitiq] No chat history found.")
             return response
 
         # if there is chat history, we add it to the prompt to give LLM more context.
-        logging.info(f"[Analitiq] Chat history: '{chat_hist}'")
+        logger.info(f"[Analitiq] Chat history: '{chat_hist}'")
         user_prompt = chat_hist + "\n" + user_prompt
         response = self.llm.llm_is_prompt_clear(user_prompt, self.avail_services_str)
 
@@ -166,10 +216,12 @@ class Analitiq():
 
             response = self.llm.llm_summ_user_prompts(user_prompt, user_prompt_w_hist)
 
-            logging.info(f"[Prompt][Change From]: {user_prompt_w_hist}\n[Prompt][Change To]: {response}")
+            logger.info(f"[Prompt][Change From]: {user_prompt_w_hist}\n[Prompt][Change To]: {response}")
 
         return response
 
+    def return_response(self):
+        return {"Analitiq": self.response}
 
     def run(self, user_prompt):
         """
@@ -182,9 +234,21 @@ class Analitiq():
 
         # First, we check if user typed Help. If so, we can skiop the rest of the logic, for now
         if user_prompt.lower() == 'help':
-            return HELP_RESPONSE + '\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
+            text = HELP_RESPONSE + '\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
+            self.response.set_content(text)
+            return self.return_response()
+        elif user_prompt.lower() == 'fail':
+            logger.error("[[TAG]]:RESPONSE_FAIL")
+            text = "I apologise for poor response. It has been logged for review by developers."
+            self.response.set_content(text)
+            return self.return_response()
 
-        logging.info(f"User query: {user_prompt}")
+        logger.info(f"User query: {user_prompt}")
+
+        # Here we load DB, LLM amd VDB. If there are errors, we exit.
+        load_errors = self.load_connections()
+        if load_errors > 0:
+            return self.return_response()
 
         # check if there are user hints in the prompt
         self.prompts['original'], self.prompts['hints'] = extract_hints(user_prompt)
@@ -195,6 +259,7 @@ class Analitiq():
         # we now trigger the main forward logic: goal -> tasks -> services/tools -> outcome
 
         # Step 1 - Is the task clear? IF not and there is no history to fall back on, exit with feedback.
+<<<<<<< HEAD:libs/analitiq/analitiq.py
         prompt_clear_response = self.is_prompt_clear(self.prompts['original'])
         try:
             if type(prompt_clear_response)=='str':
@@ -207,14 +272,37 @@ class Analitiq():
         except:
             return {"Analitiq": self.response}
 
+=======
+        # because it is the first try of using LLM, we need to wrap it in TRY
+        """
+        
+        try:
+            prompt_clear_response = self.is_prompt_clear(self.prompts['original'])
+        except Exception as e:
+            self.response.set_content("Error")
+            self.response.add_text_to_metadata(f"{e}")
+            return self.return_response()
+        
+        if not prompt_clear_response.Clear:
+            self.response.set_content(prompt_clear_response.Feedback)
+            return self.return_response()
+        
+>>>>>>> c7c08acdbcba4904187810782f616754c92535a6:libs/analitiq/main.py
         # add the refined prompts by the model.
         self.prompts['refined'] = prompt_clear_response.Query
         self.prompts['feedback'] = prompt_clear_response.Feedback
         user_prompt = self.prompts['refined']
+        
+        logger.info(f"Refined prompt context: {self.prompts}")
+        """
 
+<<<<<<< HEAD:libs/analitiq/analitiq.py
         logging.info(f"Refined prompt context: {self.prompts}")
         # I only returned the selected_service, the system would run an error when I stopped
         #// TODO remove the return statement as I added it to test the service selection
+=======
+        self.prompts['refined'] = self.prompts['original']
+>>>>>>> c7c08acdbcba4904187810782f616754c92535a6:libs/analitiq/main.py
 
         selected_services = self.llm.llm_select_services(self.prompts, self.avail_services_str)
         if isinstance(selected_services,list):
@@ -253,13 +341,13 @@ class Analitiq():
             # selected_services = {service['Action']: {'Action': service['Action'], 'ActionInput': service['Action'], 'Instructions': service.Instructions, 'DependsOn': service.DependsOn} for service in selected_services}
 
 
-        logging.info(f"[Services][Selected]:\n{selected_services}")
+        logger.info(f"[Services][Selected]: {selected_services}")
 
         # Building node dependency
         # Check if the list contains exactly one item
         if len(selected_services) == 0:
             self.response.set_content("No services selected.")
-            return {"Analitiq": self.response}
+            return self.return_response()
 
         # Initialize the execution graph with the context
         graph = Graph(self.services, self.db, self.llm, self.vdb)

@@ -1,7 +1,7 @@
 from typing import List, Optional, Any
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
-import logging
+from analitiq.logger import logger
 
 # from langchain_core.pydantic_v1 import 
 from pydantic import field_validator,model_validator,BaseModel, Field, validator
@@ -165,11 +165,11 @@ class BaseLlm:
     def _set_llm(self, params):
         if params['type'] == 'openai':
             from langchain_openai import ChatOpenAI
-            logging.info(f"LLM is set to {params['type']}")
+            logger.info(f"LLM is set to {params['type']}")
             return ChatOpenAI(openai_api_key=params['api_key'], temperature=params['temperature'], model_name=params['llm_model_name'])
         elif params['type'] == 'mistral':
             from langchain_mistralai.chat_models import ChatMistralAI
-            logging.info(f"LLM is set to {params['type']}")
+            logger.info(f"LLM is set to {params['type']}")
 
             return ChatMistralAI(mistral_api_key=params['api_key'])
 
@@ -177,7 +177,7 @@ class BaseLlm:
             from langchain_aws import BedrockLLM
             import boto3
 
-            logging.info(f"LLM is set to {params['type']}")
+            logger.info(f"LLM is set to {params['type']}")
             client = boto3.client("bedrock-runtime",
                                   aws_access_key_id=params['aws_access_key_id'],
                                   aws_secret_access_key=params['aws_secret_access_key'],

@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-import logging
+from analitiq.logger import logger
 import inspect
 import json
 
@@ -70,7 +70,7 @@ class Graph:
             node (Node): The node to add to the graph.
         """
         if service not in self.available_services:
-            logging.warning(f"Trying to add non existent service: {service}")
+            logger.warning(f"Trying to add non existent service: {service}")
             return
         node = Node(service, self.available_services[service]['path'], details['Instructions'])
 
@@ -79,14 +79,25 @@ class Graph:
     def build_service_dependency(self, selected_services):
         # print(selected_services.items())
         # Then, set up dependencies based on the JSON response
+<<<<<<< HEAD
         try:
             for service, details in selected_services.items():
                 
                 if len(details['DependsOn']) > 0:
+=======
+        for service, details in selected_services.items():
+            if len(details['DependsOn']) > 0:
+                try:
+                    dependency_node = self.nodes.get(service)
+                except Exception as e:
+                    logger.warning(f"Dep node not found: {dependency_node}. {e}")
+
+                for master_name in details['DependsOn']:
+>>>>>>> c7c08acdbcba4904187810782f616754c92535a6
                     try:
                         dependency_node = self.nodes.get(service)
                     except Exception as e:
-                        logging.warning(f"Dep node not found: {dependency_node}. {e}")
+                        logger.warning(f"Dep node not found: {dependency_node}. {e}")
 
                     for master_name in details['DependsOn']:
                         try:
@@ -123,7 +134,7 @@ class Graph:
                 # Execute all ready nodes
                 for node in ready_nodes:
                     if node.name not in executed_nodes:  # Check if node has been executed
-                        logging.info(f"==== RUNNING SERVICE: {node.name}\n Prompt: {node.instructions} \n Inputs: {str(node_outputs)}")  # Print the current node being executed
+                        logger.info(f"[Service][Run]: {node.name}\n Prompt: {node.instructions} \n Inputs: {str(node_outputs)}")  # Print the current node being executed
 
                         future = executor.submit(self.run_service, node, services[node.name]['class_inst'], node.instructions, node_outputs)
                         futures_to_nodes[future] = node
@@ -184,7 +195,7 @@ class Graph:
             params['service_input'] = inputs if inputs else None
 
         response = service_instance.run(**params)
-        logging.info(f"Response from service {node.service_name}: {response}")
+        logger.info(f"Response from service {node.service_name}: {response}")
         # if we have a response with some data from a services, it will be structured as BaseResponse object
 
         return response
@@ -200,6 +211,7 @@ class Graph:
         # Start from nodes without dependencies and print the tree
         root_nodes = [node for node in self.nodes.values() if not node.dependencies]
         trees = [create_tree(node) for node in root_nodes]
-        logging.info("Node Dependency Trees:")
-        for tree in trees:
-            logging.info(json.dumps(tree, indent=2))
+        tree_text = ''
+        for branch in trees:
+            tree_text = tree_text + json.dumps(branch)
+        logger.info(f"Node Dependency: {tree_text}")
