@@ -1,5 +1,5 @@
 # Analitiq
-Analitiq is a Framework for managin your data using LLMs. Analitiq can be extended with your own services written in python. 
+Analitiq is a Framework for managing your data using LLMs. Analitiq can be extended with your own services written in python. 
 These custom services can address your unique tasks for managing your data, and they can function as part of the overall analytical engine of Analitiq.
 
 ![image](assets/images/Analitiq_Diagram.png)

@@ -2,8 +2,9 @@
 
 ## High Priority
 
-- [ ] Set up authentication between FE and BE
+- [x] Set up authentication between FE and BE
 - [ ] Set up backend API access so apps can connect to the backend with Token
+- [ ] Unit tests
 
 ## Medium Priority
 
@@ -12,8 +13,8 @@
 
 ## Low Priority
 
-- [ ] Set up Documentation site
-- [ ] Enable analitiq run command from CLI
+- [x] Set up Documentation site
+- [ ] Enable Analitiq run command from CLI
 
 
 - `analitiq load - s` should load documents from directory into vector store
