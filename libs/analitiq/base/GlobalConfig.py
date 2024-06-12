@@ -21,6 +21,9 @@ class GlobalConfig:
         """
         if not self._initialized:
 
+            self.core_config = self.load_config('libs/analitiq/core_config.yml')  # this is analitiq project.yml
+            self.project_config = self.load_config('libs/project.yml')  # this is the users project.yml
+            self.profiles = self.load_config('libs/profiles.yml')  # this is the users profiles.yml
             self.project_config = self.load_config('project.yml')  # this is the users project.yml
             self.profiles: Dict = None
             self.profile_configs: Dict = None
@@ -51,14 +54,22 @@ class GlobalConfig:
             logger.info(f"Loaded config: {path}")
             return _config
         except Exception as e:
+
+            print(f"{file_path} not in home directory")
+            raise e
+            exit()
+
             logger.info(f"{file_path} not in home directory")
             raise e
 
+
     def get_log_dir(self):
-        return self.project_config['config']['general']['log_dir']
+        print(self.project_config['config']['general'])
+        return self.project_config['config']['general']['chat_log_dir']
 
     def get_log_filename(self):
-        return self.project_config['config']['general']['latest_run_filename']
+        return self.project_config['config']['general']['session_uuid_file']
+        # return self.project_config['config']['general']['latest_run_filename']
 
     def get_session_uuid_file(self):
         return self.project_config['config']['general']['session_uuid_file']

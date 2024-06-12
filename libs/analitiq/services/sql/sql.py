@@ -61,15 +61,19 @@ class Sql:
     def setup_logger(self):
         logger = logging.getLogger(__name__)
         logger.setLevel(logging.INFO)
-        handler = logging.FileHandler(self.get_log_file_path())
-        handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
-        logger.addHandler(handler)
-        logger.propagate = False
+        # print()
+        try:
 
-        # clear the logfile content
-        with open(self.get_log_file_path(), "w") as log_file:
-            pass
+            handler = logging.FileHandler(self.get_log_file_path())
+            handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+            logger.addHandler(handler)
+            logger.propagate = False
 
+            # clear the logfile content
+            with open(self.get_log_file_path(), "w") as log_file:
+                pass
+        except:
+            print('in exception')
         return logger
 
     def get_log_file_path(self):
@@ -78,13 +82,13 @@ class Sql:
     def _format_prompt(self, prompt, is_history):
         formatted_prompt = prompt.format(user_prompt=self.user_prompt)
         if is_history:
-            return "\n\t".join(formatted_prompt.splitlines())
+            return " ".join(formatted_prompt.splitlines())
         return formatted_prompt
 
     def _log_prompt(self, prompt_as_txt, is_history):
 
         if is_history:
-            self.logger.info(f"[[PROMPT_WITH_CHAT_HISTORY_START]]\n\n{prompt_as_txt}\n\n[[PROMPT_WITH_CHAT_HISTORY_END]]")
+            self.logger.info(f"[[PROMPT_WITH_CHAT_HISTORY_START]]{prompt_as_txt}[[PROMPT_WITH_CHAT_HISTORY_END]]")
         else:
             self.logger.info(f"Human: {prompt_as_txt}")
 
@@ -138,7 +142,7 @@ class Sql:
         ddl = self.get_ddl(docs)
 
         if docs:
-            docs = f"Database Documentation:\n{docs}\n"
+            docs = f"Database Documentation:{docs}"
         else:
             docs = ''
         parser = PydanticOutputParser(pydantic_object=Tables)
@@ -181,8 +185,8 @@ class Sql:
                 column_details = ', '.join(f"{column.ColumnName} ({column.DataType})" for column in table.Columns)
                 output_lines.append(f"    - Columns: {column_details}")
 
-        self.relevant_tables = "\n".join(output_lines)
-        self.logger.info(f"Assistant:\nList of relevant tables and columns.\n{self.relevant_tables}")
+        self.relevant_tables = " ".join(output_lines)
+        self.logger.info(f"Assistant: List of relevant tables and columns.{self.relevant_tables}")
         self.response.add_text_to_metadata(f"Relevant tables: {self.relevant_tables}")
 
         self.response.set_metadata({"relevant_tables": self.relevant_tables})
@@ -197,7 +201,7 @@ class Sql:
 
         parser = PydanticOutputParser(pydantic_object=TableCheck)
         prompt = PromptTemplate(
-            template="You are a data analys. You received user query: {user_prompt}.\nDoes the table {schema_name}.{table_name} contain the data that might be relevant to answer the users query? Bellow is some data from the table: \n {data_sample}. \n {format_instructions}.",
+            template="You are a data analys. You received user query: {user_prompt}.Does the table {schema_name}.{table_name} contain the data that might be relevant to answer the users query? Bellow is some data from the table:  {data_sample}.  {format_instructions}.",
             input_variables=["user_prompt"],
             partial_variables={"schema_name": schema_name,
                                "table_name": table_name,
@@ -220,7 +224,7 @@ class Sql:
         """Invoke the LLM with a given prompt and parser."""
         try:
             response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
-            self.logger.info(f"Assistant:\n{response}")
+            self.logger.info(f"Assistant:{response}")
             return response
         except Exception as e:
             self.logger.error(f"LLM response error: {str(e)}")
@@ -251,7 +255,7 @@ class Sql:
             response_dict = json.loads(response)
             return response_dict
         except Exception as e:
-            self.logger.error(f"Could not extract dictionary from response {response}.\n{str(e)}")
+            self.logger.error(f"Could not extract dictionary from response {response}.{str(e)}")
             raise RuntimeError("Failed to recover from LLM error.") from e
 
 
@@ -321,6 +325,7 @@ class Sql:
         response = self.vdb.get_many_like("document_name", db_docs_name)
         if not response:
             self.logger.info(f"[VectorDB] No DB schema objects returned.")
+            return response
 
         # Initialize an empty string to hold the formatted content
         document_dict = {}
@@ -340,8 +345,8 @@ class Sql:
             # Use the dictionary to print the formatted document contents
 
         for document_name, content_list in document_dict.items():
-            formatted_content = "\n".join(content_list)
-            formatted_documents_string += f"Document name: {document_name}\nDocument content:\n{formatted_content}\n\n"
+            formatted_content = "".join(content_list)
+            formatted_documents_string += f"Document name: {document_name}Document content: {formatted_content}"
 
         response = self.llm.extract_info_from_db_docs(self.user_prompt, formatted_documents_string)
         self.logger.info(f"LLM: {response}")
@@ -361,25 +366,25 @@ class Sql:
                 if result.empty:
                     self.logger.info(f"Human: SQL executed successfully, but result is empty.")
                 else:
-                    self.logger.info(f"Human: SQL executed successfully.\nConverted to DataFrame. {result}")
+                    self.logger.info(f"Human: SQL executed successfully.Converted to DataFrame. {result}")
             else:
                 result = self.db.run(sql, include_columns=True)
                 self.logger.info("Human: SQL executed successfully.")
 
-            self.response.add_text_to_metadata(f"```\n{sql}\n```")
+            self.response.add_text_to_metadata(f"```{sql}```")
             return True, result
         except DatabaseError as e:
-            self.logger.error(f"Human: Error executing SQL.\n{str(e)}")
+            self.logger.error(f"Human: Error executing SQL.{str(e)}")
             return False, str(e)
 
     def _set_result(self, result: pd.DataFrame, sql: str = None, explanation: str = None):
         self.response.set_content(result, 'dataframe')
         if result.empty:
-            self.response.add_text_to_metadata("\nThe query produced no result. Please review your query and SQL generated based on it and fine-tune your instructions.")
+            self.response.add_text_to_metadata("The query produced no result. Please review your query and SQL generated based on it and fine-tune your instructions.")
         else:
-            self.response.add_text_to_metadata(f"\n{explanation}")
+            self.response.add_text_to_metadata(f"{explanation}")
             if sql:
-                self.response.add_text_to_metadata(f"\n```\n{sql}\n```")
+                self.response.add_text_to_metadata(f"```{sql}```")
 
     def run(self, user_prompt: str = None):
         """Executes the full process from interpreting a user prompt to SQL query generation and execution.
@@ -392,8 +397,13 @@ class Sql:
                      and additional metadata such as executed SQL and relevant tables.
        """
         self.user_prompt = user_prompt
+        self.response.set_content("SQL Service Called Succesfully", 'text') 
+        return self.response
+        # return 'SQL service'
         self.logger.info(f"Human: {user_prompt}")
         docs = self.get_db_docs()
+        print(docs,'docs')
+
 
         if docs:
             # we check if DB doc already has SQL as some LLMs tend to do that.

@@ -50,25 +50,104 @@ LLM responses:
 {responses}
 """
 
+# SERVICE_SELECTION = """
+# You are an experienced Data Analyst. 
+# You received a user query "{user_prompt}".
+
+# Create an action list based on the available list of services provided.
+# Keep the list of actions to the minimum required to fulfill users query.
+# Avoid duplicating actions, unless it is necessary for the workflow.
+# Try to combine actions where possible.
+# Each action should be linked to one of the available services.
+# For each action create an action input and detailed instructions for that action.
+
+# {extra_info}
+
+# Available Services:
+# {available_services}
+
+# Response format instructions:
+# {format_instructions}
+# """
+
+# SERVICE_SELECTION = """
+# Analyze the given user query "{user_query}" 
+# and generate a streamlined action list using the available services.
+# Ensure the list is concise, non-repetitive, and combines actions where possible. 
+# Each action will be linked to a specific service, with an action input and detailed instructions provided.
+# Additional information:
+# {extra_info}
+
+# Available Services:
+# {available_services}
+
+# Please format your response according to the following instructions:
+# {format_instructions}
+# """
+
+
+# This is the new Prompt
 SERVICE_SELECTION = """
-You are an experienced Data Analyst. 
-You received a user query "{user_prompt}".
-
-Create an action list based on the available list of services provided.
-Keep the list of actions to the minimum required to fulfill users query.
-Avoid duplicating actions, unless it is necessary for the workflow.
-Try to combine actions where possible.
-Each action should be linked to one of the available services.
-For each action create an action input and detailed instructions for that action.
-
+Analyze the user query "{user_prompt}" 
+and determine the necessary steps to fulfill it. Organize these steps into a concise action list
+, ensuring each action is unique, relevant, and linked to an available service. For each action
+, provide an action input and detailed instructions.
+Additional information:
 {extra_info}
 
 Available Services:
 {available_services}
 
-Response format instructions:
+---
+
+Follow the following format.
+
+Available Services: All available services for the agent
+
+Query: User specified query
+
+Reasoning: Let's think step by step in order to selected_service. We ...
+
+Selected Service: The details of the service selected, only the service selected
+
+----
+Available Services: name: QueryDatabase description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales." name: SearchDocs description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?" name: DataManager description: "This service is to run pre-configured data pipelines like DAGs ETL" name: GeneralKnowledger description: "This service answer general knowledge querys"
+
+Query: What is the definition of 'machine learning'?
+
+Reasoning: Let's think step by step in order to Selected Service: General_Knowledger --- Available Services: name: QueryDatabase description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales." name: SearchDocs description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?" name: DataManager description: "This service is to run pre-configured data pipelines like DAGs ETL" name: General_Knowledger description: "This service answer general knowledge querys" Query: What is the process of training a machine learning model? Reasoning: Let's think step by step in order toFollow the format only once !
+
+Selected Service: SearchDocs --- Available Services: name: QueryDatabase description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales." name: SearchDocs description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?" name: DataManager description: "This service is to run pre-configured data pipelines like DAGs ETL" name: GeneralKnowledger description: "This service answer general knowledge querys" Query: How do we calculate the ROI of a machine learning model? Reasoning: Let's think step by step in order toFollow the format only once ! Selected Service: SearchDocs --- Available Services: name: QueryDatabase description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales." name: SearchDocs description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?" name: DataManager description: "This service is to run pre-configured data pipelines like DAGs ETL" name: General_Knowledger description: "This service answer general knowledge querys" Query: Show me the data of the last 5 years of sales for product Y Reasoning: Let's think step by step in order toFollow the format only once ! Selected Service: QueryDatabase --- Available Services: name: QueryDatabase description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales." name: SearchDocs description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?" name: DataManager description: "This service is to run pre-configured data pipelines like DAGs ETL" name: General_Knowledger description: "This service answer general knowledge querys" Query: What is the current inventory level of product Z? Reasoning: Let's think step by step in order toFollow the format only once ! Selected Service: QueryDatabase --- Available Services: name: QueryDatabase description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me
+
+---
+
+Available Services: name: QueryDatabase description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales." name: SearchDocs description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?" name: DataManager description: "This service is to run pre-configured data pipelines like DAGs ETL" name: GeneralKnowledger description: "This service answer general knowledge querys"
+
+Query: Write a SQL query to retrieve the average order value for a specific product category.
+
+Reasoning: Let's think step by step in order to Available Services: name: QueryDatabase description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales." name: SearchDocs description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?" name: DataManager description: "This service is to run pre-configured data pipelines like DAGs ETL" name: GeneralKnowledger description: "This service answer general knowledge querys" Query: Write a SQL query to retrieve the average order value for a specific product category. Reasoning: To retrieve the average order value for a specific product category, we will use the QueryDatabase service to execute a SQL query. We will first identify the relevant tables and columns containing the necessary data, and then construct a SQL query to calculate the average order value for the specified product category.
+
+Selected Service: QueryDatabase Action Input: - Database connection details (e.g., host, port, username, password) - SQL query to retrieve the average order value for a specific product category (e.g., SELECT AVG(total_order_value) FROM orders WHERE product_category = 'Electronics') Detailed Instructions: 1. Connect to the company database using the provided database connection details. 2. Execute the SQL query to retrieve the average order value for the specified product category. 3. Return the result to the user.
+
+---
+
+Available Services: name: QueryDatabase description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales." name: SearchDocs description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?" name: DataManager description: "This service is to run pre-configured data pipelines like DAGs ETL" name: General_Knowledger description: "This service answer general knowledge querys"
+
+Query: What other tables does table X depend on?
+
+Reasoning: Let's think step by step in order to Selected Service: QueryDatabase --- Available Services: name: QueryDatabase description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales." name: SearchDocs description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?" name: DataManager description: "This service is to run pre-configured data pipelines like DAGs ETL" name: General_Knowledger description: "This service answer general knowledge querys" Query: What other tables does table X depend on? Reasoning: To find out which tables table X depends on, we need to query the database schema. This service is best suited for this task as it can directly query the database and return the required information. Action: Query the database schema to find the dependencies of table X Action Input: - Database connection details (host, username, password, database name) - Table name (X) Instructions: 1. Connect to the database using the provided connection details. 2. Query the database schema to find the dependencies of table X. 3. Return the list of tables that table X depends on.
+
+Selected Service: Available Services: name: QueryDatabase description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales." name: SearchDocs description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?" name: DataManager description: "This service is to run pre-configured data pipelines like DAGs ETL" name: General_Knowledger description: "This service answer general knowledge querys" Query: Refresh table X and all tables it depend on Reasoning: Let's think step by step in order to Selected Service: DataManager --- Available Services: name: QueryDatabase description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales." name: SearchDocs description: "The service to search the documentation for information. Should be used for when user is asking for an explanation for a description of the methodology or process used to determine something. Example questions: How do we calculate profit? Show me code related to revenue? Where do we process transactions?" name: DataManager description: "This service is to run pre-configured data pipelines like DAGs ETL" name: General_Knowledger description: "This service answer general knowledge querys" Query: Refresh table X and all tables it depend on Reasoning: To refresh table X and all tables it depends on, we need to run a data pipeline that updates the tables. This service is best suited for this task as it can run pre-configured data pipelines. Action: Run a data pipeline to refresh table X and all tables it depends on Action Input: - Database connection details (host, username, password, database name) - Table name (X) - List of tables that table X depends on Instructions: 1
+
+---
+
+
+
+
+Please format your response according to the following instructions:
 {format_instructions}
 """
+
 
 
 HELP_RESPONSE = """

@@ -300,4 +300,3 @@ class Analitiq():
         node_outputs = graph.run(self.services)
 
         return node_outputs
-

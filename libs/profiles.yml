@@ -1,17 +1,17 @@
 test:
   connections:
     databases:
-      - name: prod_dw
+      - name: postgres
         type: postgres
-        host: localhost
-        user: Admin
-        password: Ascj1997
+        host: 
+        user: postgres
+        password: 
         port: 5432
-        dbname: FB Test Server
-        dbschema: Test
+        dbname: postgres
+        dbschema: public
         threads: 4
-        keepalives_idle: 240 # default 240 seconds
-        connect_timeout: 10 # default 10 seconds
+        keepalives_idle: 500 # default 240 seconds
+        connect_timeout: 20 # default 10 seconds
         # search_path: public # optional, not recommended
     llms:
       - name: prod_llm
@@ -21,7 +21,8 @@ test:
         llm_model_name: gpt-3.5-turbo
       - name: dev_llm
         type: mistral
-        api_key: xxxxxx
+        api_key: 
+        llm_model_name: open-mistral-7b
       - name: aws_llm
         type: bedrock
         credentials_profile_name: my_profile
@@ -29,13 +30,13 @@ test:
         llm_model_name: anthropic.claude-v2:1
         temperature: 0.0
     vector_dbs:
-      - name: prod_vdb
+      - name: firebird
+        collection_name: firebird
         type: weaviate
-        collection_name: my_collection
-        host: example.com
-        api_key: xxxxx
+        host: 
+        api_key: 
 
   usage:
-    databases: prod_dw
-    llms: aws_llm
-    vector_dbs: prod_vdb
+    databases: postgres
+    llms: dev_llm
+    vector_dbs: firebird

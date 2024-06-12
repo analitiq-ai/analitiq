@@ -3,8 +3,10 @@ from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from analitiq.logger import logger
 
-from langchain_core.pydantic_v1 import BaseModel, Field, validator
+# from langchain_core.pydantic_v1 import 
+from pydantic import field_validator,model_validator,BaseModel, Field, validator
 from enum import Enum
+import re
 
 from analitiq.base.llm.prompt import (
     PROMPT_CLARIFICATION,
@@ -29,6 +31,20 @@ class PromptClarification(BaseModel):
     Query: str = Field(description="Properly worded query.")
     Hints: str = Field(description="Extract here the hints from the user provided inside the double square brackets, if available.")
     Feedback: Optional[str] = Field(description="If user query is clear, rephrase the user query here, while keeping all the details. If query is not clear, put your questions here.")
+    @field_validator("Query","Hints","Feedback", mode='before')
+    def transform_id_to_str(cls, value) -> str:
+            return str(value).replace('\_','').replace('\\','')
+    @model_validator( mode='before')
+    def transform(cls, value) -> Any:
+
+        new_dict = {}
+        for key,val in zip(value.keys(), value.values()):
+            if type(val) == 'str':
+                new_dict[key.replace('\_','_').replace('\\','')] = val.replace('\*','').replace('\_','')
+            else:
+                new_dict[key.replace('\_','_').replace('\\','')] = val
+        return new_dict
+    
 
 
 def fix_case(llm_output) -> str:
@@ -60,19 +76,61 @@ class Tasks(BaseModel):
 
 
 class SelectedService(BaseModel):
-    Action: str = Field(description="Name of a service.")
-    ActionInput: str = Field(description="Action input require for successful completion of this action.")
-    Instructions: str = Field(description="Instructions of what needs to be done by this action.")
-    DependsOn: List[str] = Field(description="List of names of actions this action depends on.")
+    Action: str = Field(description="Name of a service.", default='none')
+    ActionInput: str = Field(description="Action input require for successful completion of this action, output 'none' as default", default='none')
+    Instructions: str = Field(description="Instructions of what needs to be done by this action.", default='none')
+    DependsOn: List[str] = Field(description="List of names of actions this action depends on.Don't output [], instead output ['1']", default=['None'])
+    # Further_Explanation: str = Field(description="Includes the explanation and extra details. Add all extra details here Remove'\_' with _", default='none')
+    # Added field validation so that the Pydantic output checks for \_ character
+    @field_validator("ActionInput","Action","Instructions", mode='before')
+    def transform_id_to_str(cls, value) -> str:
+            value = str(value).replace("'",'')
+            
+            return str(value).replace('\_','').replace('\*','')
+    @model_validator( mode='before')
+    def transform(cls, value) -> Any:
+        # print(value, 'Validator')
+        # new_key = []
+        # new_val
+        new_dict = {}
+        for key,val in zip(value.keys(), value.values()):
+            if type(val) == 'str':
+                new_dict[key.replace('\_','_').replace('\\','')] = val.replace('\*','').replace('\_','')
+            else:
+                new_dict[key.replace('\_','_').replace('\\','')] = val
+        return new_dict
+    
 
 
+
+## TODO change the Pydantic definition back to a List
+## I simplified it to make the program smoother
 class SelectedServices(BaseModel):
     ServiceList: List[SelectedService] = Field(description="A list of selected services from available services matched against required services to fulfill the users query")
+    @field_validator("ServiceList", mode='before')
+    def transform_id_to_str(cls, value) -> List[SelectedService]:
+        return [value[0]]
 
+            # value = str(value).replace("'",'')
+            
+            # return str(value).replace('\_','').replace('\*','')
+    
+
+
+        # elif isinstance(value, dict):
+        #     return value['SelectedServices']
+
+            
+            
+        
 
 class ServiceDependencies(BaseModel):
+
     Name: str = Field(description="Name of the service")
     Dependencies: list[str] = Field("List of tasks that this service depends on for completion ")
+class JsonExtract(BaseModel):
+    code: str = Field(description='Json  in the output')
+    extra: str = Field(description='Extra stuff')
 
 
 class Service(BaseModel):
@@ -113,7 +171,7 @@ class BaseLlm:
             from langchain_mistralai.chat_models import ChatMistralAI
             logger.info(f"LLM is set to {params['type']}")
 
-            return ChatMistralAI(mistral_api_key=params['llm_api_key'])
+            return ChatMistralAI(mistral_api_key=params['api_key'])
 
         elif params['type'] == 'bedrock':
             from langchain_aws import BedrockLLM
@@ -223,11 +281,24 @@ class BaseLlm:
             template=PROMPT_CLARIFICATION,
             input_variables=["user_prompt"]
         )
-        table_chain = prompt | self.llm | parser
-        response = table_chain.invoke({"user_prompt": user_prompt
-                                            , "available_services": available_services
-                                            , "format_instructions": parser.get_format_instructions()}
-                                        )
+        # Added a temporary try catch exception as sometimes the Pydantic output did not work 
+        # TODO you should write a cleaner/more robust version of this, as this was a quick fix for my part
+        try:
+            table_chain = prompt | self.llm | parser
+            response = table_chain.invoke({"user_prompt": user_prompt
+                                                , "available_services": available_services
+                                                , "format_instructions": parser.get_format_instructions()}
+                                            )
+        except:
+            from langchain.output_parsers import OutputFixingParser
+            new_parser = OutputFixingParser.from_llm(parser=parser, llm=self.llm)
+            table_chain = prompt | self.llm | new_parser | parser
+            response = table_chain.invoke({"user_prompt": user_prompt
+                                                , "available_services": available_services
+                                                , "format_instructions": parser.get_format_instructions()}
+                                            )
+            return response
+
 
         return response
 
@@ -254,11 +325,11 @@ class BaseLlm:
         """
         # Example: Return a tool based on a keyword in the prompt.
         # In a real scenario, this function would interact with an LLM to make an informed decision.
-
+        # print(available_services, 'available_services')
         parser = PydanticOutputParser(pydantic_object=SelectedServices)
 
         user_prompt, extra_info = get_prompt_extra_info(prompts)
-
+        # print(extra_info,'extra_info')
         prompt = PromptTemplate(
             template=SERVICE_SELECTION,
             input_variables=["user_prompt"],
@@ -267,11 +338,59 @@ class BaseLlm:
                                "format_instructions": parser.get_format_instructions()
                                },
         )
+    # Added this exception handling as sometimes the Pydantic output was problematic, 
+    # I only added a quick fix solution
+    # TODO You can add a more clean/robust solution that fixes the problem long term
 
-        table_chain = prompt | self.llm | parser
-        response = table_chain.invoke({"user_prompt": prompts['refined']})
+        try:
 
-        return response.ServiceList
+            table_chain = prompt | self.llm | parser
+
+            response = table_chain.invoke({"user_prompt": prompts['refined']})
+            return response.ServiceList
+            
+        except:
+            from langchain.output_parsers import OutputFixingParser
+            new_parser = OutputFixingParser.from_llm(parser=parser, llm=self.llm, max_retries=3)
+
+
+            table_chain = prompt | self.llm | new_parser | parser
+            try:
+                if str(type(prompts)) =="<class 'dict'>":
+                    response = table_chain.invoke({"user_prompt": prompts['refined']})
+                else:
+                    response = table_chain.invoke({"user_prompt": prompts.refined})
+            except:
+                table_chain = prompt | self.llm
+                response = table_chain.invoke({"user_prompt": prompts['refined']})
+                # print(response)
+                response = response.content.replace('\_','')
+                new_parser = OutputFixingParser.from_llm(parser=parser, llm=self.llm)
+                response = new_parser.parse(response)
+                response = str(response).replace('\_','_')
+                # print(response)
+                # response = 
+                pattern = r"{(.*?)}"
+
+                # response = '{'+ re.sub(pattern, r'\1', response)+'}'
+                try:
+                    response = parser.parse(response)
+                except:
+                    try:
+                        response = response.replace('\_','_')
+                        # response = new_parser.parse(response)
+                        response = parser.parse(response)
+                    except:
+                        return str(response).replace('\_','')
+
+                # print(response)
+                return response
+
+
+
+        return response
+
+
 
     def llm_create_task_list(self, prompts: dict, avail_services_str):
         """
