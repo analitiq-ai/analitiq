@@ -77,14 +77,7 @@ class Graph:
         self.nodes[node.name] = node
 
     def build_service_dependency(self, selected_services):
-        # print(selected_services.items())
         # Then, set up dependencies based on the JSON response
-<<<<<<< HEAD
-        try:
-            for service, details in selected_services.items():
-                
-                if len(details['DependsOn']) > 0:
-=======
         for service, details in selected_services.items():
             if len(details['DependsOn']) > 0:
                 try:
@@ -93,22 +86,13 @@ class Graph:
                     logger.warning(f"Dep node not found: {dependency_node}. {e}")
 
                 for master_name in details['DependsOn']:
->>>>>>> c7c08acdbcba4904187810782f616754c92535a6
                     try:
-                        dependency_node = self.nodes.get(service)
+                        master_node = self.nodes.get(master_name)  # Retrieve the node from temporary storage
                     except Exception as e:
                         logger.warning(f"Dep node not found: {dependency_node}. {e}")
 
-                    for master_name in details['DependsOn']:
-                        try:
-                            master_node = self.nodes.get(master_name)  # Retrieve the node from temporary storage
-                        except Exception as e:
-                            logging.warning(f"Dep node not found: {dependency_node}. {e}")
-
-                        if master_node and dependency_node:
-                            dependency_node.add_dependency(master_node)
-        except:
-            print("HERE")
+                    if master_node and dependency_node:
+                        dependency_node.add_dependency(master_node)
 
     def run(self, services):
         """Executes the graph, respecting node dependencies, and allows for parallel execution.

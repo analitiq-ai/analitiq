@@ -129,27 +129,15 @@ class Analitiq():
         :param feedback: Feedback to the LLM model after failed runs to help the model fix an issue.
         :return:
         """
-<<<<<<< HEAD:libs/analitiq/analitiq.py
-        response="temp_val"
-=======
         response = None
->>>>>>> c7c08acdbcba4904187810782f616754c92535a6:libs/analitiq/main.py
         try:
             response = self.llm.llm_is_prompt_clear(user_prompt, self.avail_services_str)
-            if response.Clear:
-                return response
-
         except Exception as e:
-<<<<<<< HEAD:libs/analitiq/analitiq.py
-            logging.error(f"[Analitiq] Exception: '{e}'. Needs explanation:\n{str(e)}")
-            # logging.error(f"[Analitiq] Exception: '{e}'. Needs explanation:\n{str(response)}")
-=======
             logger.error(f"[Analitiq] Exception: '{e}'. Needs explanation:\n{str(response)}")
->>>>>>> c7c08acdbcba4904187810782f616754c92535a6:libs/analitiq/main.py
 
         # is LLM is clear with prompt, we return results
-        # if response.Clear:
-        #     return response
+        if response.Clear:
+            return response
 
         # Log that the model needs clarification
         logger.info(f"[Analitiq] Prompt not clear: '{user_prompt}'. Needs explanation:\n{str(response)}")
@@ -259,20 +247,6 @@ class Analitiq():
         # we now trigger the main forward logic: goal -> tasks -> services/tools -> outcome
 
         # Step 1 - Is the task clear? IF not and there is no history to fall back on, exit with feedback.
-<<<<<<< HEAD:libs/analitiq/analitiq.py
-        prompt_clear_response = self.is_prompt_clear(self.prompts['original'])
-        try:
-            if type(prompt_clear_response)=='str':
-                self.response.set_content(prompt_clear_response)
-                return {"Analitiq": self.response}
-
-            if not prompt_clear_response.Clear:
-                self.response.set_content(prompt_clear_response.Feedback)
-                return {"Analitiq": self.response}
-        except:
-            return {"Analitiq": self.response}
-
-=======
         # because it is the first try of using LLM, we need to wrap it in TRY
         """
         
@@ -287,7 +261,6 @@ class Analitiq():
             self.response.set_content(prompt_clear_response.Feedback)
             return self.return_response()
         
->>>>>>> c7c08acdbcba4904187810782f616754c92535a6:libs/analitiq/main.py
         # add the refined prompts by the model.
         self.prompts['refined'] = prompt_clear_response.Query
         self.prompts['feedback'] = prompt_clear_response.Feedback
@@ -296,50 +269,12 @@ class Analitiq():
         logger.info(f"Refined prompt context: {self.prompts}")
         """
 
-<<<<<<< HEAD:libs/analitiq/analitiq.py
-        logging.info(f"Refined prompt context: {self.prompts}")
-        # I only returned the selected_service, the system would run an error when I stopped
-        #// TODO remove the return statement as I added it to test the service selection
-=======
         self.prompts['refined'] = self.prompts['original']
->>>>>>> c7c08acdbcba4904187810782f616754c92535a6:libs/analitiq/main.py
 
         selected_services = self.llm.llm_select_services(self.prompts, self.avail_services_str)
-        if isinstance(selected_services,list):
-            return selected_services[0].Action
-        elif isinstance(selected_services,dict):
-            return selected_services['ServiceList'][0]['Action']
-        else:
-            try:
-                selected_services = {service.Action: {'Action': service.Action, 'ActionInput': service.ActionInput, 'Instructions': service.Instructions, 'DependsOn': service.DependsOn} for service in selected_services}
-                first = selected_services.keys()[0]
-                return selected_services[first]['Action']
-            except:
-                try:
-                    str_ = str(selected_services).split("'Action'")[1].split(',')[0]
-                    return str_
-                except:
-                    return str(selected_services).split('Action=')[1].split(',')[0]
 
-        if type(selected_services) =='tuple':
-            import json
-
-        # print(selected_services)
         # Convert list of objects into a dictionary where name is the key and description is the value
-        try:
-            selected_services = {service.Action: {'Action': service.Action, 'ActionInput': service.ActionInput, 'Instructions': service.Instructions, 'DependsOn': service.DependsOn} for service in selected_services}
-        except:
-            import json
-            print(selected_services,'first')
-            selected_services = selected_services[0]
-            # selected_services = selected_services.replace('"','/').replace("/","'")
-            # print('END')
-            # print(selected_services)
-            # selected_services = json.loads(selected_services)
-# ""
-                                           
-            # selected_services = {service['Action']: {'Action': service['Action'], 'ActionInput': service['Action'], 'Instructions': service.Instructions, 'DependsOn': service.DependsOn} for service in selected_services}
-
+        selected_services = {service.Action: {'Action': service.Action, 'ActionInput': service.ActionInput, 'Instructions': service.Instructions, 'DependsOn': service.DependsOn} for service in selected_services}
 
         logger.info(f"[Services][Selected]: {selected_services}")
 
@@ -365,4 +300,3 @@ class Analitiq():
         node_outputs = graph.run(self.services)
 
         return node_outputs
-
