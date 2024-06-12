@@ -2,8 +2,7 @@
 This is an example of how to query Analitiq for information.
 """
 
-from libs.analitiq.main import Analitiq
-from ..logger import logger
+from analitiq.main import Analitiq
 
 user_prompt = "Search documentation for number of bikes."
 

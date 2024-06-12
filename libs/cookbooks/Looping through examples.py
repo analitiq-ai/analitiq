@@ -1,6 +1,6 @@
-
-from analitiq.analitiq import Analitiq
+from libs.analitiq.main import Analitiq
 import pandas as pd
+
 # Suppresses some warnings, remove while debugging
 import warnings
 warnings.filterwarnings('ignore')
