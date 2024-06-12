@@ -32,14 +32,27 @@ def tree(dir_path: Path, prefix: str=''):
         print(line)
     ```
     """
+    prefixes = ['.', '__', 'venv', 'env']
     contents = list(dir_path.iterdir())
     # contents each get pointers that are ├── with a final └── :
     pointers = [tee] * (len(contents) - 1) + [last]
     for pointer, path in zip(pointers, contents):
-        if path.name.startswith('.') or path.name.startswith('__'):
+        if any(path.name.startswith(prefix) for prefix in prefixes):
             continue
         yield prefix + pointer + path.name
         if path.is_dir(): # extend the prefix and recurse:
             extension = branch if pointer == tee else space
             # i.e. space because last, └── , above so no more |
             yield from tree(path, prefix=prefix+extension)
+
+
+if __name__ == '__main__':
+    # Create a Path object for the directory
+    dir_path = Path('/Users/kirillandriychuk/Documents/Projects/analitiq')
+
+    # Generate the tree structure
+    tree_generator = tree(dir_path)
+
+    # Iterate over the generator and print each line
+    for line in tree_generator:
+        print(line)

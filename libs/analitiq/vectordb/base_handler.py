@@ -1,4 +1,4 @@
-from analitiq.logger import logger
+from ..logger import logger
 
 
 class BaseVDBHandler:

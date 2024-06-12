@@ -1,5 +1,5 @@
 import os
-from analitiq.logger import logger
+from ..logger import logger
 import weaviate
 from weaviate.util import generate_uuid5
 from weaviate.auth import AuthApiKey

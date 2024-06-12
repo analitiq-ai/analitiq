@@ -3,15 +3,23 @@ from unittest.mock import MagicMock
 from libs.analitiq.base.Database import DatabaseWrapper
 
 class TestDatabaseWrapper(unittest.TestCase):
+    """
+    :mod:`TestDatabaseWrapper` Module
+    ==================================
+
+    .. autoclass:: TestDatabaseWrapper(unittest.TestCase)
+       :members:
+
+    """
     def setUp(self):
         # Mocking the parameters dictionary for the database connection
         self.params = {
             "type": "postgres",
-            "user": "postgres",
+            "username": "postgres",
             "password": "root",
             "host": "localhost",
             "port": "5432",
-            "dbname": "analitiq",
+            "db_name": "analitiq",
             "db_schemas": ["schema1", "schema2"]
         }
 

@@ -1,6 +1,7 @@
 import time
 from analitiq.logger import logger
 import re
+
 import yaml
 from typing import Dict, Any
 
@@ -78,6 +79,7 @@ def load_yaml(file_path: str) -> Dict[str, Any]:
     - List[Type]: A list of instantiated service classes.
     """
     # Create a Path object for the file you want to check
+
     if file_path.exists():
         with open(file_path, 'r') as f:
             configs = yaml.safe_load(f)
