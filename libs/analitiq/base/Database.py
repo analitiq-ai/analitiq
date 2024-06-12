@@ -3,7 +3,6 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.engine.url import URL
 from functools import lru_cache
 from langchain_community.utilities import SQLDatabase
-#from analitiq.logger import logger
 from typing import List, Dict
 
 CACHE_SIZE = 64
@@ -44,7 +43,7 @@ class DatabaseEngine:
             schemas_str = ",".join(self.params['db_schemas'])
             engine_options['connect_args'] = {'options': f"-csearch_path={schemas_str}"}
         return create_engine(
-            f"postgresql+psycopg2://{self.params['user']}:{self.params['password']}@{self.params['host']}:{self.params['port']}/{self.params['dbname']}",
+            f"postgresql+psycopg2://{self.params['username']}:{self.params['password']}@{self.params['host']}:{self.params['port']}/{self.params['db_name']}",
             **engine_options
         )
 

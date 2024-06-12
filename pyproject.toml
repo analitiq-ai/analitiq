@@ -1,44 +1,64 @@
 [tool.poetry]
-name = "datastorm"
-version = "0.0.0a9"
-homepage = "https://github.com/JavierLuna/datastorm"
-repository = "https://github.com/JavierLuna/datastorm"
-documentation = "https://datastorm.readthedocs.io/en/latest/"
-description = "Simple and easy to use ODM for Google Datastore. Documentation: https://datastorm-docs.rtfd.io"
-authors = ["JavierLuna <javierlunamolina@gmail.com>"]
+name = "analitiq"
+version = "0.1.0"
+homepage = "https://analitiq.ai"
+repository = "https://github.com/analitiq-ai/analitiq"
+documentation = "https://analitiq-ai.github.io/analitiq/"
+description = "A framework for managing your data using LLMs."
+authors = ["Kirill Andriychuk <kirill@analitiq.ai>"]
 license = "MIT"
-keywords = ["odm", "datastore", "google-cloud", "google-datastore", "orm"]
+keywords = ["analitiq", "llms", "data management", "nl2sql"]
+readme = "README.md"
 classifiers= [
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        'Natural Language :: Spanish',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
+        'Natural Language :: English',
+        'Programming Language :: Python :: 3.9'
     ]
-packages = [{include= "datastorm"}]
+packages = [
+        {include = "analitiq", from = "./libs" }
+]
+
 
 [tool.poetry.dependencies]
 python = "^3.9"
-google-cloud-datastore = "^1.9"
-sqlalchemy = "^2.0.30"
-langchain-community = "^0.2.3"
+boto3 = "1.34.113"
+langchain = "0.2.1"
+langchain-aws = "0.1.6"
+langchain-community = "0.2.1"
+langchain-core = "0.2.1"
+langchain-mistralai = "0.1.7"
+langchain-openai = "0.1.7"
+langchain-text-splitters = "0.2.0"
+pandas = "1.4.2"
+pyyaml = "6.0.1"
+sqlalchemy = "1.4.52"
+sqlalchemy-redshift = "0.8.14"
+typing-inspect = "0.9.0"
+typing-extensions = "4.8.0"
+pydantic = "2.5.1"
+weaviate-client = "4.5.6"
+redshift-connector = "2.1.1"
+tabulate = "0.9.0"
+psycopg2-binary = "2.9.9"
+json-log-formatter = "^1.0"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 pytest = "^5.2"
 pytest-mock = "^1.11"
-pytest-cov = "^2.8"
-flake8 = "^3.7"
-pre-commit = "^1.20"
-mypy = "^0.740.0"
-bump2version = "^0.5.11"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+mkdocs-material = "*"
 
 [build-system]
 requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
 
-
 [tool.pytest.ini_options]
 pythonpath = [
-  ".", "libs",
+        ".", "libs",
 ]

@@ -1,4 +1,7 @@
-from analitiq.logger import logger
+"""
+This is an example of how to query Analitiq for information.
+"""
+
 from analitiq.main import Analitiq
 
 user_prompt = "Search documentation for number of bikes."
