@@ -1,7 +1,7 @@
 from analitiq.logger import logger
 from typing import Dict, Any
 from pathlib import Path
-
+import os
 from analitiq.base.ProfileLoader import ProfileLoader
 from analitiq.base.ServicesLoader import ServicesLoader
 from analitiq.utils.general import load_yaml
@@ -38,7 +38,15 @@ class GlobalConfig:
 
     def load_profiles(self):
         if not self.profiles:
-            self.profiles = self.load_config('profiles.yml')  # this is the users project.yml
+            # check if the file is in .analitiq directory of the user
+            home_dir = os.path.expanduser("~")
+            filename = 'profiles.yml'
+            full_path = home_dir + f"/.analitiq/{filename}"
+
+            if os.path.isfile(full_path):
+                self.profiles = self.load_config(full_path)
+            else:
+                self.profiles = self.load_config(filename)
 
             # Load and validate the Profile configuration
             profile_loader = ProfileLoader(self.profiles)

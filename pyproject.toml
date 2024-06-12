@@ -1,26 +1,24 @@
 [tool.poetry]
-name = "datastorm"
-version = "0.0.0a9"
-homepage = "https://github.com/JavierLuna/datastorm"
-repository = "https://github.com/JavierLuna/datastorm"
-documentation = "https://datastorm.readthedocs.io/en/latest/"
-description = "Simple and easy to use ODM for Google Datastore. Documentation: https://datastorm-docs.rtfd.io"
-authors = ["JavierLuna <javierlunamolina@gmail.com>"]
+name = "analitiq"
+version = "0.1.0"
+homepage = "https://analitiq.ai"
+repository = "https://github.com/analitiq-ai/analitiq"
+documentation = "https://analitiq-ai.github.io/analitiq/"
+description = "A framework for managing your data using LLMs."
+authors = ["Kirill Andriychuk <kirill@analitiq.ai>"]
 license = "MIT"
-keywords = ["odm", "datastore", "google-cloud", "google-datastore", "orm"]
+keywords = ["analitiq", "llms", "data management", "nl2sql"]
 classifiers= [
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
         'Topic :: Software Development :: Libraries :: Python Modules',
-        'Natural Language :: Spanish',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
+        'Natural Language :: English',
+        'Programming Language :: Python :: 3.9'
     ]
 packages = [{include= "datastorm"}]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-google-cloud-datastore = "^1.9"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
