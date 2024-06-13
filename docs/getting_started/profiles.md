@@ -1,4 +1,4 @@
-# Profiles YAML
+# Profiles Configuration (`profiles.yml`) for Analitiq
 
 The file `profiles.yml` has all of your sensitive connection information, such as your API keys and DB credentials, so treat it with respect. This file can be placed in one of the two locations:
 1. in the `.analitiq` directory inside your users home directory

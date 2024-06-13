@@ -1,6 +1,14 @@
-# Project YAML
+# Project Configuration (`project.yml`) for Analitiq
 
-The file `project.yml` has all of your project data, such as where the logs are stored. Most importantly, `project.yml` defines where your custom Services are located so Analitiq can pick them up and use them to manage your data.
+## Overview
+
+The `project.yml` file serves as the main configuration file for an Analitiq project. It must be located in the project's root directory. This file specifies various parameters that define the behavior and settings of your Analitiq application.
+The file `project.yml` has all of your project data, such as where the logs are stored. 
+Most importantly, `project.yml` defines where your custom Services are located so Analitiq can pick them up and use them to manage your data.
+
+[![Video about project config](../assets/images/project_yml.png)](https://www.loom.com/share/a0b6f3b2bcd148408786e0e44b430558?sid=1d8d51f1-28c3-4944-a00c-d42d6b15a64e)
+
+
 ```yaml
 name: 'analitiq'
 version: '0.1'
@@ -28,3 +36,38 @@ services:
     inputs: "dataframe as serialized json"
     outputs: "javascript that is used by the frontend to visualize data"
 ```
+
+### Key Sections and Parameters
+
+- `name`: The name of your project.
+- `version`: The version of your project.
+- `profile`: Defines which profile from the [profiles.yml](/getting_started/profiles) is being used by this project.
+- `config_version`: (Not used currently) Placeholder for future use.
+
+#### General Configuration
+
+- `chat_log_dir`: Directory for saving chat logs.
+- `sql_dir`: Storage for ETL SQL scripts.
+- `services_dir`: Directory for custom services.
+- `session_uuid_file`: Tracks session identifiers.
+- `message_lookback`: Defines how far back the AI should refer in the conversation history when needed.
+
+#### Vector Database Configuration
+
+- `doc_chunk_size`: Size of document chunks in characters.
+- `doc_chunk_overlap`: Overlap in characters between document chunks for consistency.
+
+### Services Configuration
+
+Services define tasks like data visualization, PDF parsing, or API interactions. Each service is detailed with its functionality, input, and output specifications.
+
+#### Example: ChartService
+
+- `path`: Location of the service script.
+- `class & method`: Specifies the class and method to execute the service.
+- `inputs & outputs`: Defines the expected inputs and the format of outputs.
+
+## Usage
+
+This configuration file enables the Analitiq framework to understand and manage project-specific settings and services efficiently. It is vital for running custom services and managing data interactions within the framework.
+

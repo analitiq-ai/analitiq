@@ -5,10 +5,15 @@ nav:
   - Home: index.md
   - 'Getting Started':
     - 'Quick Start': getting_started/quick_start.md
-    - 'Profiles YAML': getting_started/profiles.md
-    - 'Project YAML': getting_started/project.md
-  - 'Vector Databases':
-    - 'Weaviate': vector_databases/weaviate.md
+    - 'Config files':
+      - 'Profiles YAML': getting_started/profiles.md
+      - 'Project YAML': getting_started/project.md
+  - 'Services':
+    - 'Query Database / SQL': services/sql.md
+    - 'Document Search': services/doc_search.md
+  - 'Framework Docs':
+    - 'Vector Databases':
+      - 'Weaviate': framework/vector_databases/weaviate.md
 
 theme:
   name: material
