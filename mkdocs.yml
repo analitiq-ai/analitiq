@@ -1,7 +1,19 @@
 site_name: Analitiq Documentation
 site_url: https://analitiq.ai
+
+nav:
+  - Home: index.md
+  - 'Getting Started':
+    - 'Quick Start': getting_started/quick_start.md
+    - 'Profiles YAML': getting_started/profiles.md
+    - 'Project YAML': getting_started/project.md
+  - 'Vector Databases':
+    - 'Weaviate': vector_databases/weaviate.md
+
 theme:
   name: material
+  logo: assets/images/analitiq-logo-transparent.png
+  favicon: assets/images/favicon.ico
   features:
     - navigation.tabs
     - navigation.sections

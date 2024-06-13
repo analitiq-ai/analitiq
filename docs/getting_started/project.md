@@ -1,0 +1,30 @@
+# Project YAML
+
+The file `project.yml` has all of your project data, such as where the logs are stored. Most importantly, `project.yml` defines where your custom Services are located so Analitiq can pick them up and use them to manage your data.
+```yaml
+name: 'analitiq'
+version: '0.1'
+profile: 'test'
+config_version: 2
+
+config:
+  general:
+    chat_log_dir: "chats" # this is where we save our chat logs.
+    sql_dir: "analysis" # this is where the ETL SQLs are being saved and managed
+    services_dir: "custom_services"
+    session_uuid_file: 'session_uuid.txt' # Where session identifier is being recorded. When session is reset, it is like beginning of a new chat topic and new log file will be created.
+    target_path: "target"
+    message_lookback: 5 # when LLM has no clue about users request, or users request relates to some item in chat history, how far back (in number of messages) should the LLM look in the current session chat log
+  vectordb:
+    doc_chunk_size: 2000
+    doc_chunk_overlap: 200
+
+services:
+  - name: ChartService
+    description: "Use this service to generate script for APEX charts to visualize data"
+    path: "custom_services/chart/chart.py"
+    class: "Chart"
+    method: "run"
+    inputs: "dataframe as serialized json"
+    outputs: "javascript that is used by the frontend to visualize data"
+```
