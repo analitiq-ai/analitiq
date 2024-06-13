@@ -55,7 +55,7 @@ class TestDatabaseWrapper(unittest.TestCase):
         table_names = self.database_wrapper.get_tables_in_schema("schema1")
 
         # Asserting the returned table names
-        self.assertEqual(table_names, ["table2", "table1"  ])
+        self.assertEqual(table_names, ["table1", "table2"])
 
     def test_get_schemas_and_tables(self):
         # Mocking the inspector and its methods get_schema_names and get_table_names
@@ -70,7 +70,7 @@ class TestDatabaseWrapper(unittest.TestCase):
         schemas_and_tables = self.database_wrapper.get_schemas_and_tables([  "schema1", "schema2" ])
         print(schemas_and_tables)
         # Asserting the returned schema and table details
-        expected_response = ['schema1.table2.column1 (TEXT)', 'schema1.table1.column1 (TEXT), schema1.table1.column2 (INTEGER)']
+        expected_response =['schema1.table1.column1 (TEXT), schema1.table1.column2 (INTEGER)', 'schema1.table2.column1 (TEXT)']
         self.assertEqual(schemas_and_tables, expected_response)
 
 
