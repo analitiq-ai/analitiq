@@ -7,6 +7,7 @@ from typing import List
 from analitiq.utils.general import split_list_of_ddl
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.code_extractor import CodeExtractor
+from analitiq.base.Database import DatabaseWrapper
 
 from analitiq.services.sql.schema import Table, Column, Tables, SQL, TableCheck
 from langchain.prompts import PromptTemplate
@@ -48,7 +49,7 @@ class Sql:
 
     """Class to generate and execute SQL queries using prompts submitted to an LLM, with logging and retries."""
 
-    def __init__(self, db, llm, vdb=None):
+    def __init__(self, db: DatabaseWrapper, llm, vdb=None):
         self.user_prompt: str = None
         self.db = db
         self.llm = llm
@@ -276,10 +277,9 @@ class Sql:
                 template=TEXT_TO_SQL_PROMPT,
                 input_variables=["user_prompt"],
                 partial_variables={
-                    "dialect": self.db.dialect,
+                    "dialect": self.db.params['type'],
                     "table_info": self.relevant_tables,
                     "top_k": 100,
-                    "schema_name": self.db_schema,
                     "format_instructions": parser.get_format_instructions()
                 }
             )
@@ -314,13 +314,15 @@ class Sql:
 
     def get_db_docs(self):
 
-        # If connection to vectorDB did not initialise, return None
+        # If connection to VectorDB did not initialise, return None
         if not self.vdb:
             return None
 
         response = self.vdb.get_many_like("document_name", db_docs_name)
+
         if not response:
-            self.logger.info(f"[VectorDB] No DB schema objects returned.")
+            self.logger.info(f"[VectorDB] No objects returned that match search parameter {db_docs_name}.")
+            return None
 
         # Initialize an empty string to hold the formatted content
         document_dict = {}
@@ -357,7 +359,7 @@ class Sql:
         self.logger.info({sql})
         try:
             if convert_to_df:
-                result = pd.read_sql(sql, self.db.db_engine)
+                result = pd.read_sql(sql, self.db.engine)
                 if result.empty:
                     self.logger.info(f"Human: SQL executed successfully, but result is empty.")
                 else:
