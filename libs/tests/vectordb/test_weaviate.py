@@ -47,15 +47,15 @@ class TestWeaviateHandler(unittest.TestCase):
 
     def test_load(self):
 
+        test_file = os.path.dirname(__file__) + '/test_file.txt'
         # Test case for loading a valid file
         with patch.object(self.handler, '_chunk_load_file_or_directory') as mock_chunk_load:
-            test_file = 'test_file.txt'
             self.handler.load(test_file)
             mock_chunk_load.assert_called_once_with(test_file, "txt")
 
         # Test case for invalid file extension
         with self.assertRaises(ValueError):
-            self.handler.load('test_file.txt', file_ext='invalid')
+            self.handler.load(test_file, file_ext='invalid')
 
         # Test case for non-existent file or directory
         with self.assertRaises(FileNotFoundError):

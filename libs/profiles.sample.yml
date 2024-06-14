@@ -5,9 +5,11 @@ test:
         type: postgres
         host: xxxxx
         user: xxxx
+        username: xxxx
         password: 'xxxxx'
         port: 5432
         dbname: sample_db
+        db_name: sample_db
         dbschema: sample_schema
         threads: 4
         keepalives_idle: 240 # default 240 seconds
