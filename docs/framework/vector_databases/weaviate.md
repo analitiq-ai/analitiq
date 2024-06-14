@@ -1,33 +1,10 @@
-# Analitiq Weaviate Integration Documentation
+# Analitiq::Weaviate Documentation
 
 This documentation covers the `WeaviateHandler` module, part of the larger Analitiq framework. This module facilitates interactions with a Weaviate vector database, including loading document chunks and performing searches.
-
-## Table of Contents
-1. [Overview](#overview)
-2. [Installation Requirements](#installation-requirements)
-3. [Quick Start](#quick-start)
-4. [Modules](#modules)
-    - [Decorators](#decorators)
-    - [Chunk Class](#chunk-class)
-    - [WeaviateHandler Class](#weaviatehandler-class)
-5. [Usage Examples](#usage-examples)
-    - [Loading Files](#loading-files)
-    - [Searching for Data](#searching-for-data)
 
 ## Overview
 
 The `WeaviateHandler` module provides a set of tools for managing and querying a Weaviate vector database. It allows users to load documents, split them into chunks, and perform keyword searches. This module is designed to integrate seamlessly with other parts of the Analitiq framework.
-
-## Installation Requirements
-
-Before using the `WeaviateHandler` module, ensure you have the following software and libraries installed:
-
-- Python 3.6+
-- Weaviate Python Client
-- Pydantic
-- Analitiq Framework
-
-## Quick Start
 
 Here's a simple example demonstrating the basic functionality of the `WeaviateHandler` module:
 
