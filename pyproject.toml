@@ -37,16 +37,19 @@ sqlalchemy = "1.4.52"
 sqlalchemy-redshift = "0.8.14"
 typing-inspect = "0.9.0"
 typing-extensions = "4.8.0"
-pydantic = "2.5.1"
-weaviate-client = "4.5.6"
+pydantic = "2.5.2"
+weaviate-client = "^4.5.6"
 redshift-connector = "2.1.1"
 tabulate = "0.9.0"
 psycopg2-binary = "2.9.9"
 json-log-formatter = "^1.0"
+mistralai = "^0.4.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^5.2"
 pytest-mock = "^1.11"
+dspy-ai = "2.4.9"
+scikit-learn = "^1.5.0"
 
 [tool.poetry.group.docs]
 optional = true
