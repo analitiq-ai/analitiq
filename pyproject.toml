@@ -47,6 +47,7 @@ json-log-formatter = "^1.0"
 [tool.poetry.group.dev.dependencies]
 pytest = "^5.2"
 pytest-mock = "^1.11"
+python-dotenv = "^1.0.1"
 
 [tool.poetry.group.docs]
 optional = true

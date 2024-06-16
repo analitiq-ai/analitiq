@@ -4,7 +4,7 @@ import weaviate
 from weaviate.util import generate_uuid5
 from weaviate.auth import AuthApiKey
 from weaviate.classes.query import Filter
-from weaviate.classes.config import Configure
+from weaviate.classes.config import Configure, DataType, Property
 from weaviate.classes.tenants import Tenant
 from typing import Optional
 from .base_handler import BaseVDBHandler
@@ -80,6 +80,7 @@ class WeaviateHandler(BaseVDBHandler):
     .. automethod:: load
     .. automethod:: _group_by_document_and_source
     .. automethod:: kw_search
+    .. automethod:: kw_search
     .. automethod:: delete_many_like
     .. automethod:: get_many_like
     .. automethod:: delete_collection
@@ -105,7 +106,7 @@ class WeaviateHandler(BaseVDBHandler):
         """
         Connect to the Weaviate database.
         """
-        self.client = weaviate.connect_to_wcs(
+        self.client: weaviate.classes = weaviate.connect_to_wcs(
             cluster_url=self.params['host'], auth_credentials=AuthApiKey(self.params['api_key'])
         )
 
@@ -116,10 +117,24 @@ class WeaviateHandler(BaseVDBHandler):
             logger.info(f"Existing VDB Collection name: {self.collection_name}")
 
     def create_collection(self):
+        """Create a collection if not existing."""
+
+        
 
         self.client.collections.create(self.collection_name,
-                                       # Enable multi-tenancy on the new collection
-                                       multi_tenancy_config=Configure.multi_tenancy(enabled=True))
+                                           properties=[
+                                                Property(name="project_name", data_type=DataType.TEXT),
+                                                Property(name="document_name", data_type=DataType.TEXT),
+                                                Property(name="document_type", data_type=DataType.TEXT),
+                                                Property(name="content", data_type=DataType.TEXT, indexSearchable=True),
+                                                Property(name="source", data_type=DataType.TEXT),
+                                                Property(name="document_num_char", data_type=DataType.INT),
+                                                Property(name="chunk_num_char", data_type=DataType.INT),
+                                            ],
+                                       # enable multi_tenancy_config                                       
+                                       multi_tenancy_config=Configure.multi_tenancy(enabled=True),
+                                       # vectorizer_config=Configure.Vectorizer.text2vec_cohere(),
+        )
 
         self.collection = self.client.collections.get(self.collection_name)
 
@@ -209,6 +224,32 @@ class WeaviateHandler(BaseVDBHandler):
                 query_properties=["content"],
                 limit=limit
             )
+        except Exception as e:
+            logger.error(f"Weaviate error {e}")
+        finally:
+            self.close()
+
+        logger.info(f"Weaviate search result: {response}")
+        return response
+    
+    @search_only
+    def hybrid_search(self, query: str, limit: int = 3) -> dict:
+        """Use Hybrid Search for document retrieval from Weaviate Database."""
+        response = {}
+        try:
+            response = self.collection.query.hybrid(
+                query={
+                    "query": {
+                        "concept": query,
+                        "properties": ["content"]
+                    },
+                    "keyword": {
+                        "query": query,
+                        "properties": ["content"]
+                    }
+                },
+                limit=limit
+            ).do()
         except Exception as e:
             logger.error(f"Weaviate error {e}")
         finally:
