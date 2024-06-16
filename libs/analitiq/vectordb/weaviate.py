@@ -238,17 +238,9 @@ class WeaviateHandler(BaseVDBHandler):
         response = {}
         try:
             response = self.collection.query.hybrid(
-                query={
-                    "query": {
-                        "concept": query,
-                        "properties": ["content"]
-                    },
-                    "keyword": {
-                        "query": query,
-                        "properties": ["content"]
-                    }
-                },
-                limit=limit
+                    query=query,
+                    target_vector="content",
+                    limit=limit
             ).do()
         except Exception as e:
             logger.error(f"Weaviate error {e}")

@@ -41,7 +41,7 @@ params = {
 vdb = WeaviateHandler(params)
 
 # Example of using the SQLGenerator class
-service = SearchVdb(llm, vdb=vdb, search_mode="kw")
+service = SearchVdb(llm, vdb=vdb, search_mode="hybrid")
 result = service.run("Please give me revenues by month.")
 print(result)
 
