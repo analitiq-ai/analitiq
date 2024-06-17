@@ -1,15 +1,19 @@
+from typing import Optional, List
+
 import os
 from ..logger import logger
 import weaviate
 from weaviate.util import generate_uuid5
 from weaviate.auth import AuthApiKey
-from weaviate.classes.query import Filter
-from weaviate.classes.config import Configure, DataType, Property
+from weaviate.classes.query import Filter, MetadataQuery
+from weaviate.classes.config import Configure
 from weaviate.classes.tenants import Tenant
-from typing import Optional
+
 from .base_handler import BaseVDBHandler
 from ..utils.document_processor import DocumentChunkLoader
 from pydantic import BaseModel
+
+from libs.analitiq.vectordb import huggingface_vectorizer
 
 
 def search_only(func):
@@ -64,6 +68,7 @@ class Chunk(BaseModel):
     source: str
     document_num_char: int
     chunk_num_char: int
+    chunk_vector: List[float]
 
 
 class WeaviateHandler(BaseVDBHandler):
@@ -99,6 +104,10 @@ class WeaviateHandler(BaseVDBHandler):
             multi_collection = self.client.collections.get(self.collection_name)
             # Get collection specific to the required tenant
             self.collection = multi_collection.with_tenant(self.collection_name)
+        
+        modelname = "sentence-transformers/all-mpnet-base-v2"
+
+        self.vectorizer = huggingface_vectorizer.HuggingFaceVectorizer(modelname)
 
         self.chunk_processor = DocumentChunkLoader(self.collection_name)
 
@@ -118,19 +127,7 @@ class WeaviateHandler(BaseVDBHandler):
 
     def create_collection(self):
         """Create a collection if not existing."""
-
-        
-
         self.client.collections.create(self.collection_name,
-                                           properties=[
-                                                Property(name="project_name", data_type=DataType.TEXT),
-                                                Property(name="document_name", data_type=DataType.TEXT),
-                                                Property(name="document_type", data_type=DataType.TEXT),
-                                                Property(name="content", data_type=DataType.TEXT, indexSearchable=True),
-                                                Property(name="source", data_type=DataType.TEXT),
-                                                Property(name="document_num_char", data_type=DataType.INT),
-                                                Property(name="chunk_num_char", data_type=DataType.INT),
-                                            ],
                                        # enable multi_tenancy_config                                       
                                        multi_tenancy_config=Configure.multi_tenancy(enabled=True),
                                        # vectorizer_config=Configure.Vectorizer.text2vec_cohere(),
@@ -164,7 +161,8 @@ class WeaviateHandler(BaseVDBHandler):
                 document_type=extension,
                 document_name=os.path.basename(chunk.metadata['source']),
                 document_num_char=doc_lengths[chunk.metadata['source']],
-                chunk_num_char=len(chunk.page_content)
+                chunk_num_char=len(chunk.page_content),
+                chunk_vector=self.vectorizer.vectorize(chunk.page_content)
             ) for chunk in documents_chunks
             ]
 
@@ -237,10 +235,25 @@ class WeaviateHandler(BaseVDBHandler):
         """Use Hybrid Search for document retrieval from Weaviate Database."""
         response = {}
         try:
-            response = self.collection.query.hybrid(
-                    query=query,
-                    target_vector="content",
-                    limit=limit
+            # add a function for combining results from kw_search and vector_search
+            print("Todo")
+        except Exception as e:
+            logger.error(f"Weaviate error {e}")
+        finally:
+            self.close()
+
+        logger.info(f"Weaviate search result: {response}")
+        return response
+    
+    def vector_search(self, query: str, limit: int = 3):
+        """Use Vector Search for document retrieval from Weaviate Database."""
+        response = {}
+        query_vector = self.vectorizer.vectorize(query)
+        try:
+            response = self.collection.query.near_vector(
+                    near_vector=query_vector,
+                    limit=limit,
+                    return_metadata=MetadataQuery(distance=True)
             ).do()
         except Exception as e:
             logger.error(f"Weaviate error {e}")
