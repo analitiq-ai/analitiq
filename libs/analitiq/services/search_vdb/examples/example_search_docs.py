@@ -42,6 +42,6 @@ vdb = WeaviateHandler(params)
 
 # Example of using the SQLGenerator class
 service = SearchVdb(llm, vdb=vdb, search_mode="hybrid")
-result = service.run("Was machen Haustiere?")
+result = service.run("Welche tiere sind loyal?")
 print(result)
 

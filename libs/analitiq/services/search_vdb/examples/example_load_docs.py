@@ -25,5 +25,5 @@ params = {
 
 
 wc=WeaviateHandler(params)
-FILE_PATH = './example_test_files/dogs.txt'
+FILE_PATH = './example_test_files/elefants.txt'
 wc.load(FILE_PATH)

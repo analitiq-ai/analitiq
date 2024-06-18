@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 import os
 from ..logger import logger
@@ -16,8 +16,6 @@ from ..utils.document_processor import DocumentChunkLoader
 from pydantic import BaseModel
 
 from analitiq.vectordb import huggingface_vectorizer
-from analitiq.base import BaseResponse
-
 
 def search_only(func):
     """
@@ -222,6 +220,7 @@ class WeaviateHandler(BaseVDBHandler):
             response: QueryReturn = self.collection.query.bm25(
                 query=query,
                 query_properties=["content"],
+                return_metadata=MetadataQuery(score=True, distance=True),
                 limit=limit
             )
         except Exception as e:
@@ -229,7 +228,7 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-        # logger.info(f"Weaviate search result: {response}")
+        logger.info(f"Weaviate search result: {response}")
         return response
     
     @search_only
@@ -242,7 +241,6 @@ class WeaviateHandler(BaseVDBHandler):
             vector_results = self.vector_search(query, limit)
             
             response = self.combine_and_rerank_results(kw_results, vector_results)
-            # print(response)
         except Exception as e:
             logger.error(f"Weaviate error {e}")
             raise e
@@ -260,33 +258,44 @@ class WeaviateHandler(BaseVDBHandler):
             response: QueryReturn = self.collection.query.near_vector(
                     near_vector=query_vector,
                     limit=limit,
-                    return_metadata=MetadataQuery(distance=True)
+                    return_metadata=MetadataQuery(distance=True, score=True)
             )
         except Exception as e:
             logger.error(f"Weaviate error {e}")
         finally:
             self.close()
 
-        # logger.info(f"Weaviate search result: {response}")
+        logger.info(f"Weaviate search result: {response}")
         return response
     
-    def combine_and_rerank_results(self, kw_results: QueryReturn, vector_results: QueryReturn , limit: int = 3) -> List[dict]:
+    def combine_and_rerank_results(self, kw_results: QueryReturn, vector_results: QueryReturn , limit: int = 3,
+                                    kw_vector_weights: Tuple[float,float] =[0.3,0.7]) -> List[dict]:
         """Combine and rerank the results from different searches."""
-        combined = {result.uuid: result for result in kw_results.objects}
-        for result in vector_results.objects:
+        combined = {}
+
+        vector_weight = kw_vector_weights[1]
+        kw_weight = kw_vector_weights[0]
+
+        # Assign ranks to keyword search results
+        for rank, result in enumerate(kw_results.objects, start=1):
             uuid = result.uuid
-            if uuid in combined:
-                # add scoring mechanism for reranking TODO -> distance or other?
-                combined[uuid].metadata.distance = 0
-                combined[uuid].distance = (combined[uuid].metadata.distance + result.metadata.distance) / 2
-            else:
-                combined[uuid] = result
+            if uuid not in combined:
+                combined[uuid] = {"result": result, "score": 0}
+            combined[uuid]["score"] += kw_weight * (1 / (60 + rank))
+        # Assign ranks to vector search results
+        for rank, result in enumerate(vector_results.objects, start=1):
+            uuid = result.uuid
+            if uuid not in combined:
+                combined[uuid] = {"result": result, "score": 0}
+            combined[uuid]["score"] += vector_weight * (1 / (60 + rank))
+
+        # Convert the combined dictionary to a list and sort by score
+        combined_list = sorted(combined.values(), key=lambda x: x["score"], reverse=True)
+
+        # Extract only the results (up to the specified limit)
+        reranked_results = [item["result"] for item in combined_list[:limit]]
         
-        # Convert the combined dictionary back to a list and sort by distance
-        combined_list = list(combined.values())
-        combined_list.sort(key=lambda x: x.metadata.distance)
-        
-        return QueryReturn(objects=combined_list[:limit])
+        return QueryReturn(objects=reranked_results)
 
     def delete_many_like(self, property_name: str, property_value: str):
         """
