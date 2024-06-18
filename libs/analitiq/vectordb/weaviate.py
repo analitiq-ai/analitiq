@@ -8,12 +8,15 @@ from weaviate.auth import AuthApiKey
 from weaviate.classes.query import Filter, MetadataQuery
 from weaviate.classes.config import Configure
 from weaviate.classes.tenants import Tenant
+from weaviate.collections.classes.internal import QueryReturn
+
 
 from .base_handler import BaseVDBHandler
 from ..utils.document_processor import DocumentChunkLoader
 from pydantic import BaseModel
 
 from analitiq.vectordb import huggingface_vectorizer
+from analitiq.base import BaseResponse
 
 
 def search_only(func):
@@ -210,13 +213,13 @@ class WeaviateHandler(BaseVDBHandler):
         return grouped_data
 
     @search_only
-    def kw_search(self, query: str, limit: int = 3) -> dict:
+    def kw_search(self, query: str, limit: int = 3) -> QueryReturn:
         """
         Perform a keyword search in the Weaviate database.
         """
         response = {}
         try:
-            response = self.collection.query.bm25(
+            response: QueryReturn = self.collection.query.bm25(
                 query=query,
                 query_properties=["content"],
                 limit=limit
@@ -226,41 +229,64 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-        logger.info(f"Weaviate search result: {response}")
+        # logger.info(f"Weaviate search result: {response}")
         return response
     
     @search_only
-    def hybrid_search(self, query: str, limit: int = 3) -> dict:
+    def hybrid_search(self, query: str, limit: int = 3) -> QueryReturn:
         """Use Hybrid Search for document retrieval from Weaviate Database."""
         response = {}
         try:
             kw_results = self.kw_search(query, limit)
+            self.client.connect()
             vector_results = self.vector_search(query, limit)
             
-            # combine them
-            print(kw_results)
-            print(vector_results)
+            response = self.combine_and_rerank_results(kw_results, vector_results)
+            # print(response)
         except Exception as e:
             logger.error(f"Weaviate error {e}")
+            raise e
         finally:
             self.close()
 
         logger.info(f"Weaviate search result: {response}")
         return response
     
-    def vector_search(self, query: str, limit: int = 3):
+    def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
         """Use Vector Search for document retrieval from Weaviate Database."""
         response = {}
-        query_vector = self.vectorizer.vectorize(query)
-        response = self.collection.query.near_vector(
-                near_vector=query_vector,
-                limit=limit,
-                return_metadata=MetadataQuery(distance=True)
-        )
-        self.close()
+        try:
+            query_vector = self.vectorizer.vectorize(query)
+            response: QueryReturn = self.collection.query.near_vector(
+                    near_vector=query_vector,
+                    limit=limit,
+                    return_metadata=MetadataQuery(distance=True)
+            )
+        except Exception as e:
+            logger.error(f"Weaviate error {e}")
+        finally:
+            self.close()
 
-        logger.info(f"Weaviate search result: {response}")
+        # logger.info(f"Weaviate search result: {response}")
         return response
+    
+    def combine_and_rerank_results(self, kw_results: QueryReturn, vector_results: QueryReturn , limit: int = 3) -> List[dict]:
+        """Combine and rerank the results from different searches."""
+        combined = {result.uuid: result for result in kw_results.objects}
+        for result in vector_results.objects:
+            uuid = result.uuid
+            if uuid in combined:
+                # add scoring mechanism for reranking TODO -> distance or other?
+                combined[uuid].metadata.distance = 0
+                combined[uuid].distance = (combined[uuid].metadata.distance + result.metadata.distance) / 2
+            else:
+                combined[uuid] = result
+        
+        # Convert the combined dictionary back to a list and sort by distance
+        combined_list = list(combined.values())
+        combined_list.sort(key=lambda x: x.metadata.distance)
+        
+        return QueryReturn(objects=combined_list[:limit])
 
     def delete_many_like(self, property_name: str, property_value: str):
         """
