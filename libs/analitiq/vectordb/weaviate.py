@@ -13,7 +13,7 @@ from .base_handler import BaseVDBHandler
 from ..utils.document_processor import DocumentChunkLoader
 from pydantic import BaseModel
 
-from libs.analitiq.vectordb import huggingface_vectorizer
+from analitiq.vectordb import huggingface_vectorizer
 
 
 def search_only(func):
@@ -68,7 +68,6 @@ class Chunk(BaseModel):
     source: str
     document_num_char: int
     chunk_num_char: int
-    chunk_vector: List[float]
 
 
 class WeaviateHandler(BaseVDBHandler):
@@ -105,7 +104,7 @@ class WeaviateHandler(BaseVDBHandler):
             # Get collection specific to the required tenant
             self.collection = multi_collection.with_tenant(self.collection_name)
         
-        modelname = "sentence-transformers/all-mpnet-base-v2"
+        modelname = "sentence-transformers/all-MiniLM-L6-v2"
 
         self.vectorizer = huggingface_vectorizer.HuggingFaceVectorizer(modelname)
 
@@ -162,7 +161,6 @@ class WeaviateHandler(BaseVDBHandler):
                 document_name=os.path.basename(chunk.metadata['source']),
                 document_num_char=doc_lengths[chunk.metadata['source']],
                 chunk_num_char=len(chunk.page_content),
-                chunk_vector=self.vectorizer.vectorize(chunk.page_content)
             ) for chunk in documents_chunks
             ]
 
@@ -171,7 +169,8 @@ class WeaviateHandler(BaseVDBHandler):
         with self.collection.batch.dynamic() as batch:
             for chunk in chunks:
                 uuid = generate_uuid5(chunk.model_dump())
-                batch.add_object(properties=chunk.model_dump(), uuid=uuid)
+                hf_vector = self.vectorizer.vectorize(chunk.content)
+                batch.add_object(properties=chunk.model_dump(), uuid=uuid, vector=hf_vector)
                 chunks_loaded += 1
 
         self.close()
@@ -235,8 +234,12 @@ class WeaviateHandler(BaseVDBHandler):
         """Use Hybrid Search for document retrieval from Weaviate Database."""
         response = {}
         try:
-            # add a function for combining results from kw_search and vector_search
-            print("Todo")
+            kw_results = self.kw_search(query, limit)
+            vector_results = self.vector_search(query, limit)
+            
+            # combine them
+            print(kw_results)
+            print(vector_results)
         except Exception as e:
             logger.error(f"Weaviate error {e}")
         finally:
@@ -249,16 +252,12 @@ class WeaviateHandler(BaseVDBHandler):
         """Use Vector Search for document retrieval from Weaviate Database."""
         response = {}
         query_vector = self.vectorizer.vectorize(query)
-        try:
-            response = self.collection.query.near_vector(
-                    near_vector=query_vector,
-                    limit=limit,
-                    return_metadata=MetadataQuery(distance=True)
-            ).do()
-        except Exception as e:
-            logger.error(f"Weaviate error {e}")
-        finally:
-            self.close()
+        response = self.collection.query.near_vector(
+                near_vector=query_vector,
+                limit=limit,
+                return_metadata=MetadataQuery(distance=True)
+        )
+        self.close()
 
         logger.info(f"Weaviate search result: {response}")
         return response

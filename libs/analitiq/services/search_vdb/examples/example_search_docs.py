@@ -33,7 +33,7 @@ llm_params = {'type': 'bedrock'
 llm = BaseLlm(llm_params)
 
 params = {
-    "collection_name": "my_collection",
+    "collection_name": "daniels_collection",
     "host": WV_URL,
     "api_key": WV_CLIENT_SECRET,
 }
@@ -41,7 +41,7 @@ params = {
 vdb = WeaviateHandler(params)
 
 # Example of using the SQLGenerator class
-service = SearchVdb(llm, vdb=vdb, search_mode="hybrid")
-result = service.run("Please give me revenues by month.")
+service = SearchVdb(llm, vdb=vdb, search_mode="vector")
+result = service.run("Was machen Haustiere?")
 print(result)
 

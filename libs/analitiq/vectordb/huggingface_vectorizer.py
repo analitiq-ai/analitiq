@@ -1,6 +1,7 @@
 from typing import List, Union
 from transformers import AutoTokenizer, AutoModel
 import torch
+import numpy as np
 
 class HuggingFaceVectorizer:
     """
@@ -47,7 +48,7 @@ class HuggingFaceVectorizer:
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
         self.model = AutoModel.from_pretrained(self.model_name_or_path)
 
-    def vectorize(self, text: Union[str, List[str]]) -> torch.Tensor:
+    def vectorize(self, text: Union[str, List[str]]) -> np.ndarray:
         """
         Generates vectors for the given input text.
         
@@ -63,14 +64,15 @@ class HuggingFaceVectorizer:
         """
         inputs = self.tokenizer(text, return_tensors='pt', padding=True, truncation=True)
         outputs = self.model(**inputs)
-        return outputs.last_hidden_state.mean(dim=1)
+        vectors = outputs.last_hidden_state.mean(dim=1)
+        return vectors.detach().cpu().numpy().flatten().tolist()
 
 
 if __name__ == "__main__":
     # Loading a sentence bert transformer for embedding
     # other model
     model_name = "sentence-transformers/all-MiniLM-L6-v2"
-    model_name = 'sentence-transformers/all-mpnet-base-v2'
+    # model_name = 'sentence-transformers/all-mpnet-base-v2'
     vectorizer = HuggingFaceVectorizer(model_name)
 
     # Example Sentences
