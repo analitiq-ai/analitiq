@@ -1,16 +1,21 @@
+from typing import Optional, List, Tuple
+
 import os
 from ..logger import logger
 import weaviate
 from weaviate.util import generate_uuid5
 from weaviate.auth import AuthApiKey
-from weaviate.classes.query import Filter
+from weaviate.classes.query import Filter, MetadataQuery
 from weaviate.classes.config import Configure
 from weaviate.classes.tenants import Tenant
-from typing import Optional
+from weaviate.collections.classes.internal import QueryReturn
+
+
 from .base_handler import BaseVDBHandler
 from ..utils.document_processor import DocumentChunkLoader
 from pydantic import BaseModel
 
+from analitiq.vectordb import huggingface_vectorizer
 
 def search_only(func):
     """
@@ -80,6 +85,7 @@ class WeaviateHandler(BaseVDBHandler):
     .. automethod:: load
     .. automethod:: _group_by_document_and_source
     .. automethod:: kw_search
+    .. automethod:: kw_search
     .. automethod:: delete_many_like
     .. automethod:: get_many_like
     .. automethod:: delete_collection
@@ -98,6 +104,10 @@ class WeaviateHandler(BaseVDBHandler):
             multi_collection = self.client.collections.get(self.collection_name)
             # Get collection specific to the required tenant
             self.collection = multi_collection.with_tenant(self.collection_name)
+        
+        modelname = "sentence-transformers/all-MiniLM-L6-v2"
+
+        self.vectorizer = huggingface_vectorizer.HuggingFaceVectorizer(modelname)
 
         self.chunk_processor = DocumentChunkLoader(self.collection_name)
 
@@ -105,7 +115,7 @@ class WeaviateHandler(BaseVDBHandler):
         """
         Connect to the Weaviate database.
         """
-        self.client = weaviate.connect_to_wcs(
+        self.client: weaviate.classes = weaviate.connect_to_wcs(
             cluster_url=self.params['host'], auth_credentials=AuthApiKey(self.params['api_key'])
         )
 
@@ -116,10 +126,12 @@ class WeaviateHandler(BaseVDBHandler):
             logger.info(f"Existing VDB Collection name: {self.collection_name}")
 
     def create_collection(self):
-
+        """Create a collection if not existing."""
         self.client.collections.create(self.collection_name,
-                                       # Enable multi-tenancy on the new collection
-                                       multi_tenancy_config=Configure.multi_tenancy(enabled=True))
+                                       # enable multi_tenancy_config                                       
+                                       multi_tenancy_config=Configure.multi_tenancy(enabled=True),
+                                       # vectorizer_config=Configure.Vectorizer.text2vec_cohere(),
+        )
 
         self.collection = self.client.collections.get(self.collection_name)
 
@@ -149,7 +161,7 @@ class WeaviateHandler(BaseVDBHandler):
                 document_type=extension,
                 document_name=os.path.basename(chunk.metadata['source']),
                 document_num_char=doc_lengths[chunk.metadata['source']],
-                chunk_num_char=len(chunk.page_content)
+                chunk_num_char=len(chunk.page_content),
             ) for chunk in documents_chunks
             ]
 
@@ -158,7 +170,8 @@ class WeaviateHandler(BaseVDBHandler):
         with self.collection.batch.dynamic() as batch:
             for chunk in chunks:
                 uuid = generate_uuid5(chunk.model_dump())
-                batch.add_object(properties=chunk.model_dump(), uuid=uuid)
+                hf_vector = self.vectorizer.vectorize(chunk.content)
+                batch.add_object(properties=chunk.model_dump(), uuid=uuid, vector=hf_vector)
                 chunks_loaded += 1
 
         self.close()
@@ -198,15 +211,16 @@ class WeaviateHandler(BaseVDBHandler):
         return grouped_data
 
     @search_only
-    def kw_search(self, query: str, limit: int = 3) -> dict:
+    def kw_search(self, query: str, limit: int = 3) -> QueryReturn:
         """
         Perform a keyword search in the Weaviate database.
         """
         response = {}
         try:
-            response = self.collection.query.bm25(
+            response: QueryReturn = self.collection.query.bm25(
                 query=query,
                 query_properties=["content"],
+                return_metadata=MetadataQuery(score=True, distance=True),
                 limit=limit
             )
         except Exception as e:
@@ -216,6 +230,72 @@ class WeaviateHandler(BaseVDBHandler):
 
         logger.info(f"Weaviate search result: {response}")
         return response
+    
+    @search_only
+    def hybrid_search(self, query: str, limit: int = 3) -> QueryReturn:
+        """Use Hybrid Search for document retrieval from Weaviate Database."""
+        response = {}
+        try:
+            kw_results = self.kw_search(query, limit)
+            self.client.connect()
+            vector_results = self.vector_search(query, limit)
+            
+            response = self.combine_and_rerank_results(kw_results, vector_results)
+        except Exception as e:
+            logger.error(f"Weaviate error {e}")
+            raise e
+        finally:
+            self.close()
+
+        logger.info(f"Weaviate search result: {response}")
+        return response
+    
+    def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
+        """Use Vector Search for document retrieval from Weaviate Database."""
+        response = {}
+        try:
+            query_vector = self.vectorizer.vectorize(query)
+            response: QueryReturn = self.collection.query.near_vector(
+                    near_vector=query_vector,
+                    limit=limit,
+                    return_metadata=MetadataQuery(distance=True, score=True)
+            )
+        except Exception as e:
+            logger.error(f"Weaviate error {e}")
+        finally:
+            self.close()
+
+        logger.info(f"Weaviate search result: {response}")
+        return response
+    
+    def combine_and_rerank_results(self, kw_results: QueryReturn, vector_results: QueryReturn , limit: int = 3,
+                                    kw_vector_weights: Tuple[float,float] =[0.3,0.7]) -> List[dict]:
+        """Combine and rerank the results from different searches."""
+        combined = {}
+
+        vector_weight = kw_vector_weights[1]
+        kw_weight = kw_vector_weights[0]
+
+        # Assign ranks to keyword search results
+        for rank, result in enumerate(kw_results.objects, start=1):
+            uuid = result.uuid
+            if uuid not in combined:
+                combined[uuid] = {"result": result, "score": 0}
+            combined[uuid]["score"] += kw_weight * (1 / (60 + rank))
+        # Assign ranks to vector search results
+        for rank, result in enumerate(vector_results.objects, start=1):
+            uuid = result.uuid
+            if uuid not in combined:
+                combined[uuid] = {"result": result, "score": 0}
+            combined[uuid]["score"] += vector_weight * (1 / (60 + rank))
+
+        # Convert the combined dictionary to a list and sort by score
+        combined_list = sorted(combined.values(), key=lambda x: x["score"], reverse=True)
+
+        # Extract only the results (up to the specified limit)
+        reranked_results = [item["result"] for item in combined_list[:limit]]
+        
+        return QueryReturn(objects=reranked_results)
 
     def delete_many_like(self, property_name: str, property_value: str):
         """
