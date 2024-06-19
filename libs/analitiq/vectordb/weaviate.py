@@ -12,6 +12,7 @@ from weaviate.collections.classes.internal import QueryReturn
 
 from .base_handler import BaseVDBHandler
 from ..utils.document_processor import DocumentChunkLoader
+from ..schemas.vector_store import DocChunk
 from pydantic import BaseModel
 
 from analitiq.vectordb import vectorizer
@@ -19,6 +20,7 @@ from analitiq.vectordb import vectorizer
 ALLOWED_EXTENSIONS = ['py', 'yaml', 'yml', 'sql', 'txt', 'md', 'pdf']
 LOAD_DOC_CHUNK_SIZE = 2000
 LOAD_DOC_CHUNK_OVERLAP = 200
+VECTOR_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 def search_only(func):
     """
@@ -45,33 +47,6 @@ def search_grouped(func):
         self = args[0]  # Assuming the first argument to the function is 'self'
         return self._group_by_document_and_source(response)
     return wrapper
-
-
-class Chunk(BaseModel):
-    """Represents a chunk of text in a document.
-
-    :param project_name: The name of the project the chunk belongs to.
-    :type project_name: str
-    :param document_name: The name of the document the chunk belongs to.
-    :type document_name: str
-    :param document_type: The type of the document. (optional)
-    :type document_type: str, optional
-    :param content: The content of the chunk.
-    :type content: str
-    :param source: The source of the chunk.
-    :type source: str
-    :param document_num_char: The number of characters in the document.
-    :type document_num_char: int
-    :param chunk_num_char: The number of characters in the chunk.
-    :type chunk_num_char: int
-    """
-    project_name: str = None
-    document_name: str = None
-    document_type: Optional[str] = None
-    content: str = None
-    source: str
-    document_num_char: int
-    chunk_num_char: int
 
 
 class WeaviateHandler(BaseVDBHandler):
@@ -107,10 +82,8 @@ class WeaviateHandler(BaseVDBHandler):
             multi_collection = self.client.collections.get(self.collection_name)
             # Get collection specific to the required tenant
             self.collection = multi_collection.with_tenant(self.collection_name)
-        
-        modelname = "sentence-transformers/all-MiniLM-L6-v2"
 
-        self.vectorizer = vectorizer.AnalitiqVectorizer(modelname)
+        self.vectorizer = vectorizer.AnalitiqVectorizer(VECTOR_MODEL_NAME)
 
         self.chunk_processor = DocumentChunkLoader(self.collection_name)
 
@@ -158,7 +131,7 @@ class WeaviateHandler(BaseVDBHandler):
         documents_chunks, doc_lengths = self.chunk_processor.load_and_chunk_documents(path, extension, chunk_size, chunk_overlap)
 
         chunks = [
-            Chunk(
+            DocChunk(
                 content=chunk.page_content,
                 source=chunk.metadata['source'],
                 document_type=extension,
