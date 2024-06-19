@@ -18,12 +18,12 @@ if not WV_URL or not WV_CLIENT_SECRET:
 
 
 params = {
-    "collection_name": "daniels_collection",
+    "collection_name": "bikmo",
     "host": WV_URL,
     "api_key": WV_CLIENT_SECRET
 }
 
 
-wc=WeaviateHandler(params)
+wc = WeaviateHandler(params)
 FILE_PATH = './example_test_files/elefants.txt'
 wc.load(FILE_PATH)

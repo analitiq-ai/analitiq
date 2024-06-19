@@ -3,7 +3,7 @@ from transformers import AutoTokenizer, AutoModel
 import torch
 import numpy as np
 
-class HuggingFaceVectorizer:
+class AnalitiqVectorizer:
     """
     A class to handle vectorization of text using Hugging Face models.
     
@@ -73,7 +73,7 @@ if __name__ == "__main__":
     # other model
     model_name = "sentence-transformers/all-MiniLM-L6-v2"
     # model_name = 'sentence-transformers/all-mpnet-base-v2'
-    vectorizer = HuggingFaceVectorizer(model_name)
+    vectorizer = AnalitiqVectorizer(model_name)
 
     # Example Sentences
     sentences = ["Die Sonne scheint heute", "Es ist ein schöner Tag"]

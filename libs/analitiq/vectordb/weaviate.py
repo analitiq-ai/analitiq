@@ -10,12 +10,15 @@ from weaviate.classes.config import Configure
 from weaviate.classes.tenants import Tenant
 from weaviate.collections.classes.internal import QueryReturn
 
-
 from .base_handler import BaseVDBHandler
 from ..utils.document_processor import DocumentChunkLoader
 from pydantic import BaseModel
 
-from analitiq.vectordb import huggingface_vectorizer
+from analitiq.vectordb import vectorizer
+
+ALLOWED_EXTENSIONS = ['py', 'yaml', 'yml', 'sql', 'txt', 'md', 'pdf']
+LOAD_DOC_CHUNK_SIZE = 2000
+LOAD_DOC_CHUNK_OVERLAP = 200
 
 def search_only(func):
     """
@@ -107,7 +110,7 @@ class WeaviateHandler(BaseVDBHandler):
         
         modelname = "sentence-transformers/all-MiniLM-L6-v2"
 
-        self.vectorizer = huggingface_vectorizer.HuggingFaceVectorizer(modelname)
+        self.vectorizer = vectorizer.AnalitiqVectorizer(modelname)
 
         self.chunk_processor = DocumentChunkLoader(self.collection_name)
 
@@ -148,7 +151,7 @@ class WeaviateHandler(BaseVDBHandler):
         """
         self.client.close()
 
-    def _chunk_load_file_or_directory(self, path: str, extension: Optional[str] = None, chunk_size: int = 2000, chunk_overlap: int = 200):
+    def _chunk_load_file_or_directory(self, path: str, extension: Optional[str] = None, chunk_size: int = LOAD_DOC_CHUNK_SIZE, chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP):
         """
         Load files from a directory or a single file, split them into chunks, and insert them into Weaviate.
         """
@@ -179,20 +182,32 @@ class WeaviateHandler(BaseVDBHandler):
 
     def load(self, _path: str, file_ext: str = None):
         """
+        Load method
+
         Loads a file or directory into Weaviate.
+
+        :param _path: The path of the file or directory to be loaded.
+        :param file_ext: The file extension of the files to be loaded. If None, all files in the directory will be loaded.
+        :return: None
+
+        Raises:
+            FileNotFoundError: If the specified path does not exist.
+            ValueError: If the file extension is not allowed.
+
         """
-        allowed_extensions = ['py', 'yaml', 'yml', 'sql', 'txt', 'md', 'pdf']  # List of allowed file extensions
 
         if not os.path.exists(_path):
             raise FileNotFoundError(f"The path {_path} does not exist.")
 
+        error_msg = f"The file extension .{file_ext} is not allowed. Allowed extensions: {ALLOWED_EXTENSIONS}"
+
         if os.path.isdir(_path):
-            if file_ext not in allowed_extensions:
-                raise ValueError(f"The file extension .{file_ext} is not allowed. Allowed extensions: {allowed_extensions}")
+            if file_ext not in ALLOWED_EXTENSIONS:
+                raise ValueError(error_msg)
         else:
             file_ext = os.path.splitext(_path)[1][1:]  # Extract the file extension without the dot
-            if file_ext not in allowed_extensions:
-                raise ValueError(f"The file extension .{file_ext} is not allowed. Allowed extensions: {allowed_extensions}")
+            if file_ext not in ALLOWED_EXTENSIONS:
+                raise ValueError(error_msg)
 
         self._chunk_load_file_or_directory(_path, file_ext)
 
@@ -233,7 +248,16 @@ class WeaviateHandler(BaseVDBHandler):
     
     @search_only
     def hybrid_search(self, query: str, limit: int = 3) -> QueryReturn:
-        """Use Hybrid Search for document retrieval from Weaviate Database."""
+        """
+        Perform a hybrid search by combining keyword-based search and vector-based search.
+
+        :param query: The query string used for searching.
+        :param limit: The maximum number of results to return. Default is 3.
+        :return: A dictionary containing the search results.
+
+        :raises Exception: If there is an error during the search.
+
+        """
         response = {}
         try:
             kw_results = self.kw_search(query, limit)
@@ -251,7 +275,27 @@ class WeaviateHandler(BaseVDBHandler):
         return response
     
     def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
-        """Use Vector Search for document retrieval from Weaviate Database."""
+        """
+        :param query: A string representing the query to be performed.
+        :param limit: An optional integer representing the maximum number of results to return. Default value is 3.
+        :return: A QueryReturn object containing the search results.
+
+        This method performs a vector search using the Weaviate API. It takes a query string and an optional limit parameter to specify the maximum number of results to return. The method returns
+        * a QueryReturn object which contains the search results.
+
+        Example usage:
+        ```
+        # create an instance of the class
+        search_engine = SearchEngine()
+
+        # perform a vector search with a limit of 5 results
+        results = search_engine.vector_search("example query", limit=5)
+
+        # process the search results
+        for result in results:
+            print(result)
+        ```
+        """
         response = {}
         try:
             query_vector = self.vectorizer.vectorize(query)
@@ -267,10 +311,23 @@ class WeaviateHandler(BaseVDBHandler):
 
         logger.info(f"Weaviate search result: {response}")
         return response
-    
-    def combine_and_rerank_results(self, kw_results: QueryReturn, vector_results: QueryReturn , limit: int = 3,
-                                    kw_vector_weights: Tuple[float,float] =[0.3,0.7]) -> List[dict]:
-        """Combine and rerank the results from different searches."""
+
+    def combine_and_rerank_results(self, kw_results: QueryReturn, vector_results: QueryReturn, limit: int = 3,
+                                    kw_vector_weights: Tuple[float, float] =[0.3, 0.7]) -> List[dict]:
+        """
+        Combine and rerank keyword search and vector search results.
+
+        :param kw_results: Keyword search results.
+        :type kw_results: QueryReturn
+        :param vector_results: Vector search results.
+        :type vector_results: QueryReturn
+        :param limit: Number of results to return.
+        :type limit: int, optional
+        :param kw_vector_weights: Weights for keyword and vector search results, default is [0.3, 0.7].
+        :type kw_vector_weights: Tuple[float, float], optional
+        :return: Reranked results.
+        :rtype: List[dict]
+        """
         combined = {}
 
         vector_weight = kw_vector_weights[1]
