@@ -1,4 +1,4 @@
-from typing import Union, List, Dict, Any
+from typing import Union, List, Dict, Any, Optional
 from pydantic import BaseModel
 
 class VectoreStoreCollection(BaseModel):

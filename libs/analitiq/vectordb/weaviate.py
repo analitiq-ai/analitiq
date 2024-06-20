@@ -13,7 +13,6 @@ from weaviate.collections.classes.internal import QueryReturn
 from .base_handler import BaseVDBHandler
 from ..utils.document_processor import DocumentChunkLoader
 from ..schemas.vector_store import DocChunk
-from pydantic import BaseModel
 
 from analitiq.vectordb import vectorizer
 
