@@ -133,6 +133,7 @@ class WeaviateHandler(BaseVDBHandler):
         self.client.collections.create(self.collection_name,
                                        # enable multi_tenancy_config                                       
                                        multi_tenancy_config=Configure.multi_tenancy(enabled=True),
+                                       # vectorizer_config=Configure.Vectorizer.text2vec_cohere(),
         )
 
         self.collection = self.client.collections.get(self.collection_name)
@@ -173,9 +174,7 @@ class WeaviateHandler(BaseVDBHandler):
             for chunk in chunks:
                 uuid = generate_uuid5(chunk.model_dump())
                 hf_vector = self.vectorizer.vectorize(chunk.content)
-                batch.add_object(properties=chunk.model_dump(), uuid=uuid,
-                                 vector=hf_vector
-                                 )
+                batch.add_object(properties=chunk.model_dump(), uuid=uuid, vector=hf_vector)
                 chunks_loaded += 1
 
         self.close()
@@ -231,7 +230,7 @@ class WeaviateHandler(BaseVDBHandler):
         """
         Perform a keyword search in the Weaviate database.
         """
-        response = QueryReturn(objects=[])
+        response = {}
         try:
             response: QueryReturn = self.collection.query.bm25(
                 query=query,
@@ -244,15 +243,12 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-        logger.info(f"Weaviate Keyword search result: {response}")
+        logger.info(f"Weaviate search result: {response}")
         return response
     
     @search_only
     def hybrid_search(self, query: str, limit: int = 3) -> QueryReturn:
-
-        """Use Hybrid Search for document retrieval from Weaviate Database.
-        
-
+        """
         Perform a hybrid search by combining keyword-based search and vector-based search.
 
         :param query: The query string used for searching.
@@ -262,8 +258,7 @@ class WeaviateHandler(BaseVDBHandler):
         :raises Exception: If there is an error during the search.
 
         """
-        response = QueryReturn(objects=[])
-
+        response = {}
         try:
             kw_results = self.kw_search(query, limit)
             self.client.connect()
@@ -276,13 +271,11 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-        logger.info(f"Weaviate Hybrid search result: {response}")
+        logger.info(f"Weaviate search result: {response}")
         return response
     
     def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
-
-        """Use Vector Search for document retrieval from Weaviate Database.
-        
+        """
         :param query: A string representing the query to be performed.
         :param limit: An optional integer representing the maximum number of results to return. Default value is 3.
         :return: A QueryReturn object containing the search results.
@@ -303,9 +296,7 @@ class WeaviateHandler(BaseVDBHandler):
             print(result)
         ```
         """
-        
-        response = QueryReturn(objects=[])
-
+        response = {}
         try:
             query_vector = self.vectorizer.vectorize(query)
             response: QueryReturn = self.collection.query.near_vector(
@@ -318,7 +309,7 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-        logger.info(f"Weaviate vector search result: {response}")
+        logger.info(f"Weaviate search result: {response}")
         return response
 
     def combine_and_rerank_results(self, kw_results: QueryReturn, vector_results: QueryReturn, limit: int = 3,
@@ -362,36 +353,6 @@ class WeaviateHandler(BaseVDBHandler):
         reranked_results = [item["result"] for item in combined_list[:limit]]
         
         return QueryReturn(objects=reranked_results)
-    
-    def update_vectors(self):
-        """Update the Vectors in your database for existing entries."""
-        updated_count = 0
-        try:
-            all_objects = self.collection.query.fetch_objects(
-                filters=None  # Fetch all objects without any filters
-            )
-
-            # Iterate over all objects and update vectors
-            for obj in all_objects.objects:
-                content = obj.properties['content']
-                uuid = obj.uuid
-
-                # Re-vectorize the content
-                new_vector = self.vectorizer.vectorize(content)
-
-                # Update the object in the collection with the new vector
-                self.collection.data.update(
-                    uuid=uuid,
-                    vector=new_vector
-                )
-            updated_count += 1
-
-            logger.info(f"Successfully updated vectors for {updated_count} entries.")
-        except Exception as e:
-            logger.error(f"Error updating vectors: {e}")
-        finally:
-            self.close()
-
 
     def delete_many_like(self, property_name: str, property_value: str):
         """
