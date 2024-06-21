@@ -33,7 +33,7 @@ llm_params = {'type': 'bedrock'
 llm = BaseLlm(llm_params)
 
 params = {
-    "collection_name": "daniels_collection",
+    "collection_name": "daniels_collection_vectorless",
     "host": WV_URL,
     "api_key": WV_CLIENT_SECRET,
 }
@@ -42,6 +42,8 @@ vdb = WeaviateHandler(params)
 
 # Example of using the SQLGenerator class
 service = SearchVdb(llm, vdb=vdb, search_mode="hybrid")
-result = service.run("Welche tiere sind loyal?")
+result = service.run("katzen")
+# vdb.update_vectors()
+# vdb.delete_collection("daniels_collection_vectorless")
 print(result)
 
