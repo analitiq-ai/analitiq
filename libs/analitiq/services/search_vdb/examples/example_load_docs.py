@@ -18,12 +18,13 @@ if not WV_URL or not WV_CLIENT_SECRET:
 
 
 params = {
-    "collection_name": "bikmo",
+    "collection_name": "daniels_collection_vectorless",
     "host": WV_URL,
-    "api_key": WV_CLIENT_SECRET
+    "api_key": WV_CLIENT_SECRET,
+    "encoding_model": "microsoft/codebert-base"
 }
 
 
 wc = WeaviateHandler(params)
-FILE_PATH = './example_test_files/elefants.txt'
+FILE_PATH = './example_test_files/cats.txt'
 wc.load(FILE_PATH)
