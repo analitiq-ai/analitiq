@@ -72,6 +72,7 @@ class Chunk(BaseModel):
     source: str
     document_num_char: int
     chunk_num_char: int
+    encoder: str
 
 
 class WeaviateHandler(BaseVDBHandler):
@@ -108,8 +109,7 @@ class WeaviateHandler(BaseVDBHandler):
             # Get collection specific to the required tenant
             self.collection = multi_collection.with_tenant(self.collection_name)
         
-        modelname = "sentence-transformers/all-MiniLM-L6-v2"
-
+        modelname = self.params.get("encoding_model","sentence-transformers/all-MiniLM-L6-v2")
         self.vectorizer = vectorizer.AnalitiqVectorizer(modelname)
 
         self.chunk_processor = DocumentChunkLoader(self.collection_name)
@@ -164,6 +164,7 @@ class WeaviateHandler(BaseVDBHandler):
                 document_name=os.path.basename(chunk.metadata['source']),
                 document_num_char=doc_lengths[chunk.metadata['source']],
                 chunk_num_char=len(chunk.page_content),
+                encoder=self.vectorizer.model_name_or_path
             ) for chunk in documents_chunks
             ]
 
@@ -279,6 +280,7 @@ class WeaviateHandler(BaseVDBHandler):
         logger.info(f"Weaviate Hybrid search result: {response}")
         return response
     
+    @search_only
     def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
 
         """Use Vector Search for document retrieval from Weaviate Database.

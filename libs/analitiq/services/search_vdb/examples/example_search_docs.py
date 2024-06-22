@@ -36,6 +36,7 @@ params = {
     "collection_name": "daniels_collection_vectorless",
     "host": WV_URL,
     "api_key": WV_CLIENT_SECRET,
+    "encoding_model": "microsoft/codebert-base"
 }
 
 vdb = WeaviateHandler(params)
