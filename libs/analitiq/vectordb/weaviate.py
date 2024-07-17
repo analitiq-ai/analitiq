@@ -12,7 +12,7 @@ from weaviate.collections.classes.internal import QueryReturn
 
 from .base_handler import BaseVDBHandler
 from ..utils.document_processor import DocumentChunkLoader
-from ..schemas.vector_store import DocChunk
+from pydantic import BaseModel
 
 from analitiq.vectordb import vectorizer
 
@@ -48,6 +48,33 @@ def search_grouped(func):
     return wrapper
 
 
+class Chunk(BaseModel):
+    """Represents a chunk of text in a document.
+
+    :param project_name: The name of the project the chunk belongs to.
+    :type project_name: str
+    :param document_name: The name of the document the chunk belongs to.
+    :type document_name: str
+    :param document_type: The type of the document. (optional)
+    :type document_type: str, optional
+    :param content: The content of the chunk.
+    :type content: str
+    :param source: The source of the chunk.
+    :type source: str
+    :param document_num_char: The number of characters in the document.
+    :type document_num_char: int
+    :param chunk_num_char: The number of characters in the chunk.
+    :type chunk_num_char: int
+    """
+    project_name: str = None
+    document_name: str = None
+    document_type: Optional[str] = None
+    content: str = None
+    source: str
+    document_num_char: int
+    chunk_num_char: int
+
+
 class WeaviateHandler(BaseVDBHandler):
     """
     :class: WeaviateHandler(BaseVDBHandler)
@@ -81,8 +108,10 @@ class WeaviateHandler(BaseVDBHandler):
             multi_collection = self.client.collections.get(self.collection_name)
             # Get collection specific to the required tenant
             self.collection = multi_collection.with_tenant(self.collection_name)
+        
+        modelname = "sentence-transformers/all-MiniLM-L6-v2"
 
-        self.vectorizer = vectorizer.AnalitiqVectorizer(VECTOR_MODEL_NAME)
+        self.vectorizer = vectorizer.AnalitiqVectorizer(modelname)
 
         self.chunk_processor = DocumentChunkLoader(self.collection_name)
 
@@ -130,7 +159,7 @@ class WeaviateHandler(BaseVDBHandler):
         documents_chunks, doc_lengths = self.chunk_processor.load_and_chunk_documents(path, extension, chunk_size, chunk_overlap)
 
         chunks = [
-            DocChunk(
+            Chunk(
                 content=chunk.page_content,
                 source=chunk.metadata['source'],
                 document_type=extension,
@@ -146,7 +175,9 @@ class WeaviateHandler(BaseVDBHandler):
             for chunk in chunks:
                 uuid = generate_uuid5(chunk.model_dump())
                 hf_vector = self.vectorizer.vectorize(chunk.content)
-                batch.add_object(properties=chunk.model_dump(), uuid=uuid, vector=hf_vector)
+                batch.add_object(properties=chunk.model_dump(), uuid=uuid,
+                                 vector=hf_vector
+                                 )
                 chunks_loaded += 1
 
         self.close()
@@ -215,12 +246,15 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-        logger.info(f"Weaviate search result: {response}")
+        logger.info(f"Weaviate Keyword search result: {response}")
         return response
     
     @search_only
     def hybrid_search(self, query: str, limit: int = 3) -> QueryReturn:
-        """
+
+        """Use Hybrid Search for document retrieval from Weaviate Database.
+
+
         Perform a hybrid search by combining keyword-based search and vector-based search.
 
         :param query: The query string used for searching.
@@ -231,6 +265,7 @@ class WeaviateHandler(BaseVDBHandler):
 
         """
         response = QueryReturn(objects=[])
+
         try:
             kw_results = self.kw_search(query, limit)
             self.client.connect()
@@ -243,11 +278,13 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-        logger.info(f"Weaviate search result: {response}")
+        logger.info(f"Weaviate Hybrid search result: {response}")
         return response
     
     def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
-        """
+
+        """Use Vector Search for document retrieval from Weaviate Database.
+
         :param query: A string representing the query to be performed.
         :param limit: An optional integer representing the maximum number of results to return. Default value is 3.
         :return: A QueryReturn object containing the search results.
@@ -268,7 +305,9 @@ class WeaviateHandler(BaseVDBHandler):
             print(result)
         ```
         """
+
         response = QueryReturn(objects=[])
+
         try:
             query_vector = self.vectorizer.vectorize(query)
             response: QueryReturn = self.collection.query.near_vector(
@@ -281,7 +320,7 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-        logger.info(f"Weaviate search result: {response}")
+        logger.info(f"Weaviate vector search result: {response}")
         return response
 
     def combine_and_rerank_results(self, kw_results: QueryReturn, vector_results: QueryReturn, limit: int = 3,
@@ -342,35 +381,6 @@ class WeaviateHandler(BaseVDBHandler):
         except Exception as e:
             logger.error(f"Error deleting documents: {e}")
             return False
-        finally:
-            self.close()
-
-    def update_vectors(self):
-        """Update the Vectors in your database for existing entries."""
-        updated_count = 0
-        try:
-            all_objects = self.collection.query.fetch_objects(
-                filters=None  # Fetch all objects without any filters
-            )
-
-            # Iterate over all objects and update vectors
-            for obj in all_objects.objects:
-                content = obj.properties['content']
-                uuid = obj.uuid
-
-                # Re-vectorize the content
-                new_vector = self.vectorizer.vectorize(content)
-
-                # Update the object in the collection with the new vector
-                self.collection.data.update(
-                    uuid=uuid,
-                    vector=new_vector
-                )
-            updated_count += 1
-
-            logger.info(f"Successfully updated vectors for {updated_count} entries.")
-        except Exception as e:
-            logger.error(f"Error updating vectors: {e}")
         finally:
             self.close()
 
