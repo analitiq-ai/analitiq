@@ -1,7 +1,7 @@
 Usage example
 
 ```python
-from analitiq.services.save.save import Save
+from analitiq.agents.save.save import Save
 
 
 save_ = Save()

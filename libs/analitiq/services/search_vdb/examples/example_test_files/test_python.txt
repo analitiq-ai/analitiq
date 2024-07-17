@@ -1,4 +1,0 @@
-import re
-
-def tester_my_python(text: str) -> str:
-    return text

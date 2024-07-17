@@ -8,7 +8,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain.output_parsers import OutputFixingParser
 from langchain.prompts import PromptTemplate
 
-from analitiq.services.save.prompt import (
+from analitiq.agents.save.prompt import (
     SAVE_ELEMENT_PROMPT
 )
 

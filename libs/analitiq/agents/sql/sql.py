@@ -9,13 +9,13 @@ from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.code_extractor import CodeExtractor
 from analitiq.base.Database import DatabaseWrapper
 
-from analitiq.services.sql.schema import Table, Column, Tables, SQL, TableCheck
+from analitiq.agents.sql.schema import Table, Column, Tables, SQL, TableCheck
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.output_parsers import PydanticOutputParser
 from sqlalchemy.exc import DatabaseError
 
-from analitiq.services.sql.prompt import (
+from analitiq.agents.sql.prompt import (
     RETURN_RELEVANT_TABLE_NAMES,
     TEXT_TO_SQL_PROMPT,
     FIX_SQL,
