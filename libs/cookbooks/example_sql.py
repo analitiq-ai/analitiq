@@ -9,7 +9,7 @@ home_directory = os.environ['HOME']
 dynamic_path = f'{home_directory}/Documents/Projects/analitiq/libs/'
 sys.path.insert(0, dynamic_path)
 
-from sql import Sql
+from analitiq.services.sql.sql import Sql
 from analitiq.base.Database import DatabaseWrapper
 from analitiq.base.llm.BaseLlm import BaseLlm
 from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateHandler
@@ -45,10 +45,10 @@ params = {
     "api_key": "xxxxx"
 }
 
-vdb = WeaviateHandler(params)
+vdb = WeaviateHandler(vdb_params)
 
 # Example of using the SQLGenerator class
-service = Sql(db, llm, vdb=vdb)
-result = service.run("Please give me revenues by month.")
+agent = Sql(db, llm, vdb=vdb)
+result = agent.run("Please give me revenues by month.")
 print(result)
 
