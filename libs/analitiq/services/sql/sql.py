@@ -28,6 +28,47 @@ db_docs_name = "schema"  # this is the identifier of the name of the DB schema d
 context_max_tokens = 100000
 chunk_overlap = 200
 
+
+def get_chat_log_file_path():
+    return f"{os.path.dirname(os.path.abspath(__file__))}/logs/latest_chat.log"
+
+
+def get_execution_log_file_path():
+    return f"{os.path.dirname(os.path.abspath(__file__))}/logs/latest_run.log"
+
+
+def setup_chat_logger():
+    file_path = get_chat_log_file_path()
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+    handler = logging.FileHandler(file_path)
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+    logger.addHandler(handler)
+    logger.propagate = False
+
+    # clear the logfile content
+    with open(file_path, "w") as log_file:
+        pass
+
+    return logger
+
+
+def setup_execution_logger():
+    file_path = get_execution_log_file_path()
+    logger = logging.getLogger('execution_logger')
+    logger.setLevel(logging.INFO)
+    handler = logging.FileHandler(file_path)
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    logger.addHandler(handler)
+    logger.propagate = False
+
+    # clear the logfile content
+    with open(file_path, "w") as log_file:
+        pass
+
+    return logger
+
+
 class Sql:
     """Handles SQL query generation and execution against database. Useful when user would like to query data.
 
@@ -57,24 +98,8 @@ class Sql:
 
         self.relevant_tables = ""
         self.response = BaseResponse(self.__class__.__name__)
-        self.logger = self.setup_logger()
-
-    def setup_logger(self):
-        logger = logging.getLogger(__name__)
-        logger.setLevel(logging.INFO)
-        handler = logging.FileHandler(self.get_log_file_path())
-        handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
-        logger.addHandler(handler)
-        logger.propagate = False
-
-        # clear the logfile content
-        with open(self.get_log_file_path(), "w") as log_file:
-            pass
-
-        return logger
-
-    def get_log_file_path(self):
-        return f"{os.path.dirname(os.path.abspath(__file__))}/logs/latest_run.log"
+        self.chat_logger = setup_chat_logger()
+        self.exe_logger = setup_execution_logger()  # Set up the execution logger
 
     def _format_prompt(self, prompt, is_history):
         formatted_prompt = prompt.format(user_prompt=self.user_prompt)
@@ -85,9 +110,9 @@ class Sql:
     def _log_prompt(self, prompt_as_txt, is_history):
 
         if is_history:
-            self.logger.info(f"[[PROMPT_WITH_CHAT_HISTORY_START]]\n\n{prompt_as_txt}\n\n[[PROMPT_WITH_CHAT_HISTORY_END]]")
+            self.chat_logger.info(f"[[PROMPT_WITH_CHAT_HISTORY_START]]\n\n{prompt_as_txt}\n\n[[PROMPT_WITH_CHAT_HISTORY_END]]")
         else:
-            self.logger.info(f"Human: {prompt_as_txt}")
+            self.chat_logger.info(f"Human: {prompt_as_txt}")
 
     def get_ddl(self, docs) -> List[str]:
         """Retrieves a list of usable table names from the database.
@@ -155,8 +180,8 @@ class Sql:
 
         response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
 
-
-        self.logger.info(f"Assistant:\nList of tables believed to be relevant - {response.to_json()}")
+        self.exe_logger.info(f"Relevant Tables: {response.to_json()}")
+        self.chat_logger.info(f"Assistant:\nList of tables believed to be relevant - {response.to_json()}")
 
         schema_dict = {}
         # Organize tables by schema
@@ -183,10 +208,11 @@ class Sql:
                 output_lines.append(f"    - Columns: {column_details}")
 
         self.relevant_tables = "\n".join(output_lines)
-        self.logger.info(f"Assistant:\nList of relevant tables and columns.\n{self.relevant_tables}")
+        self.chat_logger.info(f"Assistant:\nList of relevant tables and columns.\n{self.relevant_tables}")
         self.response.add_text_to_metadata(f"Relevant tables: {self.relevant_tables}")
 
         self.response.set_metadata({"relevant_tables": self.relevant_tables})
+        self.exe_logger.info(f"Relevant Tables Formatted: {self.relevant_tables}")
 
         return True
 
@@ -221,10 +247,10 @@ class Sql:
         """Invoke the LLM with a given prompt and parser."""
         try:
             response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
-            self.logger.info(f"Assistant:\n{response}")
+            self.chat_logger.info(f"Assistant:\n{response}")
             return response
         except Exception as e:
-            self.logger.error(f"LLM response error: {str(e)}")
+            self.chat_logger.error(f"LLM response error: {str(e)}")
             return self._handle_llm_failure(e)
 
     def _handle_llm_failure(self, exception):
@@ -241,7 +267,7 @@ class Sql:
                 return result
             return None
         except Exception as e:
-            self.logger.error(f"LLM code extractor error: {str(e)}")
+            self.chat_logger.error(f"LLM code extractor error: {str(e)}")
             return None
 
     def _attempt_llm_recovery(self, exception, result):
@@ -252,7 +278,7 @@ class Sql:
             response_dict = json.loads(response)
             return response_dict
         except Exception as e:
-            self.logger.error(f"Could not extract dictionary from response {response}.\n{str(e)}")
+            self.chat_logger.error(f"Could not extract dictionary from response {response}.\n{str(e)}")
             raise RuntimeError("Failed to recover from LLM error.") from e
 
 
@@ -291,7 +317,7 @@ class Sql:
                 raise ValueError("Human: No SQL Code returned")
             return response
         except Exception as e:
-            self.logger.error(f"Human: Error getting LLM response. {str(e)}")
+            self.chat_logger.error(f"Human: Error getting LLM response. {str(e)}")
             if iteration_num < 5:
                 return self.get_sql_from_llm(iteration_num + 1)
             else:
@@ -321,7 +347,7 @@ class Sql:
         response = self.vdb.get_many_like("document_name", db_docs_name)
 
         if not response:
-            self.logger.info(f"[VectorDB] No objects returned that match search parameter {db_docs_name}.")
+            self.chat_logger.info(f"[VectorDB] No objects returned that match search parameter {db_docs_name}.")
             return None
 
         # Initialize an empty string to hold the formatted content
@@ -346,7 +372,7 @@ class Sql:
             formatted_documents_string += f"Document name: {document_name}\nDocument content:\n{formatted_content}\n\n"
 
         response = self.llm.extract_info_from_db_docs(self.user_prompt, formatted_documents_string)
-        self.logger.info(f"LLM: {response}")
+        self.chat_logger.info(f"LLM: {response}")
         self.response.add_text_to_metadata(response)
 
         if response == 'None':
@@ -356,22 +382,22 @@ class Sql:
 
     def execute_sql(self, sql: str, convert_to_df=True):
         """Execute SQL and log the process, handling errors and retries."""
-        self.logger.info({sql})
+        self.chat_logger.info({sql})
         try:
             if convert_to_df:
                 result = pd.read_sql(sql, self.db.engine)
                 if result.empty:
-                    self.logger.info(f"Human: SQL executed successfully, but result is empty.")
+                    self.chat_logger.info(f"Human: SQL executed successfully, but result is empty.")
                 else:
-                    self.logger.info(f"Human: SQL executed successfully.\nConverted to DataFrame. {result}")
+                    self.chat_logger.info(f"Human: SQL executed successfully.\nConverted to DataFrame. {result}")
             else:
                 result = self.db.run(sql, include_columns=True)
-                self.logger.info("Human: SQL executed successfully.")
+                self.chat_logger.info("Human: SQL executed successfully.")
 
             self.response.add_text_to_metadata(f"```\n{sql}\n```")
             return True, result
         except DatabaseError as e:
-            self.logger.error(f"Human: Error executing SQL.\n{str(e)}")
+            self.chat_logger.error(f"Human: Error executing SQL.\n{str(e)}")
             return False, str(e)
 
     def _set_result(self, result: pd.DataFrame, sql: str = None, explanation: str = None):
@@ -394,8 +420,10 @@ class Sql:
                      and additional metadata such as executed SQL and relevant tables.
        """
         self.user_prompt = user_prompt
-        self.logger.info(f"Human: {user_prompt}")
+        self.chat_logger.info(f"Human: {user_prompt}")
+        self.exe_logger.info(f"User query: {user_prompt}")
         docs = self.get_db_docs()
+        self.exe_logger.info(f"Documents obtained: {docs}")
 
         if docs:
             # we check if DB doc already has SQL as some LLMs tend to do that.
@@ -418,9 +446,12 @@ class Sql:
         except RuntimeError as e:
             return str(e)
 
+        self.exe_logger.info(f"SQL: {sql}")
+
         for _ in range(max_iterations):
             success, result = self.execute_sql(sql)
             if success:
+                self.exe_logger.info(f"SQL Executed successfully: {result}")
                 self._set_result(result, sql, response['Explanation'])
                 break  # terminate the loop on successful execution of SQL
             else:

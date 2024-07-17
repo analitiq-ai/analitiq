@@ -2,6 +2,7 @@ import logging
 import sys
 
 console = True  # Set this to True to enable console debugging
+LOG_DIRECTORY = 'analitiq/logs/'
 
 # Create a logger
 logger = logging.getLogger(__name__)
@@ -12,7 +13,7 @@ console_handler = logging.StreamHandler(sys.stdout)
 console_handler.setLevel(logging.DEBUG)
 
 # Create a file handler and set the level to INFO
-file_handler = logging.FileHandler(filename='latest_run.log', encoding='utf-8', mode='w')
+file_handler = logging.FileHandler(filename=f"{LOG_DIRECTORY}latest_run.log", encoding='utf-8', mode='w')
 file_handler.setLevel(logging.INFO)
 
 # Create a formatter and add it to the handlers

@@ -11,8 +11,8 @@ from analitiq.base.Graph import Graph, Node
 from analitiq.base.BaseSession import BaseSession
 
 HELP_RESPONSE = """
-    Analitiq is an AI assistant that can examine your SQL files and database structure and answer common questions about your data.
-    Please note that DB query is currently in beta and is disabled on this instance.
+    Analitiq [v{version}] is an AI assistant that can examine your SQL files and database structure and answer common questions about your data.\n
+    Please note that DB query is currently in beta and is disabled on this instance.\n
     Services that are currently connected:
 """
 
@@ -222,7 +222,7 @@ class Analitiq():
 
         # First, we check if user typed Help. If so, we can skiop the rest of the logic, for now
         if user_prompt.lower() == 'help':
-            text = HELP_RESPONSE + '\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
+            text = HELP_RESPONSE.format(version=GlobalConfig().project_config['version']) + '\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
             self.response.set_content(text)
             return self.return_response()
         elif user_prompt.lower() == 'fail':

@@ -3,22 +3,27 @@ This is an example of how to load documents into VectorDB before allowing analit
 """
 
 import os
-import sys
-# Get the home directory
-home_directory = os.environ['HOME']
-# Dynamically construct the path
-dynamic_path = f'{home_directory}/Documents/Projects/analitiq/libs/'
-sys.path.insert(0, dynamic_path)
 
-from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateHandler
+from analitiq.vectordb.weaviate import WeaviateHandler
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+WV_URL = os.getenv("WEAVIATE_URL")
+WV_CLIENT_SECRET = os.getenv("WEAVIATE_CLIENT_SECRET")
+
+if not WV_URL or not WV_CLIENT_SECRET:
+    raise KeyError("Environment Variables not set. Please set variables!")
+
 
 params = {
-    "collection_name": "my_collection",
-    "host": "https://xxxxx.weaviate.network",
-    "api_key": "xxxxx"
+    "collection_name": "bikmo",
+    "host": WV_URL,
+    "api_key": WV_CLIENT_SECRET
 }
 
 
-wc=WeaviateHandler(params)
-FILE_PATH = '/xxx/xxx/xxx/xxx/xxx/test_schema.yml'
+wc = WeaviateHandler(params)
+FILE_PATH = './example_test_files/elefants.txt'
 wc.load(FILE_PATH)

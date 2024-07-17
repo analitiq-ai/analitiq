@@ -1,22 +1,30 @@
+from typing import Literal
 from analitiq.logger import logger
 from analitiq.base.BaseResponse import BaseResponse
+from analitiq.vectordb import weaviate
 
+DEFAULT_SEARCH_MODE = 'hybrid'
 
 class SearchVdb:
     """
     This class represents a service to search internal documentation for information.
     """
 
-    def __init__(self, llm, vdb) -> None:
+    def __init__(self, llm, vdb: weaviate.WeaviateHandler, search_mode: Literal["kw", "vector", "hybrid"] = DEFAULT_SEARCH_MODE) -> None:
         self.llm = llm
         self.client = vdb
         self.user_prompt: str = None
         self.response = BaseResponse(self.__class__.__name__)
+        self.search_mode = search_mode
 
     def run(self, user_prompt):
         self.user_prompt = user_prompt
-
-        response = self.client.kw_search(user_prompt)
+        if self.search_mode == "kw":
+            response = self.client.kw_search(user_prompt)
+        elif self.search_mode == "hybrid":
+            response = self.client.hybrid_search(user_prompt)
+        elif self.search_mode == "vector":
+            response = self.client.vector_search(user_prompt)
 
         try:
             docs = response.objects

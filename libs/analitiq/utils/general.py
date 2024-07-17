@@ -83,6 +83,8 @@ def load_yaml(file_path: str) -> Dict[str, Any]:
     if file_path.exists():
         with open(file_path, 'r') as f:
             configs = yaml.safe_load(f)
+            if configs is None or configs == {}:
+                raise ValueError(f"The file is empty: {file_path}")
     else:
         raise FileNotFoundError(f"The file does not exist: {file_path}")
 
