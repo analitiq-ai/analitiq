@@ -4,7 +4,7 @@ This is an example of how to search documents using search services.
 
 import os
 
-from analitiq.services.search_vdb.search_vdb import SearchVdb
+from analitiq.agents.search_vdb.search_vdb import SearchVdb
 from analitiq.base.llm.BaseLlm import BaseLlm
 from analitiq.vectordb.weaviate import WeaviateHandler
 

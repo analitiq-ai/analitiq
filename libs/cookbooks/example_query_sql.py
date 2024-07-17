@@ -9,10 +9,23 @@ home_directory = os.environ['HOME']
 dynamic_path = f'{home_directory}/Documents/Projects/analitiq/libs/'
 sys.path.insert(0, dynamic_path)
 
-from analitiq.services.sql.sql import Sql
+from analitiq.agents.sql.sql import Sql
 from analitiq.base.Database import DatabaseWrapper
 from analitiq.base.llm.BaseLlm import BaseLlm
 from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateHandler
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
+WV_URL = os.getenv("WEAVIATE_URL")
+WV_CLIENT_SECRET = os.getenv("WEAVIATE_CLIENT_SECRET")
+
+LLM_MODEL_NAME=os.getenv("LLM_MODEL_NAME")
+CREDENTIALS_PROFILE_NAME=os.getenv("CREDENTIALS_PROFILE_NAME")
+AWS_ACCESS_KEY_ID=os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY=os.getenv("AWS_SECRET_ACCESS_KEY")
+REGION_NAME=os.getenv("REGION_NAME")
 
 db_params = {'name': 'prod_dw'
     , 'type': 'redshift'
