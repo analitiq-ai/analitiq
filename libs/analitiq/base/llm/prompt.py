@@ -70,20 +70,6 @@ Response format instructions:
 {format_instructions}
 """
 
-
-HELP_RESPONSE = """
-I am a Synthetic Data Analyst and I have access to the following services.
-You can ask me a data related question and I will use the services at my disposal to answer it.
-
-To force me to complete steps in a particular order, type
-Action: Step1 -> Step2
-
-To force me to use certain services, type
-Tools: Tool1 -> Tool2
-
-Services at my disposal:
-"""
-
 TASK_LIST = """
 You are a data analyst.
 You received a user query: "{user_prompt}".

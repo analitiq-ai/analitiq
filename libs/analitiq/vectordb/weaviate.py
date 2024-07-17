@@ -202,7 +202,7 @@ class WeaviateHandler(BaseVDBHandler):
         """
         Perform a keyword search in the Weaviate database.
         """
-        response = {}
+        response = QueryReturn(objects=[])
         try:
             response: QueryReturn = self.collection.query.bm25(
                 query=query,
@@ -230,7 +230,7 @@ class WeaviateHandler(BaseVDBHandler):
         :raises Exception: If there is an error during the search.
 
         """
-        response = {}
+        response = QueryReturn(objects=[])
         try:
             kw_results = self.kw_search(query, limit)
             self.client.connect()
@@ -268,7 +268,7 @@ class WeaviateHandler(BaseVDBHandler):
             print(result)
         ```
         """
-        response = {}
+        response = QueryReturn(objects=[])
         try:
             query_vector = self.vectorizer.vectorize(query)
             response: QueryReturn = self.collection.query.near_vector(
@@ -342,6 +342,35 @@ class WeaviateHandler(BaseVDBHandler):
         except Exception as e:
             logger.error(f"Error deleting documents: {e}")
             return False
+        finally:
+            self.close()
+
+    def update_vectors(self):
+        """Update the Vectors in your database for existing entries."""
+        updated_count = 0
+        try:
+            all_objects = self.collection.query.fetch_objects(
+                filters=None  # Fetch all objects without any filters
+            )
+
+            # Iterate over all objects and update vectors
+            for obj in all_objects.objects:
+                content = obj.properties['content']
+                uuid = obj.uuid
+
+                # Re-vectorize the content
+                new_vector = self.vectorizer.vectorize(content)
+
+                # Update the object in the collection with the new vector
+                self.collection.data.update(
+                    uuid=uuid,
+                    vector=new_vector
+                )
+            updated_count += 1
+
+            logger.info(f"Successfully updated vectors for {updated_count} entries.")
+        except Exception as e:
+            logger.error(f"Error updating vectors: {e}")
         finally:
             self.close()
 

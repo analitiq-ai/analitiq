@@ -1,17 +1,16 @@
 from typing import Literal
-
 from analitiq.logger import logger
 from analitiq.base.BaseResponse import BaseResponse
-
 from analitiq.vectordb import weaviate
 
+DEFAULT_SEARCH_MODE = 'hybrid'
 
 class SearchVdb:
     """
     This class represents a service to search internal documentation for information.
     """
 
-    def __init__(self, llm, vdb: weaviate.WeaviateHandler, search_mode: Literal["kw","vector","hybrid"] = "kw") -> None:
+    def __init__(self, llm, vdb: weaviate.WeaviateHandler, search_mode: Literal["kw", "vector", "hybrid"] = DEFAULT_SEARCH_MODE) -> None:
         self.llm = llm
         self.client = vdb
         self.user_prompt: str = None
