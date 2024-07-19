@@ -25,6 +25,16 @@ DB_DOCS_NAME = "schema.sql"
 CONTEXT_MAX_TOKENS = 100000
 CHUNK_OVERLAP = 200
 
+"""
+TODO How do you reconcile:
+VDB docs with info about tables in schemas.
+schemas which Analitiq has access to.
+Schemas that are defined in configuration.
+
+Perhaps what we should do is to limit the schemas to only the ones that are defined in config, and if the documents have additional info, we disregard it?
+"""
+
+
 # Logging setup
 def setup_logger(name: str, log_file: str, level=logging.INFO) -> logging.Logger:
     logger = logging.getLogger(name)
@@ -53,6 +63,7 @@ class Sql:
         self.vdb = vdb # TODO this should be double checked as it is not same as search example.
         self.relevant_tables = ""
         self.response = BaseResponse(self.__class__.__name__)
+
 
     @staticmethod
     def _get_chat_log_file_path() -> str:
@@ -86,9 +97,7 @@ class Sql:
 
     def get_relevant_tables(self, docs: str = None) -> List[Table]:
         ddl = self.get_ddl()
-
         docs = f"Database Documentation:\n{docs}\n" if docs else ''
-
         parser = PydanticOutputParser(pydantic_object=Tables)
         prompt = PromptTemplate(
             template=RETURN_RELEVANT_TABLE_NAMES,
@@ -111,7 +120,10 @@ class Sql:
                     schema_dict[table.SchemaName] = []
                 schema_dict[table.SchemaName].append(table)
 
-        return self._format_relevant_tables(schema_dict)
+        self.relevant_tables = self._format_relevant_tables(schema_dict)
+        self.chat_logger.info(f"Assistant: List of relevant tables and columns.\n{self.relevant_tables}")
+        self.response.add_text_to_metadata(f"Relevant tables: {self.relevant_tables}")
+        self.response.set_metadata({"relevant_tables": self.relevant_tables})
 
     @staticmethod
     def _format_relevant_tables(schema_dict: dict) -> str:
@@ -208,17 +220,53 @@ class Sql:
             )
             is_hist = False
 
-        response = self._prep_llm_invoke(prompt, parser, is_hist)
-        if not response.get('SQL_Code'):
-            raise ValueError("No SQL Code returned")
-        return response
+        try:
+            response = self._prep_llm_invoke(prompt, parser, is_hist)
+            if not response.get('SQL_Code'):
+                raise ValueError("No SQL Code returned")
+            return response
+        except Exception as e:
+            self.chat_logger.error(f"Error getting LLM response. {str(e)}")
+            if iteration_num < MAX_ITERATIONS:
+                return self.get_sql_from_llm(iteration_num + 1)
+            else:
+                raise RuntimeError("Maximum retry attempts reached for SQL generation.")
 
     def _prep_llm_invoke(self, prompt, parser, is_history: bool = False):
         prompt_as_txt = prompt.format(user_prompt=self.user_prompt)
         self._log_prompt(prompt_as_txt, is_history)
-        response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
-        self.chat_logger.info(f"Assistant: {response}")
-        return response
+        try:
+            response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
+            self.chat_logger.info(f"Assistant: {response}")
+            return response
+        except Exception as e:
+            self.chat_logger.error(f"LLM response error: {str(e)}")
+            return self._handle_llm_failure(e)
+
+    def _handle_llm_failure(self, exception):
+        extractor = CodeExtractor()
+        try:
+            success, result = extractor.CodeAndDictionaryExtractor(str(exception))
+            if success and result:
+                return result
+            return None
+        except Exception as e:
+            self.chat_logger.error(f"LLM code extractor error: {str(e)}")
+            return None
+
+    def _get_chat_hist(self, num_sections: int = 5) -> str:
+        with open(self._get_chat_log_file_path(), 'r') as file:
+            content = file.read()
+
+        start_tag = '[[PROMPT_WITH_CHAT_HISTORY_START]]'
+        end_tag = '[[PROMPT_WITH_CHAT_HISTORY_END]]'
+        pattern = re.compile(re.escape(start_tag) + '.*?' + re.escape(end_tag), re.DOTALL)
+        modified_content = re.sub(pattern, '', content)
+
+        return modified_content
+
+    def _remove_bracket_contents(self, text: str) -> str:
+        return re.sub(r'\[[^]]*\]', '', text)
 
     def run(self, user_prompt: str) -> BaseResponse:
         self.user_prompt = user_prompt
@@ -226,10 +274,7 @@ class Sql:
         self.exe_logger.info(f"[Sql Agent] Query: {user_prompt}")
         docs = self.get_db_docs()
 
-        if docs and docs == 'ANALYTQ_KW__NO_ANSWER':
-            print("No relevant documents in VDb located.", docs)
-            docs = None
-        elif docs and "```" in docs:
+        if docs and "```" in docs:
             extractor = CodeExtractor()
             sql = extractor.extract_code(docs, 'sql')
             if sql:
@@ -238,12 +283,7 @@ class Sql:
                     self._set_result(result, None, docs)
                     return self.response
 
-        # extract relevant tables
-        self.relevant_tables = self.get_relevant_tables(docs)
-        self.chat_logger.info(f"Assistant: List of relevant tables and columns.\n{self.relevant_tables}")
-        self.response.add_text_to_metadata(f"Relevant tables: {self.relevant_tables}")
-        self.response.set_metadata({"relevant_tables": self.relevant_tables})
-        print("Relevant tables", self.relevant_tables)
+        self.get_relevant_tables(docs)
 
         try:
             response = self.get_sql_from_llm(0)
@@ -254,11 +294,17 @@ class Sql:
 
         self.exe_logger.info(f"SQL: {sql}")
 
-        success, result = self.execute_sql(sql)
-        if success:
-            self._set_result(result, sql, response['Explanation'])
-        else:
-            self.response.add_text_to_metadata(result)
+        for _ in range(MAX_ITERATIONS):
+            success, result = self.execute_sql(sql)
+            if success:
+                self._set_result(result, sql, response['Explanation'])
+                break
+            else:
+                try:
+                    response = self.get_sql_from_llm(1)
+                    sql = response['SQL_Code']
+                except RuntimeError as e:
+                    self.response.add_text_to_metadata(str(e))
 
         return self.response
 

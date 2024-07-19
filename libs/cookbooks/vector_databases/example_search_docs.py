@@ -6,6 +6,7 @@ import os
 
 from analitiq.agents.search_vdb.search_vdb import SearchVdb
 from analitiq.base.llm.BaseLlm import BaseLlm
+from analitiq.agents.search_vdb.search_vdb import SearchVdb
 from analitiq.vectordb.weaviate import WeaviateHandler
 
 from dotenv import load_dotenv
@@ -36,10 +37,10 @@ llm_params = {'type': 'bedrock'
     , 'aws_access_key_id': AWS_ACCESS_KEY_ID
     , 'aws_secret_access_key': AWS_SECRET_ACCESS_KEY
     , 'region_name': REGION_NAME}
-# llm = BaseLlm(llm_params)
-llm = None
+llm = BaseLlm(llm_params)
+
 vdb_params = {
-    "collection_name": "daniel_test",
+    "collection_name": "test",
     "host": WV_URL,
     "api_key": WV_CLIENT_SECRET,
 }

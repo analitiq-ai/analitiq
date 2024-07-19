@@ -231,7 +231,7 @@ class Analitiq():
             self.response.set_content(text)
             return self.return_response()
 
-        logger.info(f"User query: {user_prompt}")
+        logger.info(f"[Main] User query: {user_prompt}")
 
         # Here we load DB, LLM amd VDB. If there are errors, we exit.
         load_errors = self.load_connections()

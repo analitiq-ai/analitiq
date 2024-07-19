@@ -151,11 +151,15 @@ class BaseLlm:
 
         return response
 
-    def extract_info_from_db_docs(self, user_query, formatted_documents_string):
+    def extract_info_from_db_docs(self, user_query, schemas_list, docs: str = None):
+
+        if docs is None:
+            docs = ""
+
         prompt = PromptTemplate(
             template=EXTRACT_INFO_FROM_DB_DOCS,
             input_variables=["user_query"],
-            partial_variables={"db_schema": formatted_documents_string}
+            partial_variables={"schemas_list": schemas_list, "docs": docs}
         )
         table_chain = prompt | self.llm
         response = table_chain.invoke({"user_query": user_query})
