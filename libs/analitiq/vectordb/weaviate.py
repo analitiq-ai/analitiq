@@ -217,8 +217,10 @@ class WeaviateHandler(BaseVDBHandler):
     def _group_by_document_and_source(self, response):
         """
         Groups a list of dictionaries (chunks of data) by their 'document_name' and 'source'.
+        Because there could be many chunks belonging to the same document.
         """
         grouped_data = {}
+        # put all chunks into the same key.
         for item in response.objects:
             key = (item.properties['document_name'], item.properties['source'])
             if key in grouped_data:
@@ -226,7 +228,24 @@ class WeaviateHandler(BaseVDBHandler):
             else:
                 grouped_data[key] = [item.properties['content']]
 
-        return grouped_data
+        # format the data into list of dictionaries
+        """
+        [{
+        document_name: ,
+        document_source: ,
+        document_chunks: [chunk1, chunk2]
+        }]
+        """
+        # format the data into more explicit dictionary
+        reformatted_data = []
+        for key, value in grouped_data.items():
+            document_name, document_source = key
+            reformatted_data.append({
+                'document_name': document_name,
+                'document_source': document_source,
+                'document_chunks': value
+            })
+        return reformatted_data
 
     @search_only
     def kw_search(self, query: str, limit: int = 3) -> QueryReturn:
@@ -384,7 +403,7 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-    def get_many_like(self, property_name: str, property_value: str):
+    def search_vector_database_with_filter(self, query: str, property_name: str, property_value: str):
         """
         Retrieve objects from the collection that have a property whose value matches the given pattern.
         Example:
@@ -396,15 +415,22 @@ class WeaviateHandler(BaseVDBHandler):
         :rtype: list or None
         """
         try:
-            response = self.collection.query.fetch_objects(
-                filters=Filter.by_property("source").like(f"*{property_value}*")
+            query_vector = self.vectorizer.vectorize(query)
+
+            response: QueryReturn = self.collection.query.near_vector(
+                near_vector=query_vector,
+                filters=Filter.by_property(property_name).equal(property_value),
+                limit=10,
+                return_metadata=MetadataQuery(distance=True, score=True)
             )
-            return response
+
         except Exception as e:
             logger.error(f"Error retrieving documents: {e}")
             return None
         finally:
             self.close()
+
+        return self._group_by_document_and_source(response)
 
     def delete_collection(self, collection_name: str):
         # delete collection - THIS WILL DELETE THE COLLECTION AND ALL ITS DATA

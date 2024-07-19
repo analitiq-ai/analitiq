@@ -1,5 +1,5 @@
 from typing import Literal
-from analitiq.logger import logger
+from analitiq.logger import logger as alogger
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.vectordb import weaviate
 
@@ -19,6 +19,8 @@ class SearchVdb:
 
     def run(self, user_prompt):
         self.user_prompt = user_prompt
+        alogger.info(f"[Search VDb Agent]. Query: {user_prompt}")
+
         if self.search_mode == "kw":
             response = self.client.kw_search(user_prompt)
         elif self.search_mode == "hybrid":
@@ -29,7 +31,7 @@ class SearchVdb:
         try:
             docs = response.objects
         except Exception as e:
-            logger.error(f"[Bode: Vector Search] Error: No objects returned")
+            alogger.error(f"[Body: Vector Search] Error: No objects returned")
             self.response.set_content('Search failed')
             return self.response
 
