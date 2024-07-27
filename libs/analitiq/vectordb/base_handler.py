@@ -1,4 +1,6 @@
+from typing import Optional
 from ..logger import logger
+import weaviate
 
 
 class BaseVDBHandler:
@@ -10,7 +12,7 @@ class BaseVDBHandler:
         self.params = params
 
         self.collection_name = params['collection_name']
-        self.client = None
+        self.client: Optional[weaviate.WeaviateClient] = None
         self.connected = False
 
     def connect(self):
