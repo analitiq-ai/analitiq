@@ -20,7 +20,7 @@ def extract_keywords(text: str) -> str:
     stemmer = PorterStemmer()
     tokens = [stemmer.stem(word) for word in tokens]
 
-    return " ".join(tokens)
+    return " ".join(set(tokens))
 
 if __name__ == '__main__':
     text = "SELECT sum(revenue_last_year) FROM tblPayments"

@@ -1,7 +1,5 @@
 from typing import Optional
 from ..logger import logger
-import weaviate
-
 
 class BaseVDBHandler:
     """
@@ -12,7 +10,7 @@ class BaseVDBHandler:
         self.params = params
 
         self.collection_name = params['collection_name']
-        self.client: Optional[weaviate.WeaviateClient] = None
+        self.client = None
         self.connected = False
 
     def connect(self):
@@ -31,6 +29,7 @@ class BaseVDBHandler:
         """
         Attempt to connect to the database. Returns None if the connection fails.
         """
+        
         try:
             self.connect()
             self.connected = True
@@ -39,6 +38,8 @@ class BaseVDBHandler:
             self.connected = False
             return None
         return self
+        
+        #self.connect()
 
     def delete_collection(self):
         """

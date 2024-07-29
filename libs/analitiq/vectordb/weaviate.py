@@ -10,8 +10,7 @@ from weaviate.auth import AuthApiKey
 from weaviate.classes.query import Filter, MetadataQuery
 from weaviate.classes.config import Configure
 from weaviate.classes.tenants import Tenant
-from weaviate.collections.classes.internal import QueryReturn, WeaviateProperties
-
+from weaviate.collections.classes.internal import QueryReturn
 from .base_handler import BaseVDBHandler
 from ..utils.document_processor import DocumentChunkLoader
 from pydantic import BaseModel

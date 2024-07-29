@@ -36,18 +36,18 @@ llm_params = {'type': 'bedrock'
     , 'aws_access_key_id': AWS_ACCESS_KEY_ID
     , 'aws_secret_access_key': AWS_SECRET_ACCESS_KEY
     , 'region_name': REGION_NAME}
-llm = BaseLlm(llm_params)
-
+# llm = BaseLlm(llm_params)
+llm = None
 vdb_params = {
-    "collection_name": "test",
+    "collection_name": "daniel_test",
     "host": WV_URL,
     "api_key": WV_CLIENT_SECRET,
 }
 
 vdb = WeaviateHandler(vdb_params)
-vdb.update_vectors()
+#vdb.update_vectors()
 # Example of using the SQLGenerator class
-service = SearchVdb(llm, vdb=vdb, search_mode="hybrid")
-result = service.run("Welche tiere sind loyal?")
+service = SearchVdb(llm, vdb=vdb, search_mode="kw")
+result = service.run("gibe me thr event and sales data")
 print(result)
 

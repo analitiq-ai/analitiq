@@ -3,7 +3,7 @@ This is an example of how to load documents into VectorDB before allowing analit
 """
 
 import os
-
+import pathlib
 from analitiq.vectordb.weaviate import WeaviateHandler
 
 from dotenv import load_dotenv
@@ -18,12 +18,18 @@ if not WV_URL or not WV_CLIENT_SECRET:
 
 
 params = {
-    "collection_name": "bikmo",
+    "collection_name": "daniel_test",
     "host": WV_URL,
     "api_key": WV_CLIENT_SECRET
 }
 
 
 wc = WeaviateHandler(params)
-FILE_PATH = './example_test_files/elefants.txt'
-wc.load(FILE_PATH)
+#wc.delete_collection("daniel_test")
+CURRENT_DIR = pathlib.Path(__file__).resolve().parent
+FILE_DIR = pathlib.Path(CURRENT_DIR / "example_test_files")
+FILES = [file for file in FILE_DIR.iterdir() if file.is_file()]
+for file in FILES:
+    wc.load(str(file))
+    print(file)
+

@@ -41,10 +41,11 @@ class SearchVdb:
             document_name_list.append(o.properties['document_name'])
             # Append the document name and content to the formatted string with the desired formatting
             formatted_documents_string += f"Document name: {o.properties['document_name']}\nDocument content:\n{o.properties['content']}\n\n"
-
-        ai_response = self.llm.llm_summ_docs(user_prompt, formatted_documents_string)
-
-        self.response.set_content(ai_response)
-        self.response.set_metadata({"documents": ', '.join(document_name_list)})
+        if self.llm is not None:
+            ai_response = self.llm.llm_summ_docs(user_prompt, formatted_documents_string)
+            self.response.set_content(ai_response)
+            self.response.set_metadata({"documents": ', '.join(document_name_list)})
+        else:
+            logger.error("ERROR: No llm set")
 
         return self.response
