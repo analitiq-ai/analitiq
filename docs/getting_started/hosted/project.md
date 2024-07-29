@@ -6,7 +6,7 @@ The `project.yml` file serves as the main configuration file for an Analitiq pro
 The file `project.yml` has all of your project data, such as where the logs are stored. 
 Most importantly, `project.yml` defines where your custom Services are located so Analitiq can pick them up and use them to manage your data.
 
-[![Video about project config](../assets/images/project_yml.png)](https://www.loom.com/share/a0b6f3b2bcd148408786e0e44b430558?sid=1d8d51f1-28c3-4944-a00c-d42d6b15a64e)
+[![Video about project config](../../assets/images/project_yml.png)](https://www.loom.com/share/a0b6f3b2bcd148408786e0e44b430558?sid=1d8d51f1-28c3-4944-a00c-d42d6b15a64e)
 
 
 ```yaml

@@ -2,10 +2,12 @@
 Analitiq is a comprehensive framework designed to enhance data management using Large Language Models (LLMs). Our goal is to transcend traditional Text-to-SQL functionalities, enabling Data Engineers, Analysts, and non-technical users to interact with data effortlessly through natural language and advanced AI capabilities.
 
 With Analitiq, you can harness the power of LLMs to:
- - Query data from your Data Warehouse.
- - Search for information across your company wiki, SQL files, and Data Warehouse schema.
- - Create custom agents tailored to your data management needs.
- - Utilize your preferred LLM, whether it's a private model via Ollama or public APIs like OpenAI and Mistral.
+
+- Query data from your Data Warehouse.
+- Search for information across your company wiki, SQL files, and Data Warehouse schema.
+- Create custom agents tailored to your data management needs.
+- Utilize your preferred LLM, whether it's a private model via Ollama or public APIs like OpenAI and Mistral.
+
 
 ## Deployment Options
  - **Self-hosted**: Self-hosted Analitiq option will let you run it in your own environment.
@@ -14,7 +16,8 @@ With Analitiq, you can harness the power of LLMs to:
 ## User Interfaces for Analitiq Cloud
 ### Slack
 Analitiq Cloud can be added to a Slack account to allow anyone in the organisation to interact with data using LLMs.
-![image](assets/images/slack_2.png)
+![image](assets/images/slack/slack_2.png)
+
 
 ### Web UI
 Analitiq Cloud can be accessed via our UI interface.
