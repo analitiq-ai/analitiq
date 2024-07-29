@@ -1,16 +1,16 @@
-# SQL Service
+# SQL agent
 
-The SQL service, part of the `analitiq` framework, empowers users to interact with databases through natural language prompts. By leveraging advanced natural language processing (NLP) techniques, this service interprets user inputs to determine relevant database tables, generate SQL queries accordingly, and execute these queries. The results are returned as pandas DataFrames, making data analysis and visualization tasks more accessible to users without deep SQL expertise.
+The SQL agent, part of the `analitiq` framework, empowers users to interact with databases through natural language prompts. By leveraging advanced natural language processing (NLP) techniques, this agent interprets user inputs to determine relevant database tables, generate SQL queries accordingly, and execute these queries. The results are returned as pandas DataFrames, making data analysis and visualization tasks more accessible to users without deep SQL expertise.
 
 ## Purpose
 
-The SQL service is designed to bridge the gap between natural language queries and SQL, enabling users to extract and analyze data from databases by simply describing their data retrieval needs in plain English. This eliminates the need for intricate SQL knowledge and speeds up the data retrieval process, making it ideal for quick insights and iterative data exploration.
+The SQL agent is designed to bridge the gap between natural language queries and SQL, enabling users to extract and analyze data from databases by simply describing their data retrieval needs in plain English. This eliminates the need for intricate SQL knowledge and speeds up the data retrieval process, making it ideal for quick insights and iterative data exploration.
 
 ## How It Works
 
-The service operates through several steps:
+The agent operates through several steps:
 
-1. **Table Identification**: From the user's natural language prompt, the service identifies relevant tables within the database.
+1. **Table Identification**: From the user's natural language prompt, the agent identifies relevant tables within the database.
 2. **Query Generation**: It then translates the prompt into a structured SQL query using the identified tables.
 3. **Query Execution**: The SQL query is executed against the database, and the results are fetched.
 4. **Result Transformation**: Finally, the results are converted into a pandas DataFrame for easy manipulation, analysis, or visualization.
@@ -43,7 +43,7 @@ home_directory = os.environ['HOME']
 dynamic_path = f'{home_directory}/Documents/Projects/analitiq/libs/'
 sys.path.insert(0, dynamic_path)
 ```
-We need 3 things for SQL service to work with:
+We need 3 things for SQL agent to work with:
 1. Database
 2. Large Language Model
 3. VectorDB (for searching documentation for better SQL results)
