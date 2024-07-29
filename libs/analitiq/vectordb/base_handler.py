@@ -1,5 +1,6 @@
 from typing import Optional
-from ..logger import logger
+from analitiq.logger.logger import logger
+
 
 class BaseVDBHandler:
     """
@@ -29,7 +30,6 @@ class BaseVDBHandler:
         """
         Attempt to connect to the database. Returns None if the connection fails.
         """
-        
         try:
             self.connect()
             self.connected = True
@@ -38,8 +38,6 @@ class BaseVDBHandler:
             self.connected = False
             return None
         return self
-        
-        #self.connect()
 
     def delete_collection(self):
         """

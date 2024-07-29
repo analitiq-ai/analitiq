@@ -175,7 +175,7 @@ class Sql:
 
         self.exe_logger.info(f"LLM Info from Documents: {response}")
 
-        if 'ANALITQ_KW__NO_ANSWER' in response:
+        if 'ANALITQ___NO_ANSWER' in response:
             return None
 
         return response

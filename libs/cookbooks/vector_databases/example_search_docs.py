@@ -4,7 +4,7 @@ This is an example of how to search documents using search services.
 
 import os
 
-from analitiq.agents.search_vdb.search_vdb import SearchVdb
+
 from analitiq.base.llm.BaseLlm import BaseLlm
 from analitiq.agents.search_vdb.search_vdb import SearchVdb
 from analitiq.vectordb.weaviate import WeaviateHandler
@@ -46,9 +46,9 @@ vdb_params = {
 }
 
 vdb = WeaviateHandler(vdb_params)
-#vdb.update_vectors()
+
 # Example of using the SQLGenerator class
-service = SearchVdb(llm, vdb=vdb, search_mode="kw")
-result = service.run("give me the event and sales data")
+agent = SearchVdb(llm, vdb=vdb, search_mode="hybrid")
+result = agent.run("Welche tiere sind loyal?")
 print(result)
 

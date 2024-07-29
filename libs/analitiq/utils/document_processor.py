@@ -5,7 +5,7 @@ import pathlib
 import ast
 
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from analitiq.utils import sql_recursive_text_splitter
 
@@ -13,18 +13,24 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "services/search_vdb/examples/example_test_files"
 
 class DocumentChunkLoader:
+    """
+    Initializes a new instance of `DocumentChunkLoader`.
+
+    Parameters:
+        project_name: The name of the project.
+    """
     def __init__(self, project_name: str):
         self.project_name = project_name
 
     def _is_python_code(self, text: str) -> bool:
         """Calculate if the given snippet is sql or python code returns true if so."""
-        try: 
+        try:
             ast.parse(text)
             return True
         except SyntaxError:
             pass
         return False
-    
+
     def _is_sql_statements(self, text: str) -> bool:
         """Calculate if the given text is an sql statement."""
             # Patterns for SQL code
@@ -92,6 +98,35 @@ class DocumentChunkLoader:
         documents_chunks.extend(sql_chunks)
 
         return documents_chunks, doc_lengths
+
+    def chunk_text(self, text: str, chunk_size: int = 2000, chunk_overlap: int = 200, token: str = ',') -> List[str]:
+        """
+        Split the provided text into chunks based on a token.
+
+        Parameters:
+            text: The text to be chunked.
+            chunk_size: The size of chunks into which to split the text.
+            chunk_overlap: How much the chunks should overlap.
+            token: The token by which to split the text.
+
+        Returns:
+            A list of text chunks.
+        """
+        text_length = len(text)
+        chunks = []
+
+        start = 0
+        while start < text_length:
+            # Find the next token after the chunk size
+            end = start + chunk_size
+            if end < text_length:
+                end = text.rfind(token, start, end)
+                if end == -1:
+                    end = min(start + chunk_size, text_length)
+            chunks.append(text[start:end])
+            start = end + 1 - chunk_overlap
+
+        return chunks
 
 if __name__ == "__main__":
     chunky = DocumentChunkLoader("my_project")

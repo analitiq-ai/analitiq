@@ -1,8 +1,8 @@
-from analitiq.logger import logger
+from analitiq.logger.logger import logger
 import chromadb
 import os
 from chromadb.api import ClientAPI
-from typing import List, Optional
+from typing import Optional
 from schemas.vector_store import VectoreStoreCollection
 
 

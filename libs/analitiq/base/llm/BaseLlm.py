@@ -1,9 +1,9 @@
 from typing import List, Optional, Any
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
-from analitiq.logger import logger
+from analitiq.logger.logger import logger
 
-from langchain_core.pydantic_v1 import BaseModel, Field, validator
+from langchain_core.pydantic_v1 import BaseModel, Field
 from enum import Enum
 
 from analitiq.base.llm.prompt import (
@@ -12,7 +12,6 @@ from analitiq.base.llm.prompt import (
     TASK_LIST,
     REFINE_TASK_LIST,
     SUMMARISE_REQUEST,
-    COMBINE_TASK_PAIR,
     FIX_JSON,
     EXTRACT_INFO_FROM_DB_DOCS,
     EXTRACT_INFO_FROM_DB_DDL,
