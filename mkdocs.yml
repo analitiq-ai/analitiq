@@ -2,15 +2,20 @@ site_name: Analitiq Documentation
 site_url: https://analitiq.ai
 
 nav:
-  - Home: index.md
-  - 'Getting Started':
+  - Intro: index.md
+  - 'Self-hosted':
     - 'Quick Start': getting_started/quick_start.md
     - 'Config files':
       - 'Profiles YAML': getting_started/profiles.md
       - 'Project YAML': getting_started/project.md
-  - 'Services':
-    - 'Query Database / SQL': services/sql.md
-    - 'Document Search': services/doc_search.md
+  - 'Cloud':
+    - 'Registration': getting_started/quick_start.md
+    - 'Loading Data': getting_started/quick_start.md
+  - 'Agents':
+    - 'Query Database / SQL': agents/sql.md
+    - 'Document Search': agents/doc_search.md
+  - 'Cookbooks':
+    - 'Loading Data': agents/sql.md
   - 'Framework Docs':
     - 'Vector Databases':
       - 'Weaviate': framework/vector_databases/weaviate.md
