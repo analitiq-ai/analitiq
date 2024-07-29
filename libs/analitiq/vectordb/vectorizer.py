@@ -1,7 +1,7 @@
 from typing import List, Union
 from transformers import AutoTokenizer, AutoModel
-import torch
 import numpy as np
+
 
 class AnalitiqVectorizer:
     """
@@ -48,7 +48,7 @@ class AnalitiqVectorizer:
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
         self.model = AutoModel.from_pretrained(self.model_name_or_path)
 
-    def vectorize(self, text: Union[str, List[str]]) -> np.ndarray:
+    def vectorize(self, text: Union[str, List[str]], flatten: bool = True) -> np.ndarray:
         """
         Generates vectors for the given input text.
         
@@ -56,7 +56,9 @@ class AnalitiqVectorizer:
         -----------
         text : Union[str, List[str]]
             The input text or list of texts to be vectorized.
-        
+        flatten : bool
+            To avoid potential issues with the FAISS index
+
         Returns:
         --------
         torch.Tensor
@@ -65,22 +67,30 @@ class AnalitiqVectorizer:
         inputs = self.tokenizer(text, return_tensors='pt', padding=True, truncation=True)
         outputs = self.model(**inputs)
         vectors = outputs.last_hidden_state.mean(dim=1)
-        return vectors.detach().cpu().numpy().flatten().tolist()
 
+        if flatten:
+            return vectors.detach().cpu().numpy().flatten().tolist()
+        else:
+            return vectors.detach().cpu().numpy()
 
-if __name__ == "__main__":
-    # Loading a sentence bert transformer for embedding
-    # other model
-    model_name = "sentence-transformers/all-MiniLM-L6-v2"
-    # model_name = 'sentence-transformers/all-mpnet-base-v2'
-    vectorizer = AnalitiqVectorizer(model_name)
+    def normalize(self, vectors: np.ndarray) -> np.ndarray:
+        norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+        return vectors / norms
 
-    # Example Sentences
-    sentences = ["Die Sonne scheint heute", "Es ist ein schöner Tag"]
+    def create_embeddings(self, texts: List[str]):
+        self.texts = texts
+        embeddings = self.vectorize(texts, False)
+        self.embeddings = self.normalize(embeddings)
 
-    # Vectorisation
-    embeddings = vectorizer.vectorize(sentences)
+    def search(self, query: str, k: int = 3):
+        if self.embeddings is None or self.texts is None:
+            raise ValueError("Embeddings have not been created. Call create_embeddings() first.")
 
-    #test print of embeddings
-    print(embeddings.shape)
-    print(embeddings)
+        query_vector = self.vectorize([query], False)
+        query_vector = self.normalize(query_vector)
+
+        similarities = np.dot(self.embeddings, query_vector.T).flatten()
+        top_k_indices = similarities.argsort()[-k:][::-1]
+        results = [(self.texts[idx], similarities[idx]) for idx in top_k_indices]
+        return results
+

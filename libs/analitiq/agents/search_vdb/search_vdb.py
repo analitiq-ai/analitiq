@@ -1,5 +1,5 @@
 from typing import Literal
-from analitiq.logger import logger as alogger
+from analitiq.logger.logger import logger as alogger
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.vectordb import weaviate
 

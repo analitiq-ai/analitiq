@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from analitiq.logger import logger
+from analitiq.logger.logger import logger
 import inspect
 import json
 

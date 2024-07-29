@@ -1,4 +1,4 @@
-from analitiq.logger import logger
+from analitiq.logger.logger import logger
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.base.GlobalConfig import GlobalConfig
 from langchain.prompts import PromptTemplate

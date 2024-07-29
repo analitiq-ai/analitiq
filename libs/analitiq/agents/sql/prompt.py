@@ -23,10 +23,12 @@ Write an initial draft of the query. Then double check the {dialect} query for c
 - Using the proper columns for joins
 - Keep in mind that underlying granular data may be very large. Try to obtain a summarized set of data from the database, but granular enough to answer the input question.
 
-Bellow is a list of relevant tables and columns for you to use to create an SQL query:
-{table_info}
+{docs_ddl}
+
+{docs_schema}
 
 # Response format instructions:
+Make sure the SQL complies with {dialect} standard.
 {format_instructions}
 """
 

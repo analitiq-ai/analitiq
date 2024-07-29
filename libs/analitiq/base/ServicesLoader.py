@@ -1,8 +1,7 @@
-from analitiq.logger import logger
+from analitiq.logger.logger import logger
 import os
 import importlib.util
 import re
-from typing import Dict, Any
 
 
 class ServicesLoader:

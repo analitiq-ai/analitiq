@@ -3,8 +3,6 @@ This is an example of how to search documents using search services.
 """
 
 import os
-
-
 from analitiq.base.llm.BaseLlm import BaseLlm
 from analitiq.agents.search_vdb.search_vdb import SearchVdb
 from analitiq.vectordb.weaviate import WeaviateHandler

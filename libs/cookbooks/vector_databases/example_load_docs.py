@@ -3,29 +3,41 @@ This is an example of how to load documents into VectorDB before allowing analit
 """
 
 import os
-
 from libs.analitiq.vectordb.weaviate import WeaviateHandler
-
 from dotenv import load_dotenv
 
 load_dotenv()
 
-WV_COLL = os.getenv("WEAVIATE_COLLECTION_NAME")
-WV_URL = os.getenv("WEAVIATE_URL")
-WV_CLIENT_SECRET = os.getenv("WEAVIATE_CLIENT_SECRET")
-
-if not WV_URL or not WV_CLIENT_SECRET:
-    raise KeyError("Environment Variables not set. Please set variables!")
+ENV_VARIABLES = ["WEAVIATE_COLLECTION", "WEAVIATE_URL", "WEAVIATE_CLIENT_SECRET"]
 
 
-params = {
-    "collection_name": WEAVIATE_COLLECTION_NAME,
-    "host": WV_URL,
-    "api_key": WV_CLIENT_SECRET
-}
+def load_env_variables():
+    load_dotenv()
+    env_vars = {variable_name: os.getenv(variable_name) for variable_name in ENV_VARIABLES}
 
-vdb = WeaviateHandler(params)
+    for var, value in env_vars.items():
+        if value is None:
+            raise EnvironmentError(f"Environment variable {var} not loaded.")
+    return env_vars
 
+
+env_vars = load_env_variables()
+
+
+def define_vdb_params(env_vars):
+    return {
+        "collection_name": "test",
+        "host": env_vars.get("WEAVIATE_URL"),
+        "api_key": env_vars.get("WEAVIATE_CLIENT_SECRET")
+    }
+
+
+vdb_params = define_vdb_params(env_vars)
+vdb = WeaviateHandler(vdb_params)
+
+result = vdb.search_vdb_with_filter("show me sales by venue.", [('document_name', 'sample_data'), ('document_type', 'ddl')], 'like')
+print(result)
+exit()
 """
 Load a directory
 """
@@ -42,10 +54,39 @@ Loading a single file
 Search for results
 """
 
-result = vdb.kw_search("bike")
-print(result)
+# result = vdb.kw_search("bike")
+# print(result)
+
+"""
+Search for results and filter by parameter
+"""
+# result = vdb.search_vector_database_with_filter('revenue', 'document_name', 'schema.yml')
+# print(result)
 
 """
 Delete a collection
 """
-# vdb.delete_collection(params['collection_name'])
+# vdb.delete_collection(vdb_params['collection_name'])
+
+"""
+Delete by document type
+"""
+# parameters = [("document_name", 'schema_cds'),
+#                          ("document_type", 'ddl')]
+# vdb.delete_objects(parameters)
+
+"""
+Match object by UUID
+"""
+
+# uuid='f33971d7-8adf-5127-99bb-8307f24f50c3'
+# result = vdb.get_by_uuid(uuid)
+# print(result)
+
+
+"""
+Count objects by parameter
+"""
+# parameters = [("document_name", 'cds'),("document_type", 'ddl')]
+# response = vdb.count_objects_by_properties(parameters, 'like')
+# print(response.total_count)

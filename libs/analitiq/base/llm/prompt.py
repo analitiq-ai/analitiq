@@ -23,9 +23,7 @@ EXTRACT_INFO_FROM_DB_DOCS = """
 You are a data analyst and your role is to examine database documentation and try to determine what tables and columns could contain information needed to answer the users query.
 The user query is: {user_query}.
 Extract the necessary information and provide it in your response.
-Always qualify tables with the name of the schema they reside in.
-Choose only the tables that are in the following list of schemas: {schemas_list}.
-If nothing in the database schema can be used to address users query or you are unable extract relevant information, return only the word "ANALITQ_KW__NO_ANSWER" in your reponse.
+If nothing in the database schema can be used to address users query or you are unable extract relevant information, return only the word "ANALITQ___NO_ANSWER" in your reponse.
 
 Chunks of relevant documentation in json format: 
 {docs}
