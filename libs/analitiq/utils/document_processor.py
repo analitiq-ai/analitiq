@@ -1,5 +1,7 @@
 import os
 from typing import List, Optional
+import re
+import ast
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 
@@ -9,6 +11,33 @@ class DocumentChunkLoader:
 
     def _is_code(self, text: str) -> bool:
         """Calculate if the given snippet is sql or python code returns true if so."""
+        try: 
+            ast.parse(text)
+            return True
+        except SyntaxError:
+            pass
+
+        # Patterns for SQL code
+        sql_patterns = [
+            r'\bSELECT\b',         # SELECT statement
+            r'\bINSERT\b',         # INSERT statement
+            r'\bUPDATE\b',         # UPDATE statement
+            r'\bDELETE\b',         # DELETE statement
+            r'\bFROM\b',           # FROM clause
+            r'\bWHERE\b',          # WHERE clause
+            r'\bJOIN\b',           # JOIN clause
+            r'--[^\n]*',           # Comments
+            r'/\*[\s\S]*?\*/',     # Multiline comments
+        ]
+
+        # Check for SQL code patterns
+        for pattern in sql_patterns:
+
+            if re.search(pattern, text):
+                print("found sql pattern")
+                return True
+        # If no patterns matched, return False
+        return False
 
     def _text_splitter(self, text: str) -> List[str]:
         """Split up the texts based on paragraphs, sentences or document sites."""
@@ -66,6 +95,3 @@ if __name__ == "__main__":
 
     chunky = DocumentChunkLoader("my_project")
     result, doc_leng= chunky.load_and_chunk_documents(path=str(EXAMPLES), extension="*", chunk_size=200, chunk_overlap=10)
-    for r in result:
-        print(r)
-        print("---------------------------------------------")
