@@ -10,8 +10,6 @@ from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.output_parsers import PydanticOutputParser
 from sqlalchemy.exc import DatabaseError
-
-
 from analitiq.agents.sql.prompt import (
     RETURN_RELEVANT_TABLE_NAMES,
     TEXT_TO_SQL_PROMPT
@@ -26,9 +24,22 @@ VECTOR_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 
 
 class Sql:
-    """Handles SQL query generation and execution against the database using LLM integration."""
+    """Handles SQL query generation and execution against the database using LLM integration.
+
+    This class provides methods to load DDL into a vector database, get relevant tables,
+    check relevant tables, get database documentation schema, execute SQL queries, search DDL vectors,
+    get SQL from LLM, glue document chunks, and run the SQL agent.
+    """
 
     def __init__(self, db: DatabaseWrapper, llm, vdb=None):
+        """
+        Initializes the SQL Agent. SQL Agent writes SQL and executes the SQL against the database. After that SQL Agent returns the result.
+
+        Args:
+            db (DatabaseWrapper): An instance of DatabaseWrapper class representing the database connection.
+            llm: A parameter representing llm (unknown data type).
+            vdb (optional): An optional parameter representing vdb (unknown data type).
+        """
         logger.info("SQL Agent Started.")
         self.user_prompt: Optional[str] = None
         self.db = db
@@ -40,7 +51,13 @@ class Sql:
     @staticmethod
     def _extract_table_name(input_string: str) -> str:
         """
-        To extract 'table_name' from the given string by splitting the text by commas, taking the first occurrence, and then splitting by dots to take the second occurrence,
+        Extracts 'table_name' from the given string by splitting the text by commas, taking the first occurrence, and then splitting by dots to take the second occurrence.
+
+        Args:
+            input_string (str): The input string containing the table name information.
+
+        Returns:
+            str: Extracted table name.
         """
         # Split the string by comma and take the first occurrence
         first_part = input_string.split(',')[0]
@@ -52,14 +69,18 @@ class Sql:
 
     def load_ddl_into_vdb(self) -> List[str]:
         """
-        Few important notes:
-        SQLAlchemay returns DDL as a list of tables in schema [] with every object in list being comma seperated list of collumns.
-        Analitiq stores the DDL in vector DB using metadata to identify source of the data:
-        - content=DDL for 1 table,
-        - source='host/database',
-        - document_type='ddl',
-        - document_name='schema.table',
-        :return:
+        Loads DDL (Data Definition Language) into the Vector Database (VDB).
+
+        Notes:
+            - SQLAlchemy returns DDL as a list of tables in schema [] with every object in list being comma separated list of columns.
+            - Analitiq stores the DDL in vector DB using metadata to identify source of the data:
+                - content=DDL for 1 table,
+                - source='host/database',
+                - document_type='ddl',
+                - document_name='schema.table'
+
+        Returns:
+            List[str]: A list of responses after loading DDL into VDB.
         """
         response = []
         metadata = {}
@@ -84,7 +105,7 @@ class Sql:
                 logger.info(f"[VDB] Found {response.total_count} ddl documents for schema {schema_name}.")
                 # TODO add checking here for when it was last loaded
 
-            else:  # if the DDl does not exist in VDB, we load it
+            else:  # if the DDL does not exist in VDB, we load it
                 chunks = []
                 counter = 0
                 for table_ddl in ddl:
@@ -99,7 +120,16 @@ class Sql:
                 logger.info(f"Loaded {counter} chunks for schema {schema_name} into Vector Database.")
 
     def get_relevant_tables(self, ddl: str, docs: str = None) -> List[Table]:
+        """
+        Retrieves relevant tables based on the provided DDL and documentation.
 
+        Args:
+            ddl (str): The Data Definition Language of the database.
+            docs (str, optional): Additional database documentation. Defaults to None.
+
+        Returns:
+            List[Table]: A list of relevant tables.
+        """
         docs = f"Database Documentation:\n{docs}\n" if docs else ''
 
         parser = PydanticOutputParser(pydantic_object=Tables)
@@ -129,6 +159,15 @@ class Sql:
 
     @staticmethod
     def _format_relevant_tables(schema_dict: dict) -> str:
+        """
+        Formats the relevant tables into a readable string format.
+
+        Args:
+            schema_dict (dict): Dictionary containing schema and table information.
+
+        Returns:
+            str: Formatted string of relevant tables.
+        """
         output_lines = []
         for schema, tables in schema_dict.items():
             output_lines.append(f"- Schema: {schema}")
@@ -139,6 +178,16 @@ class Sql:
         return "\n".join(output_lines)
 
     def check_relevant_table(self, schema_name: str, table_name: str) -> TableCheck:
+        """
+        Checks if the specified table is relevant to the user's query.
+
+        Args:
+            schema_name (str): The schema name.
+            table_name (str): The table name.
+
+        Returns:
+            TableCheck: Result of the table relevance check.
+        """
         sql = f"SELECT * FROM {schema_name}.{table_name} LIMIT 5"
         result = self.db.run(sql, include_columns=True)
         parser = PydanticOutputParser(pydantic_object=TableCheck)
@@ -157,7 +206,16 @@ class Sql:
         response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
         return response
 
-    def get_db_docs_schema(self, query:str) -> Optional[str]:
+    def get_db_docs_schema(self, query: str) -> Optional[str]:
+        """
+        Retrieves the database schema documentation relevant to the given query.
+
+        Args:
+            query (str): The user query.
+
+        Returns:
+            Optional[str]: The relevant database schema documentation, if available.
+        """
         if not self.vdb:
             return None
 
@@ -182,6 +240,15 @@ class Sql:
         return response
 
     def execute_sql(self, sql: str) -> Tuple[bool, Optional[pd.DataFrame]]:
+        """
+        Executes the given SQL query and returns the result as a DataFrame.
+
+        Args:
+            sql (str): The SQL query to be executed.
+
+        Returns:
+            Tuple[bool, Optional[pd.DataFrame]]: A tuple containing a boolean indicating success, and the result as a DataFrame or an error message.
+        """
         chat_logger.info(f"{sql}")
         try:
             result = pd.read_sql(sql, self.db.engine)
@@ -195,24 +262,20 @@ class Sql:
             chat_logger.error(f"Error executing SQL. {str(e)}")
             return False, str(e)
 
-    @staticmethod
-    def search_ddl_vectors(query, texts):
-        vectorizer = AnalitiqVectorizer(VECTOR_MODEL_NAME)
-        vectorizer.create_embeddings(texts)
-        results = vectorizer.search(query)
-
-        return results
-
-    def search_ddl_vectors2(query, texts):
-        search_meta_parameters = [("document_name", f"schema_{SCHEMA_NAME}"),
-                                  ("document_type", "ddl")]
-
-        self.vdb.count_objects_by_property()
-
-        return results
-
     def get_sql_from_llm(self, docs_ddl: str = None, docs_schema: str = None) -> str:
+        """
+        Generates SQL from the LLM (Language Model) based on provided DDL and schema documentation.
 
+        Args:
+            docs_ddl (str, optional): DDL documentation. Defaults to None.
+            docs_schema (str, optional): Schema documentation. Defaults to None.
+
+        Returns:
+            str: Generated SQL code.
+
+        Raises:
+            ValueError: If no SQL code is returned.
+        """
         if docs_ddl:
             docs_ddl = """Bellow is a list of relevant tables and columns for you to use to create an SQL query. 
             Make sure you use only the available database tables and columns. 
@@ -248,8 +311,18 @@ class Sql:
             raise ValueError("No SQL Code returned")
 
         return response
+
     @staticmethod
     def glue_document_chunks(documents):
+        """
+        Glues document chunks into a single coherent document.
+
+        Args:
+            documents: The documents to be glued.
+
+        Returns:
+            List[str]: A list of glued documents.
+        """
         glued_documents = []
         for document in documents:
             chunks = document.get('document_chunks', [])
@@ -258,6 +331,15 @@ class Sql:
         return glued_documents
 
     def run(self, user_prompt: str) -> BaseResponse:
+        """
+        Main method to run the SQL agent based on the user's prompt.
+
+        Args:
+            user_prompt (str): The user's query.
+
+        Returns:
+            BaseResponse: The response from the SQL agent.
+        """
         self.user_prompt = user_prompt
 
         chat_logger.info(f"Human: {user_prompt}")
@@ -282,11 +364,11 @@ class Sql:
 
         docs_ddl = self.vdb.search_vdb_ddl(user_prompt, self.db.params['db_schemas'])
 
-        #self.relevant_tables = self.get_relevant_tables(ddl, docs_schema)
-        #chat_logger.info(f"Assistant: List of relevant tables and columns.\n{self.relevant_tables}")
+        # self.relevant_tables = self.get_relevant_tables(ddl, docs_schema)
+        # chat_logger.info(f"Assistant: List of relevant tables and columns.\n{self.relevant_tables}")
 
-        #self.response.add_text_to_metadata(f"Relevant tables: {self.relevant_tables}")
-        #self.response.set_metadata({"relevant_tables": self.relevant_tables})
+        # self.response.add_text_to_metadata(f"Relevant tables: {self.relevant_tables}")
+        # self.response.set_metadata({"relevant_tables": self.relevant_tables})
 
         # if we do not have ddl_docs docs_schema and context, there is little point trying to create SQL.
 
@@ -299,7 +381,6 @@ class Sql:
 
         if docs_ddl:
             docs_ddl_formatted = self.glue_document_chunks(docs_ddl)
-
 
         try:
             response = self.get_sql_from_llm(docs_ddl_formatted, docs_schema_formatted)
@@ -320,6 +401,14 @@ class Sql:
         return self.response
 
     def _set_result(self, result: pd.DataFrame, sql: Optional[str] = None, explanation: Optional[str] = None):
+        """
+        Sets the result of the SQL execution into the response object.
+
+        Args:
+            result (pd.DataFrame): The result of the SQL execution.
+            sql (str, optional): The SQL query executed. Defaults to None.
+            explanation (str, optional): Explanation of the result. Defaults to None.
+        """
         print(explanation)
         self.response.set_content(result, 'dataframe')
         if result.empty:
