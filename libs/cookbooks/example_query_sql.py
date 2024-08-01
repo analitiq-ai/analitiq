@@ -76,5 +76,6 @@ if __name__ == "__main__":
     vdb = WeaviateHandler(vdb_params)
 
     agent = Sql(db, llm, vdb=vdb)
-    result = agent.run("show me sales by venue.")
-    print(result)
+    result_generator = agent.run("show me sales by venue.")
+    for result in result_generator:
+        print(result)
