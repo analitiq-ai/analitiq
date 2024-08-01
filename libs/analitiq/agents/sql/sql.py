@@ -1,11 +1,10 @@
 import pandas as pd
 from typing import List, Tuple, Optional
 from analitiq.logger.logger import logger, chat_logger
-from analitiq.base.BaseResponse import BaseResponse
+from analitiq.base.BaseResponse import BaseResponse, yield_intermediate_response
 from analitiq.utils.code_extractor import CodeExtractor
 from analitiq.base.Database import DatabaseWrapper
 from analitiq.agents.sql.schema import Table, Column, Tables, SQL, TableCheck
-from analitiq.vectordb.vectorizer import AnalitiqVectorizer
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.output_parsers import PydanticOutputParser
@@ -350,14 +349,15 @@ class Sql:
         if not docs_schema or docs_schema == 'ANALYTQ___NO_ANSWER':
             # logger.info("No relevant documents in VDB located.", docs)
             docs_schema = None
-        elif docs_schema and "```" in docs_schema:
-            extractor = CodeExtractor()
-            sql = extractor.extract_code(docs, 'sql')
-            if sql:
-                success, result = self.execute_sql(sql)
-                if success:
-                    self._set_result(result, None, docs)
-                    return self.response
+        if docs_schema:
+            if "```" in docs_schema:
+                extractor = CodeExtractor()
+                sql = extractor.extract_code(docs_schema, 'sql')
+                if sql:
+                    success, result = self.execute_sql(sql)
+                    if success:
+                        self._set_result(result, None, docs_schema)
+                        return self.response
 
         # Check if DDL is already loaded in Vector DB
         self.load_ddl_into_vdb()
@@ -377,9 +377,11 @@ class Sql:
             return self.response
 
         if docs_schema:
+            yield yield_intermediate_response(self.__class__.__name__, f"Context Documents found: {len(docs_schema)}")
             docs_schema_formatted = self.glue_document_chunks(docs_schema)
 
         if docs_ddl:
+            yield yield_intermediate_response(self.__class__.__name__, f"DDL Documents found: {len(docs_ddl)}")
             docs_ddl_formatted = self.glue_document_chunks(docs_ddl)
 
         try:
@@ -388,6 +390,9 @@ class Sql:
         except RuntimeError as e:
             self.response.add_text_to_metadata(str(e))
             return self.response
+
+        if sql:
+            yield yield_intermediate_response(self.__class__.__name__, f"SQL created:\n ```\n{sql}\n```")
 
         logger.info(f"SQL: {sql}")
 

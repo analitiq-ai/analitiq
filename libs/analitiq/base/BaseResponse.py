@@ -1,6 +1,7 @@
 from typing import List, Any, Dict
 import json
 
+
 class BaseResponse:
     """A class to encapsulate the response of service operations.
 
@@ -65,3 +66,18 @@ class BaseResponse:
             self.metadata[key] += "\n" + text
         else:
             self.metadata[key] = text
+
+
+def yield_intermediate_response(class_name, msg) -> BaseResponse:
+    """
+    Creates an instance of a BaseResponse to send intermediate results back to the requestor.
+
+    :param class_name: str, the name of the class to be set in the intermediate response
+    :param msg: str, the content message to be set in the intermediate response
+    :return: BaseResponse, the intermediate response object containing the class name and content message
+    """
+    intermediate_response = BaseResponse(class_name)
+    intermediate_response.set_content(msg)
+
+    return intermediate_response
+
