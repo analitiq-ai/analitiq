@@ -42,6 +42,7 @@ vdb_params = {
     "collection_name": "test",
     "host": WV_URL,
     "api_key": WV_CLIENT_SECRET,
+    "encoding_model": "microsoft/codebert-base"
 }
 
 vdb = WeaviateHandler(vdb_params)
