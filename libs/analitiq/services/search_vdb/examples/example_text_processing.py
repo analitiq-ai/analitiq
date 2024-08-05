@@ -2,7 +2,6 @@
 This is an example of how to load documents into VectorDB before allowing analitiq access them.
 """
 
-import os
 import pathlib
 
 from dotenv import load_dotenv

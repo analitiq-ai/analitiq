@@ -48,6 +48,6 @@ vdb = WeaviateHandler(vdb_params)
 #vdb.update_vectors()
 # Example of using the SQLGenerator class
 service = SearchVdb(llm, vdb=vdb, search_mode="kw")
-result = service.run("gibe me thr event and sales data")
+result = service.run("give me the event and sales data")
 print(result)
 
