@@ -1,6 +1,8 @@
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Collection
 
 import os
+
+import weaviate.util
 from ..logger import logger
 import weaviate
 from weaviate.util import generate_uuid5
@@ -9,12 +11,11 @@ from weaviate.classes.query import Filter, MetadataQuery
 from weaviate.classes.config import Configure
 from weaviate.classes.tenants import Tenant
 from weaviate.collections.classes.internal import QueryReturn
-
 from .base_handler import BaseVDBHandler
 from ..utils.document_processor import DocumentChunkLoader
 from pydantic import BaseModel
 
-from analitiq.vectordb import vectorizer
+from analitiq.vectordb import vectorizer, keyword_extractions
 
 ALLOWED_EXTENSIONS = ['py', 'yaml', 'yml', 'sql', 'txt', 'md', 'pdf']
 LOAD_DOC_CHUNK_SIZE = 2000
@@ -65,6 +66,8 @@ class Chunk(BaseModel):
     :type document_num_char: int
     :param chunk_num_char: The number of characters in the chunk.
     :type chunk_num_char: int
+    :param content_kw: the keywords for keyword search in the chunks
+    :type content_kw: str
     """
     project_name: str = None
     document_name: str = None
@@ -73,6 +76,7 @@ class Chunk(BaseModel):
     source: str
     document_num_char: int
     chunk_num_char: int
+    content_kw: str = None
 
 
 class WeaviateHandler(BaseVDBHandler):
@@ -119,7 +123,7 @@ class WeaviateHandler(BaseVDBHandler):
         """
         Connect to the Weaviate database.
         """
-        self.client: weaviate.classes = weaviate.connect_to_wcs(
+        self.client: weaviate.WeaviateClient = weaviate.connect_to_wcs(
             cluster_url=self.params['host'], auth_credentials=AuthApiKey(self.params['api_key'])
         )
 
@@ -166,6 +170,7 @@ class WeaviateHandler(BaseVDBHandler):
                 document_name=os.path.basename(chunk.metadata['source']),
                 document_num_char=doc_lengths[chunk.metadata['source']],
                 chunk_num_char=len(chunk.page_content),
+                content_kw=keyword_extractions.extract_keywords(chunk.page_content)
             ) for chunk in documents_chunks
             ]
 
@@ -233,11 +238,13 @@ class WeaviateHandler(BaseVDBHandler):
         """
         Perform a keyword search in the Weaviate database.
         """
+        search_kw = keyword_extractions.extract_keywords(query)
+        logger.info("Extracted keywords to search for: %s", search_kw)
         response = QueryReturn(objects=[])
         try:
             response: QueryReturn = self.collection.query.bm25(
-                query=query,
-                query_properties=["content"],
+                query=search_kw,
+                query_properties=["content_kw"],
                 return_metadata=MetadataQuery(score=True, distance=True),
                 limit=limit
             )
