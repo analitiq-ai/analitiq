@@ -77,5 +77,12 @@ if __name__ == "__main__":
 
     agent = Sql(db, llm, vdb=vdb)
     result_generator = agent.run("show me sales by venue.")
+
     for result in result_generator:
-        print(result)
+        if isinstance(result, str):
+            print(result)  # Print incremental results
+        else:
+            final_response = result  # Capture the final BaseResponse object
+
+    print(final_response)  # Print the metadata of the final BaseResponse object
+

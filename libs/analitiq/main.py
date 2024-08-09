@@ -216,7 +216,14 @@ class Analitiq():
         return response
 
     def return_response(self):
-        return {"Analitiq": self.response}
+        """
+        Example returned response:
+        {
+           "Analitiq": "{\"content\": \"Some Text\", \"metadata\": {}}"
+        }
+        :return: a dictionary containing the "Analitiq" key with the value of `self.response` converted to JSON format
+        """
+        return {"Analitiq": self.response.to_json()}
 
     def run(self, user_prompt):
         """
@@ -226,7 +233,7 @@ class Analitiq():
         """
         session = BaseSession()
         session_uuid = session.get_or_create_session_uuid()
-
+        print(user_prompt.lower())
         # First, we check if user typed Help. If so, we can skiop the rest of the logic, for now
         if user_prompt.lower() == 'help':
             text = (HELP_RESPONSE.format(
@@ -236,6 +243,7 @@ class Analitiq():
             ) + '\n\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
             )
             self.response.set_content(text)
+
             return self.return_response()
         elif user_prompt.lower() == 'fail':
             logger.error("[[TAG]]:RESPONSE_FAIL")

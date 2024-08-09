@@ -1,7 +1,8 @@
 import pandas as pd
+import json
 from typing import List, Tuple, Optional
 from analitiq.logger.logger import logger, chat_logger
-from analitiq.base.BaseResponse import BaseResponse, yield_intermediate_response
+from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.code_extractor import CodeExtractor
 from analitiq.base.Database import DatabaseWrapper
 from analitiq.agents.sql.schema import Table, Column, Tables, SQL, TableCheck
@@ -329,6 +330,24 @@ class Sql:
             glued_documents.append(glued_text)
         return glued_documents
 
+    def _set_result(self, result: pd.DataFrame, sql: Optional[str] = None, explanation: Optional[str] = None):
+        """
+        Sets the result of the SQL execution into the response object.
+
+        Args:
+            result (pd.DataFrame): The result of the SQL execution.
+            sql (str, optional): The SQL query executed. Defaults to None.
+            explanation (str, optional): Explanation of the result. Defaults to None.
+        """
+
+        self.response.set_content(result, 'dataframe')
+        if result.empty:
+            self.response.add_text_to_metadata("The query produced no result. Please review your query and SQL generated based on it and fine-tune your instructions.")
+        else:
+            self.response.add_text_to_metadata(f"\n{explanation}")
+            if sql:
+                self.response.add_text_to_metadata(f"\n```\n{sql}\n```")
+
     def run(self, user_prompt: str) -> BaseResponse:
         """
         Main method to run the SQL agent based on the user's prompt.
@@ -350,6 +369,9 @@ class Sql:
             # logger.info("No relevant documents in VDB located.", docs)
             docs_schema = None
         if docs_schema:
+            logger.info(f"Context Documents found: {len(docs_schema)}")
+            docs_schema_formatted = self.glue_document_chunks(docs_schema)
+
             if "```" in docs_schema:
                 extractor = CodeExtractor()
                 sql = extractor.extract_code(docs_schema, 'sql')
@@ -376,12 +398,8 @@ class Sql:
             self.response.add_text_to_metadata("No supporting documents found in Vector DB to query data.")
             return self.response
 
-        if docs_schema:
-            yield yield_intermediate_response(self.__class__.__name__, f"Context Documents found: {len(docs_schema)}")
-            docs_schema_formatted = self.glue_document_chunks(docs_schema)
-
         if docs_ddl:
-            yield yield_intermediate_response(self.__class__.__name__, f"DDL Documents found: {len(docs_ddl)}")
+            logger.info(f"DDL Documents found: {len(docs_ddl)}")
             docs_ddl_formatted = self.glue_document_chunks(docs_ddl)
 
         try:
@@ -392,7 +410,7 @@ class Sql:
             return self.response
 
         if sql:
-            yield yield_intermediate_response(self.__class__.__name__, f"SQL created:\n ```\n{sql}\n```")
+            print(f"SQL created:\n ```\n{sql}\n```")
 
         logger.info(f"SQL: {sql}")
 
@@ -405,20 +423,85 @@ class Sql:
 
         return self.response
 
-    def _set_result(self, result: pd.DataFrame, sql: Optional[str] = None, explanation: Optional[str] = None):
+    async def arun(self, user_prompt: str) -> BaseResponse:
         """
-        Sets the result of the SQL execution into the response object.
+        Main method to run the SQL agent based on the user's prompt.
 
         Args:
-            result (pd.DataFrame): The result of the SQL execution.
-            sql (str, optional): The SQL query executed. Defaults to None.
-            explanation (str, optional): Explanation of the result. Defaults to None.
+            user_prompt (str): The user's query.
+
+        Returns:
+            BaseResponse: The response from the SQL agent.
         """
-        print(explanation)
-        self.response.set_content(result, 'dataframe')
-        if result.empty:
-            self.response.add_text_to_metadata("The query produced no result. Please review your query and SQL generated based on it and fine-tune your instructions.")
+        self.user_prompt = user_prompt
+
+        chat_logger.info(f"Human: {user_prompt}")
+        logger.info(f"[Sql Agent] Query: {user_prompt}")
+
+        docs_schema = self.get_db_docs_schema(user_prompt)
+
+        if not docs_schema or docs_schema == 'ANALYTQ___NO_ANSWER':
+            # logger.info("No relevant documents in VDB located.", docs)
+            docs_schema = None
+        if docs_schema:
+            msg = f"Context Documents found: {len(docs_schema)}"
+            yield {"content": msg}
+            docs_schema_formatted = self.glue_document_chunks(docs_schema)
+
+            if "```" in docs_schema:
+                extractor = CodeExtractor()
+                sql = extractor.extract_code(docs_schema, 'sql')
+                if sql:
+                    success, result = self.execute_sql(sql)
+                    if success:
+                        self._set_result(result, None, docs_schema)
+                        yield self.response.to_json()
+                        return
+
+        # Check if DDL is already loaded in Vector DB
+        self.load_ddl_into_vdb()
+
+        docs_ddl = self.vdb.search_vdb_ddl(user_prompt, self.db.params['db_schemas'])
+
+        # self.relevant_tables = self.get_relevant_tables(ddl, docs_schema)
+        # chat_logger.info(f"Assistant: List of relevant tables and columns.\n{self.relevant_tables}")
+
+        # self.response.add_text_to_metadata(f"Relevant tables: {self.relevant_tables}")
+        # self.response.set_metadata({"relevant_tables": self.relevant_tables})
+
+        # if we do not have ddl_docs docs_schema and context, there is little point trying to create SQL.
+
+        if not docs_ddl and not docs_schema:
+            self.response.add_text_to_metadata("No supporting documents found in Vector DB to query data.")
+            yield self.response.to_json()
+
+            return
+
+        if docs_ddl:
+            msg = f"DDL Documents found: {len(docs_ddl)}"
+            yield {"content": msg}
+            docs_ddl_formatted = self.glue_document_chunks(docs_ddl)
+
+        try:
+            response = self.get_sql_from_llm(docs_ddl_formatted, docs_schema_formatted)
+            sql = response['SQL_Code']
+        except RuntimeError as e:
+            self.response.add_text_to_metadata(str(e))
+
+            yield self.response.to_json()
+            return
+
+        if sql:
+            msg = f"Here is the SQL that was used:\n ```\n{sql}\n```"
+            yield {"content": msg}
+
+        logger.info(f"SQL: {sql}")
+
+        success, result = self.execute_sql(sql)
+
+        if success:
+            self._set_result(result.to_markdown(), sql, response['Explanation'])
         else:
-            self.response.add_text_to_metadata(f"\n{explanation}")
-            if sql:
-                self.response.add_text_to_metadata(f"\n```\n{sql}\n```")
+            self.response.add_text_to_metadata(str(result))
+
+        yield self.response.to_json()
