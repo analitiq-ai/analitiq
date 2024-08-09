@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from libs.analitiq.base.Database import DatabaseWrapper
+from analitiq.base.Database import DatabaseWrapper
 
 class TestDatabaseWrapper(unittest.TestCase):
     """

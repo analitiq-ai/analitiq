@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from libs.analitiq.agents.sql.sql import Sql
+from analitiq.agents.sql.sql import Sql
 
 
 class TestSqlMethods(unittest.TestCase):

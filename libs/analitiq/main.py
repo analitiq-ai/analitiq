@@ -291,12 +291,17 @@ class Analitiq():
 
         self.prompts['refined'] = self.prompts['original']
 
-        selected_services = self.llm.llm_select_services(self.prompts, self.avail_services_str)
+        # TODO we still need to fix the selectin process, so for now we overide and default it to DocSearch service
+        """
+        #selected_services = self.llm.llm_select_services(self.prompts, self.avail_services_str)
 
         # Convert list of objects into a dictionary where name is the key and description is the value
-        selected_services = {service.Action: {'Action': service.Action, 'ActionInput': service.ActionInput, 'Instructions': service.Instructions, 'DependsOn': service.DependsOn} for service in selected_services}
+        #selected_services = {service.Action: {'Action': service.Action, 'ActionInput': service.ActionInput, 'Instructions': service.Instructions, 'DependsOn': service.DependsOn} for service in selected_services}
 
-        logger.info(f"[Services][Selected]: {selected_services}")
+        #logger.info(f"[Services][Selected]: {selected_services}")
+        """
+
+        selected_services = {"SearchDocs": {'Action': 'Search Documents', 'ActionInput': 'text', 'Instructions': user_prompt, 'DependsOn': ''}}
 
         # Building node dependency
         # Check if the list contains exactly one item
