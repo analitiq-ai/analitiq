@@ -31,6 +31,9 @@ class GlobalConfig:
             # This is where project services from the YAML will be stored
             self.services: Dict[str, Any] = serv_loader.load_services_from_config(self.project_config)
 
+            if not self.services:
+                raise ValueError("The 'Available Services' dictionary is empty!")
+
             # get the available services from the defined directory
             logger.info(f"[Services][Available] {self.services}")
 

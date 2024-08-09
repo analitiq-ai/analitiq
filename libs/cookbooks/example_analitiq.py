@@ -11,6 +11,6 @@ agent_responses = a.run(user_prompt)
 #print(agent_responses)
 for service, response in agent_responses.items():
     if response:
-        response.print_details()
+        print(response)
 
 
