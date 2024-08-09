@@ -10,6 +10,7 @@ from weaviate.auth import AuthApiKey
 from weaviate.classes.query import Filter, MetadataQuery
 from weaviate.classes.config import Configure
 from weaviate.classes.tenants import Tenant
+from weaviate.classes.aggregate import GroupByAggregate
 from weaviate.collections.classes.internal import QueryReturn
 from pydantic import BaseModel
 from .base_handler import BaseVDBHandler
@@ -422,7 +423,7 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-        logger.info(f"Weaviate vector search result: {response}")
+        #logger.info(f"Weaviate vector search result: {response}")
         return response
 
     @staticmethod
@@ -659,3 +660,52 @@ class WeaviateHandler(BaseVDBHandler):
             filters = [Filter.by_property(name).equal(value) for name, value in properties]
 
         return filters
+
+    def get_all_objects(self) -> dict:
+        """
+        Retrieve all objects from the collection.
+
+        :return: A list of dictionaries representing the objects.
+        :rtype: dict
+        """
+        try:
+            self.client.connect()
+        except Exception as e:
+            logger.error(f"Error connecting to Weaviate: {e}")
+            return None
+
+        docs = {}
+
+        try:
+            for item in self.collection.iterator():
+                docs[item.uuid] = item.properties
+            response = self.collection.iterator()
+        finally:
+            self.client.close()
+
+        return docs
+
+    def count_objects_grouped_by(self, group_by_property: str) -> List[dict]:
+        """
+        Count objects in Weaviate and group them by the specified property.
+
+        :param group_by_property: The property to group by.
+        :return: A list of dictionaries with the group property and count.
+        """
+        try:
+            self.client.connect()
+        except Exception as e:
+            logger.error(f"Error connecting to Weaviate: {e}")
+            return None
+
+
+        try:
+            response = self.collection.aggregate.over_all(
+                group_by=GroupByAggregate(prop=group_by_property),
+                total_count=True
+            )
+
+        finally:
+            self.client.close()
+
+        return response

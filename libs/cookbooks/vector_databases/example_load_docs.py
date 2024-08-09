@@ -35,8 +35,15 @@ def define_vdb_params(env_vars):
 vdb_params = define_vdb_params(env_vars)
 vdb = WeaviateHandler(vdb_params)
 
-result = vdb.search_vdb_with_filter("show me sales by venue.", [('document_name', 'sample_data'), ('document_type', 'ddl')], 'like')
-print(result)
+
+response = vdb.get_all_objects()
+for item in response:
+    print(item)
+#for g in response.groups:
+#    print(g.total_count)
+    #print(g.properties)
+    #print(g.grouped_by)
+
 exit()
 """
 Load a directory
@@ -85,7 +92,7 @@ Match object by UUID
 
 
 """
-Count objects by parameter
+Count objects by parameter fileter
 """
 # parameters = [("document_name", 'cds'),("document_type", 'ddl')]
 # response = vdb.count_objects_by_properties(parameters, 'like')

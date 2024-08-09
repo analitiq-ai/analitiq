@@ -23,6 +23,30 @@ class BaseResponse:
         metadata_str = ', '.join(f"{key}: {value}" for key, value in self.metadata.items())
         return f"Content: {content_str}\nMetadata: {metadata_str}"
 
+    def to_json_str(self):
+        """
+        Returns a JSON string representation of the object.
+
+        :return: A JSON string representation of the object.
+        :rtype: str
+        """
+        return json.dumps({
+            "content": self.get_content_str(),
+            "metadata": self.metadata
+        })
+
+    def to_json(self):
+        """
+        Returns a JSON string representation of the object.
+
+        :return: A JSON string representation of the object.
+        :rtype: str
+        """
+        return {
+            "content": self.get_content_str(),
+            "metadata": self.metadata
+        }
+
     def print_details(self):
         print(self.__str__())
 
@@ -67,17 +91,4 @@ class BaseResponse:
         else:
             self.metadata[key] = text
 
-
-def yield_intermediate_response(class_name, msg) -> BaseResponse:
-    """
-    Creates an instance of a BaseResponse to send intermediate results back to the requestor.
-
-    :param class_name: str, the name of the class to be set in the intermediate response
-    :param msg: str, the content message to be set in the intermediate response
-    :return: BaseResponse, the intermediate response object containing the class name and content message
-    """
-    intermediate_response = BaseResponse(class_name)
-    intermediate_response.set_content(msg)
-
-    return intermediate_response
 

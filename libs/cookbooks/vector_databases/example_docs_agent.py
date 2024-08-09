@@ -6,7 +6,7 @@ import os
 from analitiq.base.llm.BaseLlm import BaseLlm
 from analitiq.agents.search_vdb.search_vdb import SearchVdb
 from analitiq.vectordb.weaviate import WeaviateHandler
-
+import asyncio
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -38,7 +38,7 @@ llm_params = {'type': 'bedrock'
 llm = BaseLlm(llm_params)
 
 vdb_params = {
-    "collection_name": "test",
+    "collection_name": "bikmo",
     "host": WV_URL,
     "api_key": WV_CLIENT_SECRET,
 }
@@ -47,6 +47,19 @@ vdb = WeaviateHandler(vdb_params)
 
 # Example of using the SQLGenerator class
 agent = SearchVdb(llm, vdb=vdb, search_mode="hybrid")
-result = agent.run("Welche tiere sind loyal?")
-print(result)
+result_generator = agent.arun("Bikes")
+
+
+async def process_results():
+    final_response = None
+    async for result in result_generator:
+        if isinstance(result, str):
+            print(result)  # Print incremental results
+        else:
+            final_response = result  # Capture the final BaseResponse object
+
+    print(final_response)  # Print the metadata of the final BaseResponse object
+
+# Run the async function
+asyncio.run(process_results())
 
