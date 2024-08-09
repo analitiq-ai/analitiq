@@ -1,8 +1,6 @@
-from analitiq.logger import logger
-import yaml
+from analitiq.logger.logger import logger
 from typing import List, Optional
-from pydantic import BaseModel, validator, ValidationError
-from pathlib import Path
+from pydantic import BaseModel, field_validator, ValidationError
 
 
 class DatabaseConnection(BaseModel):
@@ -18,7 +16,7 @@ class DatabaseConnection(BaseModel):
     keepalives_idle: Optional[int] = 240
     connect_timeout: Optional[int] = 10
 
-    @validator('type')
+    @field_validator('type')
     def validate_type(cls, v):
         assert v in ['postgres', 'redshift'], f"Invalid database type: {v}"
         return v
@@ -36,7 +34,7 @@ class LLMConnection(BaseModel):
     aws_secret_access_key: Optional[str] = None
     region_name: Optional[str] = None
 
-    @validator('type')
+    @field_validator('type')
     def validate_type(cls, v):
         assert v in ['openai', 'mistral', 'bedrock'], f"Invalid LLM type: {v}"
         return v
@@ -49,7 +47,7 @@ class VectorDBConnection(BaseModel):
     host: str
     api_key: str
 
-    @validator('type')
+    @field_validator('type')
     def validate_type(cls, v):
         assert v in ['weaviate', 'chromadb'], f"Invalid Vector DB type: {v}"
         return v

@@ -20,13 +20,13 @@ Response format instructions:
 """
 
 EXTRACT_INFO_FROM_DB_DOCS = """
-You are a data analyst and your role is to examine user query and database schema.
-From the database schema, determine what information may be necessary to answer user query.
+You are a data analyst and your role is to examine database documentation and try to determine what tables and columns could contain information needed to answer the users query.
+The user query is: {user_query}.
 Extract the necessary information and provide it in your response.
-Always qualify tables with the name of the schema they reside in.
-If nothing in the database schema can be used to address users query or you are unable extract relevant information, return only the word "None" in your reponse.
-User query: {user_query}.
-Database schema: {db_schema}
+If nothing in the database schema can be used to address users query or you are unable extract relevant information, return only the word "ANALITQ___NO_ANSWER" in your reponse.
+
+Chunks of relevant documentation in json format: 
+{docs}
 """
 
 EXTRACT_INFO_FROM_DB_DDL = """

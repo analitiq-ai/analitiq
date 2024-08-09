@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from analitiq.logger import logger
+from analitiq.logger.logger import logger
 import inspect
 import json
 
@@ -131,7 +131,10 @@ class Graph:
                     result = future.result()
 
                     # Store the result for dependent nodes as a BaseResponse object.
-                    node_outputs[completed_node.name] = result if result.content is not None else None
+                    # node_outputs[completed_node.name] = result if result.content is not None else None
+
+                    # Store the result for dependent nodes as a JSON.
+                    node_outputs[completed_node.name] = result.to_json() if result.content is not None else None
 
                     # Check and schedule dependent nodes
                     for consumer in completed_node.consumers:

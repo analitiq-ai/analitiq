@@ -1,11 +1,11 @@
-from analitiq.logger import logger
+from analitiq.logger.logger import logger
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.base.GlobalConfig import GlobalConfig
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.pydantic_v1 import BaseModel, Field
 
-from analitiq.services.analyze.prompt import (
+from analitiq.agents.analyze.prompt import (
     ANALYZE_DATA_PROMPT
 )
 

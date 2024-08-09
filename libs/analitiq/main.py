@@ -1,19 +1,26 @@
 import sys
 from typing import Dict
-from analitiq.logger import logger
+from analitiq.logger.logger import logger
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.base.Database import DatabaseWrapper
 from analitiq.base.llm.BaseLlm import BaseLlm
 from analitiq.base.BaseResponse import BaseResponse
-from analitiq.utils.general import load_yaml, extract_hints
+from analitiq.utils.general import extract_hints
 from analitiq.base.GlobalConfig import GlobalConfig
-from analitiq.base.Graph import Graph, Node
+from analitiq.base.Graph import Graph
 from analitiq.base.BaseSession import BaseSession
 
 HELP_RESPONSE = """
-    Analitiq [v{version}] is an AI assistant that can examine your SQL files and database structure and answer common questions about your data.\n
-    Please note that DB query is currently in beta and is disabled on this instance.\n
-    Services that are currently connected:
+Analitiq [v{version}] is an AI assistant that can examine your SQL files and database structure and answer common questions about your data.
+
+Database: {db}
+Collection: {vdb_collection_name}
+
+_help_ - get help menu.
+_fail_ - mark responses from Analitiq that are not accurate.
+_params_ - get parameters and connections used by Analitiq.
+
+Services that are currently connected:
 """
 
 # import langchain
@@ -209,7 +216,14 @@ class Analitiq():
         return response
 
     def return_response(self):
-        return {"Analitiq": self.response}
+        """
+        Example returned response:
+        {
+           "Analitiq": "{\"content\": \"Some Text\", \"metadata\": {}}"
+        }
+        :return: a dictionary containing the "Analitiq" key with the value of `self.response` converted to JSON format
+        """
+        return {"Analitiq": self.response.to_json()}
 
     def run(self, user_prompt):
         """
@@ -219,11 +233,17 @@ class Analitiq():
         """
         session = BaseSession()
         session_uuid = session.get_or_create_session_uuid()
-
+        print(user_prompt.lower())
         # First, we check if user typed Help. If so, we can skiop the rest of the logic, for now
         if user_prompt.lower() == 'help':
-            text = HELP_RESPONSE.format(version=GlobalConfig().project_config['version']) + '\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
+            text = (HELP_RESPONSE.format(
+                version = GlobalConfig().project_config['version'],
+                db = f"{self.db_params['host']}/{self.db_params['db_name']}",
+                vdb_collection_name = self.vdb_params['collection_name']
+            ) + '\n\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
+            )
             self.response.set_content(text)
+
             return self.return_response()
         elif user_prompt.lower() == 'fail':
             logger.error("[[TAG]]:RESPONSE_FAIL")
@@ -231,7 +251,7 @@ class Analitiq():
             self.response.set_content(text)
             return self.return_response()
 
-        logger.info(f"User query: {user_prompt}")
+        logger.info(f"[Main] User query: {user_prompt}")
 
         # Here we load DB, LLM amd VDB. If there are errors, we exit.
         load_errors = self.load_connections()

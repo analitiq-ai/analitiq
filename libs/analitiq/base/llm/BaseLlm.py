@@ -1,9 +1,9 @@
 from typing import List, Optional, Any
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
-from analitiq.logger import logger
+from analitiq.logger.logger import logger
 
-from langchain_core.pydantic_v1 import BaseModel, Field, validator
+from langchain_core.pydantic_v1 import BaseModel, Field
 from enum import Enum
 
 from analitiq.base.llm.prompt import (
@@ -12,7 +12,6 @@ from analitiq.base.llm.prompt import (
     TASK_LIST,
     REFINE_TASK_LIST,
     SUMMARISE_REQUEST,
-    COMBINE_TASK_PAIR,
     FIX_JSON,
     EXTRACT_INFO_FROM_DB_DOCS,
     EXTRACT_INFO_FROM_DB_DDL,
@@ -151,11 +150,15 @@ class BaseLlm:
 
         return response
 
-    def extract_info_from_db_docs(self, user_query, formatted_documents_string):
+    def extract_info_from_db_docs(self, user_query, schemas_list, docs: str = None):
+
+        if docs is None:
+            docs = ""
+
         prompt = PromptTemplate(
             template=EXTRACT_INFO_FROM_DB_DOCS,
             input_variables=["user_query"],
-            partial_variables={"db_schema": formatted_documents_string}
+            partial_variables={"schemas_list": schemas_list, "docs": docs}
         )
         table_chain = prompt | self.llm
         response = table_chain.invoke({"user_query": user_query})

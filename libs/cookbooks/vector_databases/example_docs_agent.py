@@ -4,10 +4,11 @@ This is an example of how to search documents using search services.
 
 import os
 
-from analitiq.services.search_vdb.search_vdb import SearchVdb
-from analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.vectordb.weaviate import WeaviateHandler
 
+from analitiq.base.llm.BaseLlm import BaseLlm
+from analitiq.agents.search_vdb.search_vdb import SearchVdb
+from analitiq.vectordb.weaviate import WeaviateHandler
+import asyncio
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -36,18 +37,31 @@ llm_params = {'type': 'bedrock'
     , 'aws_access_key_id': AWS_ACCESS_KEY_ID
     , 'aws_secret_access_key': AWS_SECRET_ACCESS_KEY
     , 'region_name': REGION_NAME}
-# llm = BaseLlm(llm_params)
-llm = None
+llm = BaseLlm(llm_params)
+
 vdb_params = {
-    "collection_name": "daniel_test",
+    "collection_name": "test",
     "host": WV_URL,
     "api_key": WV_CLIENT_SECRET,
 }
 
 vdb = WeaviateHandler(vdb_params)
-#vdb.update_vectors()
+
 # Example of using the SQLGenerator class
-service = SearchVdb(llm, vdb=vdb, search_mode="kw")
-result = service.run("give me the event and sales data")
-print(result)
+agent = SearchVdb(llm, vdb=vdb, search_mode="hybrid")
+result_generator = agent.arun("Bikes")
+
+
+async def process_results():
+    final_response = None
+    async for result in result_generator:
+        if isinstance(result, str):
+            print(result)  # Print incremental results
+        else:
+            final_response = result  # Capture the final BaseResponse object
+
+    print(final_response)  # Print the metadata of the final BaseResponse object
+
+# Run the async function
+asyncio.run(process_results())
 

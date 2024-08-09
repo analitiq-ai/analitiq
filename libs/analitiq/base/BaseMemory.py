@@ -1,4 +1,4 @@
-from analitiq.logger import logger
+from analitiq.logger.logger import logger
 import os
 import json
 from typing import List, Dict, Any

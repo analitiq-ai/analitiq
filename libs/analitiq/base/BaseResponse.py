@@ -1,6 +1,7 @@
 from typing import List, Any, Dict
 import json
 
+
 class BaseResponse:
     """A class to encapsulate the response of service operations.
 
@@ -21,6 +22,30 @@ class BaseResponse:
         content_str = str(self.content)
         metadata_str = ', '.join(f"{key}: {value}" for key, value in self.metadata.items())
         return f"Content: {content_str}\nMetadata: {metadata_str}"
+
+    def to_json_str(self):
+        """
+        Returns a JSON string representation of the object.
+
+        :return: A JSON string representation of the object.
+        :rtype: str
+        """
+        return json.dumps({
+            "content": self.get_content_str(),
+            "metadata": self.metadata
+        })
+
+    def to_json(self):
+        """
+        Returns a JSON string representation of the object.
+
+        :return: A JSON string representation of the object.
+        :rtype: str
+        """
+        return {
+            "content": self.get_content_str(),
+            "metadata": self.metadata
+        }
 
     def print_details(self):
         print(self.__str__())
@@ -65,3 +90,5 @@ class BaseResponse:
             self.metadata[key] += "\n" + text
         else:
             self.metadata[key] = text
+
+

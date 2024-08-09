@@ -1,4 +1,4 @@
-from analitiq.logger import logger
+from analitiq.logger.logger import logger
 from typing import Dict, Any
 from pathlib import Path
 import os

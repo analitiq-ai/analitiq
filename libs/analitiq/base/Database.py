@@ -168,3 +168,6 @@ class DatabaseWrapper:
         self.engine.dispose()
 
         return response
+
+    def run(self, sql, include_columns):
+        return self.db.run(sql, include_columns)
