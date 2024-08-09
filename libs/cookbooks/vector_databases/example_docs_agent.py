@@ -40,7 +40,7 @@ llm_params = {'type': 'bedrock'
 llm = BaseLlm(llm_params)
 
 vdb_params = {
-    "collection_name": "bikmo",
+    "collection_name": "test",
     "host": WV_URL,
     "api_key": WV_CLIENT_SECRET,
 }

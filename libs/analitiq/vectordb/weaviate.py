@@ -22,7 +22,7 @@ from .base_handler import BaseVDBHandler
 from ..utils.document_processor import DocumentChunkLoader
 from pydantic import BaseModel
 
-from analitiq.vectordb import vectorizer, keyword_extractions
+from analitiq.vectordb import vectorizer
 
 ALLOWED_EXTENSIONS = ['py', 'yaml', 'yml', 'sql', 'txt', 'md', 'pdf']
 LOAD_DOC_CHUNK_SIZE = 2000
@@ -224,25 +224,14 @@ class WeaviateHandler(BaseVDBHandler):
 
     def load_chunks_to_weaviate(self, chunks):
 
-        chunks_loaded = 0
-
+        self.load_chunks_to_weaviate(chunks)
         try:
             self.client.connect()
         except Exception as e:
             print(e)
 
-        with self.collection.batch.dynamic() as batch:
-            for chunk in chunks:
-                uuid = generate_uuid5(chunk.model_dump())
-                hf_vector = self.vectorizer.vectorize(chunk.content)
                 response = batch.add_object(properties=chunk.model_dump(), uuid=uuid,
-                                 vector=hf_vector
-                                 )
 
-                chunks_loaded += 1
-
-        self.close()
-        print(f"Loaded chunks: {chunks_loaded}")
 
     def load(self, _path: str, file_ext: str = None):
         """
