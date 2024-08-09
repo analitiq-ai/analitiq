@@ -9,7 +9,7 @@ from typing import Optional, List, Tuple
 from functools import reduce
 from datetime import datetime, timezone
 from analitiq.logger.logger import logger
-from analitiq.vectordb import vectorizer
+from analitiq.vectordb import keyword_extractions
 from weaviate.util import generate_uuid5
 from weaviate.auth import AuthApiKey
 from weaviate.classes.query import Filter, MetadataQuery
@@ -28,6 +28,7 @@ ALLOWED_EXTENSIONS = ['py', 'yaml', 'yml', 'sql', 'txt', 'md', 'pdf']
 LOAD_DOC_CHUNK_SIZE = 2000
 LOAD_DOC_CHUNK_OVERLAP = 200
 VECTOR_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+QUERY_PROPERTIES = ['content'] # OR content_kw
 
 def search_only(func):
     """
@@ -224,13 +225,25 @@ class WeaviateHandler(BaseVDBHandler):
 
     def load_chunks_to_weaviate(self, chunks):
 
-        self.load_chunks_to_weaviate(chunks)
+        chunks_loaded = 0
+
         try:
             self.client.connect()
         except Exception as e:
             print(e)
 
+        with self.collection.batch.dynamic() as batch:
+            for chunk in chunks:
+                uuid = generate_uuid5(chunk.model_dump())
+                hf_vector = self.vectorizer.vectorize(chunk.content)
                 response = batch.add_object(properties=chunk.model_dump(), uuid=uuid,
+                                            vector=hf_vector
+                                            )
+                print(response)
+                chunks_loaded += 1
+
+        self.close()
+        print(f"Loaded chunks: {chunks_loaded}")
 
 
     def load(self, _path: str, file_ext: str = None):
@@ -341,7 +354,7 @@ class WeaviateHandler(BaseVDBHandler):
         try:
             response: QueryReturn = self.collection.query.bm25(
                 query=search_kw,
-                query_properties=["content_kw"],
+                query_properties=QUERY_PROPERTIES,
                 return_metadata=MetadataQuery(score=True, distance=True),
                 limit=limit
             )
