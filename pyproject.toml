@@ -49,7 +49,7 @@ nltk = "^3.8.1"
 sqlparse = "^0.5.1"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^5.2"
+pytest = "^6.2"
 pytest-mock = "^1.11"
 python-dotenv = "^1.0.1"
 

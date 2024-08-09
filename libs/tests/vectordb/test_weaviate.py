@@ -1,7 +1,7 @@
 import os
 import unittest
 from unittest.mock import patch, MagicMock, create_autospec
-from libs.analitiq.vectordb.weaviate import WeaviateHandler
+from analitiq.vectordb.weaviate import WeaviateHandler
 import weaviate
 from weaviate.util import generate_uuid5
 from weaviate.auth import AuthApiKey
@@ -17,7 +17,7 @@ from pydantic import BaseModel
 class TestWeaviateHandler(unittest.TestCase):
 
     @patch('weaviate.connect_to_wcs')
-    @patch('libs.analitiq.vectordb.weaviate.DocumentChunkLoader')
+    @patch('analitiq.vectordb.weaviate.DocumentChunkLoader')
     def setUp(self,  MockChunkLoader, MockConnectToWCS):
         self.mock_client = MockConnectToWCS.return_value
         self.mock_chunk_processor = MockChunkLoader.return_value
@@ -28,7 +28,7 @@ class TestWeaviateHandler(unittest.TestCase):
         }
         self.handler = WeaviateHandler(self.params)
 
-    @patch('libs.analitiq.vectordb.weaviate.weaviate.connect_to_wcs')
+    @patch('analitiq.vectordb.weaviate.weaviate.connect_to_wcs')
     def test_connect(self, mock_connect):
         mock_connect.return_value = self.mock_client
         self.mock_client.collections.exists.return_value = False

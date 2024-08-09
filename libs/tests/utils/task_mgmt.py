@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock, call
-from libs.analitiq.utils.task_mgmt import TaskManager
+from analitiq.utils.task_mgmt import TaskManager
 
 class TestCombineTasksPairwise(unittest.TestCase):
     def setUp(self):
