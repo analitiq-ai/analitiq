@@ -21,12 +21,14 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install dependencies
+    - name: Install base packages
       run: |
         python -m pip install --upgrade pip
         pip install nox
         pip install poetry
-        poetry install
+    
+    - name: Configure Poetry to not create virtualenvs
+      run: poetry config virtualenvs.create false --local
 
     - name: Run Nox
       run: nox --sessions install ruff_format ruff_check pylint mypy pytest coverage

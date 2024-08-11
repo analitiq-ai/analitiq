@@ -46,8 +46,7 @@ class BaseMemory:
         self.conversations.append(conversation_entry)
 
     def save_to_file(self):
-        """Saves the current conversation history to a flat file.
-        """
+        """Saves the current conversation history to a flat file."""
         # Ensure log directory exists
         if not os.path.exists(self.log_directory):
             os.makedirs(self.log_directory)
@@ -61,8 +60,7 @@ class BaseMemory:
         self.clear_memory()
 
     def clear_memory(self):
-        """Clears the in-memory conversation history.
-        """
+        """Clears the in-memory conversation history."""
         self.conversations = []
 
     def get_last_messages(self, num_messages: int) -> List[Dict[str, Any]]:

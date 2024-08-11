@@ -8,10 +8,8 @@ class InvalidServiceNameException(Exception):
     """Exception raised for invalid service names."""
 
 
-
 class ServiceNotFoundException(Exception):
     """Exception raised when a service is not found."""
-
 
 
 class Node:

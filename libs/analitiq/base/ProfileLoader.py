@@ -98,8 +98,7 @@ class ProfileLoader:
     """
 
     def __init__(self, profile_config):
-        """Initializes the ProjectLoader with an empty list of services and a dictionary for profiles.
-        """
+        """Initializes the ProjectLoader with an empty list of services and a dictionary for profiles."""
         self.profile_config = profile_config
 
     def _validate_config(self, load_profile_name: str) -> Configuration:

@@ -16,11 +16,9 @@ def is_resource_downloaded(resource):
         return False
 
 
-# Check if 'punkt' and 'stopwords' are downloaded
 punkt_downloaded = is_resource_downloaded("tokenizers/punkt")
 stopwords_downloaded = is_resource_downloaded("corpora/stopwords")
 
-# Download only if not already downloaded
 if not punkt_downloaded:
     nltk.download("punkt")
 
@@ -40,8 +38,3 @@ def extract_keywords(text: str) -> str:
     tokens = [stemmer.stem(word) for word in tokens]
 
     return " ".join(set(tokens))
-
-
-if __name__ == "__main__":
-    text = "SELECT sum(revenue_last_year) FROM tblPayments"
-    print(extract_keywords(text))

@@ -21,8 +21,7 @@ from analitiq.base.llm.prompt import (
 
 
 class PromptClarification(BaseModel):
-    """This class is used to capture primary product details of each task
-    """
+    """This class is used to capture primary product details of each task"""
 
     Clear: bool = Field(
         description="True if query is clear. False if more input or clarification is needed. Make sure True or False is with initial caps."
@@ -42,16 +41,14 @@ def fix_case(llm_output) -> str:
 
 
 class CombineTaskPair(Enum):
-    """This class is used to determine if tasks can be combined.
-    """
+    """This class is used to determine if tasks can be combined."""
 
     YES = "Can combine tasks."
     NO = "Cannot combine tasks."
 
 
 class Task(BaseModel):
-    """This class is used to capture primary product details of each task
-    """
+    """This class is used to capture primary product details of each task"""
 
     Name: str = Field(description="Short name for the task to be done")
     Using: str = Field(
@@ -61,8 +58,7 @@ class Task(BaseModel):
 
 
 class Tasks(BaseModel):
-    """This class is used to store the collection/list of tasks
-    """
+    """This class is used to store the collection/list of tasks"""
 
     TaskList: list[Task] = Field("List of tasks to be done to complete user query.")
 

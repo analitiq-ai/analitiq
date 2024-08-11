@@ -27,7 +27,7 @@ class AnalitiqVectorizer:
     """
 
     def __init__(self, model_name_or_path: str):
-        """Initializes the Vectorizer with the specified model.
+        """Initialize the Vectorizer with the specified model.
 
         Parameters
         ----------
@@ -41,14 +41,15 @@ class AnalitiqVectorizer:
         self.load_model()
 
     def load_model(self):
-        """Loads the tokenizer and model from Hugging Face.
+        """Load the tokenizer and model from Hugging Face.
+
         If the model is not present locally, it will be downloaded.
         """
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
         self.model = AutoModel.from_pretrained(self.model_name_or_path)
 
     def vectorize(self, text: Union[str, List[str]], flatten: bool = True) -> np.ndarray:
-        """Generates vectors for the given input text.
+        """Generate vectors for the given input text.
 
         Parameters
         ----------
@@ -73,17 +74,21 @@ class AnalitiqVectorizer:
             return vectors.detach().cpu().numpy()
 
     def normalize(self, vectors: np.ndarray) -> np.ndarray:
+        """Normalize some vectors."""
         norms = np.linalg.norm(vectors, axis=1, keepdims=True)
         return vectors / norms
 
     def create_embeddings(self, texts: List[str]):
+        """Create Embeddings after normalization."""
         self.texts = texts
         embeddings = self.vectorize(texts, False)
         self.embeddings = self.normalize(embeddings)
 
     def search(self, query: str, k: int = 3):
+        """Search for embeddings."""
         if self.embeddings is None or self.texts is None:
-            raise ValueError("Embeddings have not been created. Call create_embeddings() first.")
+            errmsg = "Embeddings have not been created. Call create_embeddings() first."
+            raise ValueError(errmsg)
 
         query_vector = self.vectorize([query], False)
         query_vector = self.normalize(query_vector)

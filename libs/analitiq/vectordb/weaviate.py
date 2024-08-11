@@ -155,7 +155,7 @@ class WeaviateHandler(BaseVDBHandler):
     ):
         """Chunk the data from file or directory.
 
-        Load files from a directory or a single file, 
+        Load files from a directory or a single file,
         split them into chunks, and insert them into Weaviate.
         """
         documents_chunks, doc_lengths = self.chunk_processor.load_and_chunk_documents(
@@ -347,8 +347,7 @@ class WeaviateHandler(BaseVDBHandler):
 
     @search_only
     def kw_search(self, query: str, limit: int = 3) -> QueryReturn:
-        """Perform a keyword search in the Weaviate database.
-        """
+        """Perform a keyword search in the Weaviate database."""
         search_kw = keyword_extractions.extract_keywords(query)
         logger.info("Extracted keywords to search for: %s", search_kw)
         response = QueryReturn(objects=[])
@@ -592,6 +591,7 @@ class WeaviateHandler(BaseVDBHandler):
             return self._group_results_by_properties(response, ["document_name", "document_type"])
 
     def fetch_objects_by_properties(self, properties, match_type: str = "like"):
+        """Fetch objects with given properties."""
         response = None
 
         try:
@@ -609,6 +609,7 @@ class WeaviateHandler(BaseVDBHandler):
         return response
 
     def count_objects_by_properties(self, properties, match_type: str = "like"):
+        """Count objects by properties."""
         try:
             self.client.connect()
         except Exception as e:
@@ -627,10 +628,11 @@ class WeaviateHandler(BaseVDBHandler):
         return response
 
     def get_by_uuid(self, uuid: str):
+        """Get entrys by uuid."""
         return self.collection.query.fetch_object_by_id(uuid=uuid)
 
     def delete_objects(self, properties, match_type: str = "like"):
-        """Deletes objects from the collection based on specified meta parameters.
+        """Delete objects from the collection based on specified meta parameters.
 
         :param properties: The properties used to filter the objects to be deleted.
         :param match_type: The type of matching to perform. Defaults to 'like'.
@@ -653,7 +655,10 @@ class WeaviateHandler(BaseVDBHandler):
             self.client.close()
 
     def delete_collection(self, collection_name: str):
-        # delete collection - THIS WILL DELETE THE COLLECTION AND ALL ITS DATA
+        """Delete collection.
+
+        THIS WILL DELETE THE COLLECTION AND ALL ITS DATA.
+        """
         try:
             self.client.collections.delete(collection_name)
             return True
