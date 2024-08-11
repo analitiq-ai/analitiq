@@ -6,6 +6,7 @@ from analitiq.base.ProfileLoader import ProfileLoader
 from analitiq.base.ServicesLoader import ServicesLoader
 from analitiq.utils.general import load_yaml
 
+
 class GlobalConfig:
     _instance = None
     _initialized = False
@@ -16,12 +17,9 @@ class GlobalConfig:
         return cls._instance
 
     def __init__(self):
-        """
-
-        """
+        """ """
         if not self._initialized:
-
-            self.project_config = self.load_config('project.yml')  # this is the users project.yml
+            self.project_config = self.load_config("project.yml")  # this is the users project.yml
             self.profiles: Dict = None
             self.profile_configs: Dict = None
 
@@ -43,7 +41,7 @@ class GlobalConfig:
         if not self.profiles:
             # check if the file is in .analitiq directory of the user
             home_dir = os.path.expanduser("~")
-            filename = 'profiles.yml'
+            filename = "profiles.yml"
             full_path = home_dir + f"/.analitiq/{filename}"
 
             if os.path.isfile(full_path):
@@ -53,7 +51,7 @@ class GlobalConfig:
 
             # Load and validate the Profile configuration
             profile_loader = ProfileLoader(self.profiles)
-            self.profile_configs = profile_loader._validate_config(self.project_config['profile'])
+            self.profile_configs = profile_loader._validate_config(self.project_config["profile"])
 
     def load_config(self, file_path: str):
         try:
@@ -66,14 +64,13 @@ class GlobalConfig:
             raise e
 
     def get_log_dir(self):
-        return self.project_config['config']['general']['log_dir']
+        return self.project_config["config"]["general"]["log_dir"]
 
     def get_log_filename(self):
-        return self.project_config['config']['general']['latest_run_filename']
+        return self.project_config["config"]["general"]["latest_run_filename"]
 
     def get_session_uuid_file(self):
-        return self.project_config['config']['general']['session_uuid_file']
+        return self.project_config["config"]["general"]["session_uuid_file"]
 
     def get_chat_log_dir(self):
-        return self.project_config['config']['general']['chat_log_dir']
-
+        return self.project_config["config"]["general"]["chat_log_dir"]

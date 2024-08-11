@@ -2,12 +2,25 @@ from typing import Any, List, Optional
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.docstore.document import Document
 import sqlparse
+
+
 class SQLRecursiveCharacterTextSplitter(RecursiveCharacterTextSplitter):
-    def __init__(self, separators: List[str] | None = None, keep_separator: bool = True, is_separator_regex: bool = False, **kwargs: Any):
-        super().__init__(separators=separators, keep_separator=keep_separator, is_separator_regex=is_separator_regex, **kwargs)
+    def __init__(
+        self,
+        separators: List[str] | None = None,
+        keep_separator: bool = True,
+        is_separator_regex: bool = False,
+        **kwargs: Any,
+    ):
+        super().__init__(
+            separators=separators,
+            keep_separator=keep_separator,
+            is_separator_regex=is_separator_regex,
+            **kwargs,
+        )
 
     @classmethod
-    def from_language(cls, language: str = "SQL", **kwargs: Any) -> 'SQLRecursiveCharacterTextSplitter':
+    def from_language(cls, language: str = "SQL", **kwargs: Any) -> "SQLRecursiveCharacterTextSplitter":
         if language.upper() != "SQL":
             raise ValueError("This splitter only supports SQL language.")
 

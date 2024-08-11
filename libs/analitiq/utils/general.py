@@ -14,6 +14,7 @@ def retry(max_retries, wait_time):
     :param wait_time: The wait time (in seconds) between retries.
     :return: The decorated function.
     """
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             retries = 0
@@ -21,7 +22,7 @@ def retry(max_retries, wait_time):
 
             while retries < max_retries:
                 try:
-                    result = func(*args, **kwargs, feedback=feedback) # Pass feedback to the function
+                    result = func(*args, **kwargs, feedback=feedback)  # Pass feedback to the function
                     return result
                 except Exception as e:
                     logger.error(f"Retry {retries + 1} for {func.__name__} failed due to {e}")
@@ -31,7 +32,9 @@ def retry(max_retries, wait_time):
             else:
                 logger.info(f"Max retries of function {func} exceeded")
                 raise Exception(f"Max retries of function {func} exceeded")
+
         return wrapper
+
     return decorator
 
 
@@ -50,6 +53,7 @@ def is_response_clear(response, chat_hist_exists):
 
     return False
 
+
 def extract_hints(text):
     """
     Extracts hints from the given text.
@@ -62,12 +66,13 @@ def extract_hints(text):
     pattern = r"\[\[(.*?)\]\]"
 
     # Find all matches and join them with a space
-    hints = ' '.join(re.findall(pattern, text))
+    hints = " ".join(re.findall(pattern, text))
 
     # Remove the bracketed text from the original string
-    cleaned_prompt = re.sub(pattern, '', text).strip()
+    cleaned_prompt = re.sub(pattern, "", text).strip()
 
     return cleaned_prompt, hints
+
 
 def load_yaml(file_path: str) -> Dict[str, Any]:
     """
@@ -82,7 +87,7 @@ def load_yaml(file_path: str) -> Dict[str, Any]:
     # Create a Path object for the file you want to check
 
     if file_path.exists():
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             configs = yaml.safe_load(f)
             if configs is None or configs == {}:
                 raise ValueError(f"The file is empty: {file_path}")
@@ -90,6 +95,7 @@ def load_yaml(file_path: str) -> Dict[str, Any]:
         raise FileNotFoundError(f"The file does not exist: {file_path}")
 
     return configs
+
 
 def flatten(lst):
     """
@@ -114,4 +120,4 @@ def flatten(lst):
 
 
 def remove_bracket_contents(text):
-    return re.sub(r'\[\[.*?\]\]', '', text)
+    return re.sub(r"\[\[.*?\]\]", "", text)

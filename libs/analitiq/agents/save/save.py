@@ -8,14 +8,15 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain.output_parsers import OutputFixingParser
 from langchain.prompts import PromptTemplate
 
-from analitiq.agents.save.prompt import (
-    SAVE_ELEMENT_PROMPT
-)
+from analitiq.agents.save.prompt import SAVE_ELEMENT_PROMPT
 
 
 class ElementToSave(BaseModel):
     """Define the desired data structure for llm response"""
-    timestamp: str = Field(description="Timestamp of the element that best matches what the user wants to save")
+
+    timestamp: str = Field(
+        description="Timestamp of the element that best matches what the user wants to save"
+    )
     content: str = Field(description="The content that the user would like to save")
     descr: str = Field(description="Short description of the content that you will be saving for the user")
     filename: str = Field(description="Filename that you think would suit best to the content")
@@ -32,7 +33,7 @@ class Save:
         output_directory (str): Directory where extracted objects are saved.
     """
 
-    def __init__(self, output_directory: str = './extracted'):
+    def __init__(self, output_directory: str = "./extracted"):
         """
         Initializes the ChatHistoryProcessor with a session UUID and output directory.
 
@@ -63,9 +64,10 @@ class Save:
         prompt = PromptTemplate(
             template=SAVE_ELEMENT_PROMPT,
             input_variables=["query"],
-            partial_variables={"format_instructions": parser.get_format_instructions()
-                ,"chat_history": chat_history
-                               },
+            partial_variables={
+                "format_instructions": parser.get_format_instructions(),
+                "chat_history": chat_history,
+            },
         )
 
         chain = prompt | self.llm
@@ -100,7 +102,7 @@ class Save:
 
         # Save the extracted object to a file
         filename = os.path.join(self.output_directory, f"{filename}_{session.session_uuid}.txt")
-        with open(filename, 'w') as file:
+        with open(filename, "w") as file:
             file.write(message)
 
         return filename
@@ -121,14 +123,17 @@ class Save:
 
         llm_response = self.extract_chat_entity(user_prompt)
 
-        filename = self.save_object(llm_response['filename'], llm_response['content'])
+        filename = self.save_object(llm_response["filename"], llm_response["content"])
 
-        self.response.set_content(f"I have found that {llm_response['descr']} from our chat history matches your request. The information was saved under file {filename}")
-        self.response.set_metadata({
-            "timestamp": llm_response['timestamp'],
-            "filename": llm_response['filename'],
-            "descr": llm_response['descr']
-        })
+        self.response.set_content(
+            f"I have found that {llm_response['descr']} from our chat history matches your request. The information was saved under file {filename}"
+        )
+        self.response.set_metadata(
+            {
+                "timestamp": llm_response["timestamp"],
+                "filename": llm_response["filename"],
+                "descr": llm_response["descr"],
+            }
+        )
 
         return self.response
-

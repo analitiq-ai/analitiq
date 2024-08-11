@@ -7,10 +7,7 @@ from schemas.vector_store import VectoreStoreCollection
 
 
 def get_vector_store():
-    vector_store = chromadb.HttpClient(
-        host=os.getenv("CHROMA_DB_HOST"),
-        port=os.getenv("CHROMA_DB_PORT")
-    )
+    vector_store = chromadb.HttpClient(host=os.getenv("CHROMA_DB_HOST"), port=os.getenv("CHROMA_DB_PORT"))
     try:
         yield vector_store
     finally:
@@ -18,13 +15,12 @@ def get_vector_store():
 
 
 class ChromaHandler:
-
     def save_document(
-            client: ClientAPI,
-            collection_name: str,
-            document_text: str,
-            document_metadata: object,
-            document_ids: list
+        client: ClientAPI,
+        collection_name: str,
+        document_text: str,
+        document_metadata: object,
+        document_ids: list,
     ):
         """
         Saves a document in a specified collection.
@@ -40,7 +36,9 @@ class ChromaHandler:
         """
         try:
             collection = client.get_or_create_collection(collection_name)
-            response = collection.add(documents=[document_text], metadatas=[document_metadata], ids=document_ids)
+            response = collection.add(
+                documents=[document_text], metadatas=[document_metadata], ids=document_ids
+            )
             return response
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to create document: {e}")
@@ -66,7 +64,9 @@ class ChromaHandler:
             logger.error(f"Error deleting document: {e}")
             return False
 
-    def get_document_by_metadata(client: ClientAPI, collection_name: str, metadata: object) -> Optional[list[VectoreStoreCollection]]:
+    def get_document_by_metadata(
+        client: ClientAPI, collection_name: str, metadata: object
+    ) -> Optional[list[VectoreStoreCollection]]:
         """
         Retrieves documents from a specified collection based on metadata.
 
@@ -85,7 +85,9 @@ class ChromaHandler:
             logger.error(f"Error getting document by metadata: {e}")
             return None
 
-    def get_document_by_id(client: ClientAPI, collection_name: str, document_uuid: str) -> Optional[VectoreStoreCollection]:
+    def get_document_by_id(
+        client: ClientAPI, collection_name: str, document_uuid: str
+    ) -> Optional[VectoreStoreCollection]:
         """
         Retrieves a document from a specified collection based on its ID.
 
@@ -116,13 +118,9 @@ class ChromaHandler:
         - List[VectoreStoreCollection]: A list of all documents in the collection.
         """
         collection = client.get_or_create_collection(collection_name)
-        return collection.get(include=['documents', 'metadatas'])
+        return collection.get(include=["documents", "metadatas"])
 
     def query(client: ClientAPI, collection_name: str, query: str, num_results: int):
         collection = client.get_or_create_collection(collection_name)
-        results = collection.query(
-            query_texts=[query],
-            n_results=num_results
-        )
+        results = collection.query(query_texts=[query], n_results=num_results)
         return results
-

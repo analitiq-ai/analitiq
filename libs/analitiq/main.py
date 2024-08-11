@@ -30,51 +30,45 @@ sys.path.append("/analitiq")
 
 
 #  db_params: Dict = None, llm_params: Dict = None, vdb_params: Dict = None
-class Analitiq():
-
+class Analitiq:
     def __init__(self, params: Dict = None):
-        """
-
-        """
+        """ """
         self.response = BaseResponse(self.__class__.__name__)
 
         self.db: DatabaseWrapper() = None
         self.llm: BaseLlm() = None
         self.vdb = None
 
-        if not params or not params.get('db_params'):
+        if not params or not params.get("db_params"):
             GlobalConfig().load_profiles()
-            self.db_params = GlobalConfig().profile_configs['databases'].model_dump()
+            self.db_params = GlobalConfig().profile_configs["databases"].model_dump()
         else:
-            self.db_params = params['db_params']
+            self.db_params = params["db_params"]
 
-        if not params or not params.get('llm_params'):
+        if not params or not params.get("llm_params"):
             GlobalConfig().load_profiles()
-            self.llm_params = GlobalConfig().profile_configs['llms'].model_dump()
+            self.llm_params = GlobalConfig().profile_configs["llms"].model_dump()
         else:
-            self.llm_params = params['llm_params']
+            self.llm_params = params["llm_params"]
 
-        if not params or not params.get('vdb_params'):
+        if not params or not params.get("vdb_params"):
             GlobalConfig().load_profiles()
-            self.vdb_params = GlobalConfig().profile_configs['vector_dbs'].model_dump()
+            self.vdb_params = GlobalConfig().profile_configs["vector_dbs"].model_dump()
         else:
-            self.vdb_params = params['vdb_params']
+            self.vdb_params = params["vdb_params"]
 
         self.memory = BaseMemory()
         self.services = GlobalConfig().services
         self.avail_services_str = self.get_available_services_str(self.services)
 
-        self.prompts = {'original': '',
-                        'refined': '',
-                        'feedback': ''
-                        }
+        self.prompts = {"original": "", "refined": "", "feedback": ""}
 
     def load_connections(self):
         failures = 0
         tasks = [
-            ('db', DatabaseWrapper, self.db_params, "Unable to connect to the Database"),
-            ('llm', BaseLlm, self.llm_params, "Unable to set LLM"),
-            ('vdb', self._get_vdb_handler, self.vdb_params, "Unable to connect to the Vector Database")
+            ("db", DatabaseWrapper, self.db_params, "Unable to connect to the Database"),
+            ("llm", BaseLlm, self.llm_params, "Unable to set LLM"),
+            ("vdb", self._get_vdb_handler, self.vdb_params, "Unable to connect to the Vector Database"),
         ]
         for attr, task, params, error_msg in tasks:
             try:
@@ -87,16 +81,18 @@ class Analitiq():
 
     @staticmethod
     def _get_vdb_handler(vdb_params):
-        db_type = vdb_params['type']
+        db_type = vdb_params["type"]
 
-        if db_type == 'weaviate':
+        if db_type == "weaviate":
             from .vectordb.weaviate import WeaviateHandler
+
             try:
                 handler = WeaviateHandler(vdb_params)
             except Exception as e:
                 raise Exception(f"Failed to connect to the vector database: {e}{handler}")
-        elif db_type == 'chromadb':
+        elif db_type == "chromadb":
             from .vectordb.chromadb import ChromaHandler
+
             handler = ChromaHandler(vdb_params)
         else:
             raise ValueError(f"Unsupported database type: {db_type}")
@@ -119,14 +115,15 @@ class Analitiq():
         # Iterate over each item in the Services dictionary
         for name, details in avail_services.items():
             # Determine the appropriate description to use
-            description = details['description']
+            description = details["description"]
             # Format and add the string to the list
-            available_services_list.append(f"{name}: {description}. The input for this tools is {details['inputs']}. The output of this tools is {details['outputs']}.")
+            available_services_list.append(
+                f"{name}: {description}. The input for this tools is {details['inputs']}. The output of this tools is {details['outputs']}."
+            )
             # Join the list into a single string variable, separated by new lines
         available_services_str = "\n".join(available_services_list)
 
         return available_services_str
-
 
     def is_prompt_clear(self, user_prompt, msg_lookback: int = 2):
         """
@@ -167,10 +164,9 @@ class Analitiq():
         response = self.llm.llm_is_prompt_clear(user_prompt, self.avail_services_str)
 
         # Update feedback with the latest exception
-        #feedback = f"Check your output and make sure it conforms to instructions! Your previous response created an error:\n{str(e)}"
+        # feedback = f"Check your output and make sure it conforms to instructions! Your previous response created an error:\n{str(e)}"
 
         return response
-
 
     def get_chat_hist(self, user_prompt, msg_lookback: int = 5):
         """
@@ -197,17 +193,17 @@ class Analitiq():
         :return: The response generated based on the chat history, or None if there is no chat history.
         """
 
-        user_prompt_hist = self.memory.get_last_messages_within_minutes(msg_lookback, 5, 1, 'Human')
+        user_prompt_hist = self.memory.get_last_messages_within_minutes(msg_lookback, 5, 1, "Human")
 
         response = None
 
         if not user_prompt_hist:
             return response
 
-        user_prompt_list = list({message['content'] for message in user_prompt_hist})
+        user_prompt_list = list({message["content"] for message in user_prompt_hist})
 
         if len(user_prompt_list) > 0:
-            user_prompt_w_hist = '\n'.join(user_prompt_list)
+            user_prompt_w_hist = "\n".join(user_prompt_list)
 
             response = self.llm.llm_summ_user_prompts(user_prompt, user_prompt_w_hist)
 
@@ -235,17 +231,18 @@ class Analitiq():
         session_uuid = session.get_or_create_session_uuid()
         print(user_prompt.lower())
         # First, we check if user typed Help. If so, we can skiop the rest of the logic, for now
-        if user_prompt.lower() == 'help':
-            text = (HELP_RESPONSE.format(
-                version = GlobalConfig().project_config['version'],
-                db = f"{self.db_params['host']}/{self.db_params['db_name']}",
-                vdb_collection_name = self.vdb_params['collection_name']
-            ) + '\n\n'.join([f"{details['name']}: {details['description']}" for details in self.services.values()])
+        if user_prompt.lower() == "help":
+            text = HELP_RESPONSE.format(
+                version=GlobalConfig().project_config["version"],
+                db=f"{self.db_params['host']}/{self.db_params['db_name']}",
+                vdb_collection_name=self.vdb_params["collection_name"],
+            ) + "\n\n".join(
+                [f"{details['name']}: {details['description']}" for details in self.services.values()]
             )
             self.response.set_content(text)
 
             return self.return_response()
-        elif user_prompt.lower() == 'fail':
+        elif user_prompt.lower() == "fail":
             logger.error("[[TAG]]:RESPONSE_FAIL")
             text = "I apologise for poor response. It has been logged for review by developers."
             self.response.set_content(text)
@@ -259,7 +256,7 @@ class Analitiq():
             return self.return_response()
 
         # check if there are user hints in the prompt
-        self.prompts['original'], self.prompts['hints'] = extract_hints(user_prompt)
+        self.prompts["original"], self.prompts["hints"] = extract_hints(user_prompt)
 
         self.memory.log_human_message(user_prompt)
         self.memory.save_to_file()
@@ -289,7 +286,7 @@ class Analitiq():
         logger.info(f"Refined prompt context: {self.prompts}")
         """
 
-        self.prompts['refined'] = self.prompts['original']
+        self.prompts["refined"] = self.prompts["original"]
 
         # TODO we still need to fix the selectin process, so for now we overide and default it to DocSearch service
         """
@@ -301,7 +298,14 @@ class Analitiq():
         #logger.info(f"[Services][Selected]: {selected_services}")
         """
 
-        selected_services = {"SearchDocs": {'Action': 'Search Documents', 'ActionInput': 'text', 'Instructions': user_prompt, 'DependsOn': ''}}
+        selected_services = {
+            "SearchDocs": {
+                "Action": "Search Documents",
+                "ActionInput": "text",
+                "Instructions": user_prompt,
+                "DependsOn": "",
+            }
+        }
 
         # Building node dependency
         # Check if the list contains exactly one item
@@ -325,4 +329,3 @@ class Analitiq():
         node_outputs = graph.run(self.services)
 
         return node_outputs
-

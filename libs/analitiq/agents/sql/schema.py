@@ -16,12 +16,16 @@ class Table(BaseModel):
         # Convert model to JSON string
         return self.json()
 
+
 class Tables(BaseModel):
-    TableList: List[Table] = Field(description="A list of relevant tables from the list of all tables in a database")
+    TableList: List[Table] = Field(
+        description="A list of relevant tables from the list of all tables in a database"
+    )
 
     def to_json(self):
         # Convert model to JSON string
         return self.json()
+
 
 class SQL(BaseModel):
     SQL_Code: str = Field(description="Only SQL code goes in here.")

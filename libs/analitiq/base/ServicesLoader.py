@@ -20,25 +20,24 @@ class ServicesLoader:
             tuple: A tuple containing lists of inputs and outputs.
         """
         inputs, outputs = [], []
-        lines = doc_string.split('\n')
+        lines = doc_string.split("\n")
         mode = None
         for line in lines:
-            if 'Args:' in line:
-                mode = 'inputs'
-            elif 'Parameters:' in line:
-                mode = 'inputs'
-            elif 'Returns:' in line:
-                mode = 'outputs'
-            elif mode == 'inputs' and line.strip():
+            if "Args:" in line:
+                mode = "inputs"
+            elif "Parameters:" in line:
+                mode = "inputs"
+            elif "Returns:" in line:
+                mode = "outputs"
+            elif mode == "inputs" and line.strip():
                 inputs.append(line.strip())
-            elif mode == 'outputs' and line.strip():
+            elif mode == "outputs" and line.strip():
                 outputs.append(line.strip())
 
         return inputs, outputs
 
     @staticmethod
     def load_service_class(service_config: dict) -> bool:
-
         """
         This class runs checks on a service:
         1. whether service file and class exist
@@ -57,14 +56,14 @@ class ServicesLoader:
         - AttributeError: If the specified class or method does not exist within the file.
         - ValueError: If the service name is duplicate or invalid.
         """
-        service_path = service_config['path']
-        class_name = service_config['class']
-        method_name = service_config['method']
+        service_path = service_config["path"]
+        class_name = service_config["class"]
+        method_name = service_config["method"]
 
         if not os.path.exists(service_path):
             raise FileNotFoundError(f"The specified service file does not exist: {service_path}")
 
-        if not re.match("^[a-zA-Z0-9_-]+$", service_config['name']):
+        if not re.match("^[a-zA-Z0-9_-]+$", service_config["name"]):
             raise ValueError(f"Invalid service name: {service_config['name']}")
 
         spec = importlib.util.spec_from_file_location(class_name, service_path)
@@ -85,7 +84,9 @@ class ServicesLoader:
                 raise AttributeError(f"Class '{class_name}' not found in module '{service_path}'.")
 
         if method_name and not hasattr(service_class, method_name):
-            raise AttributeError(f"The specified method '{method_name}' does not exist in the class '{class_name}'")
+            raise AttributeError(
+                f"The specified method '{method_name}' does not exist in the class '{class_name}'"
+            )
 
         return service_class
 
@@ -126,11 +127,11 @@ class ServicesLoader:
 
         verified_services = {}
 
-        if 'services' not in config:
+        if "services" not in config:
             logger.info("No Services found in Project config.")
             raise KeyError("No Services found in Project config.")
         else:
-            for service in config['services']:
+            for service in config["services"]:
                 logger.info(f"Loading service {service['name']}")
 
                 try:
@@ -140,10 +141,7 @@ class ServicesLoader:
                     logger.error(e)
                     print(e)  # Displaying the error to the end user
                 else:
-                    verified_services[service['name']] = service
-                    verified_services[service['name']]['class_inst'] = service_class
+                    verified_services[service["name"]] = service
+                    verified_services[service["name"]]["class_inst"] = service_class
 
         return verified_services
-
-
-

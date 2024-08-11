@@ -1,6 +1,7 @@
 import re
 import json
 
+
 class CodeExtractor:
     """
     Extracts code blocks from text that are fenced by triple backticks,
@@ -26,7 +27,7 @@ class CodeExtractor:
         Raises:
             ValueError: If the `code` parameter is not one of the expected keywords.
         """
-        if code not in ['json', 'sql', 'python']:
+        if code not in ["json", "sql", "python"]:
             raise ValueError("Code parameter must be 'json', 'sql', or 'python'.")
 
         # Pattern to match code blocks that start with the specified code identifier
@@ -57,7 +58,7 @@ class CodeExtractor:
         * message.
         """
 
-        match = re.search(r'\{.*\}', input_string, re.DOTALL)
+        match = re.search(r"\{.*\}", input_string, re.DOTALL)
         if match:
             substring = match.group(0)
             # Remove newlines and tabs

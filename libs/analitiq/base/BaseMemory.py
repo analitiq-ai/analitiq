@@ -10,8 +10,8 @@ from enum import Enum
 
 
 class EntityType(Enum):
-    HUMAN = 'Human'
-    ANALITIQ = 'Analitiq'
+    HUMAN = "Human"
+    ANALITIQ = "Analitiq"
 
 
 class BaseMemory:
@@ -21,31 +21,29 @@ class BaseMemory:
         self.log_directory = GlobalConfig().get_chat_log_dir()
         session = BaseSession()
         self.session_uuid = session.get_or_create_session_uuid()
-        #filename = f"{self.start_time.strftime('%Y%m%d%H%M%S')}.log"
+        # filename = f"{self.start_time.strftime('%Y%m%d%H%M%S')}.log"
         self.filename = f"{self.session_uuid}.log"
 
     def log_service_message(self, service_response: BaseResponse) -> None:
-
         content = service_response.get_content_str()
 
         conversation_entry = {
-            'timestamp': datetime.now().isoformat(),
-            'entity': EntityType.ANALITIQ.value,
-            'content': content,
-            'metadata': service_response.metadata,
-            'source_class_name': service_response.service_name
+            "timestamp": datetime.now().isoformat(),
+            "entity": EntityType.ANALITIQ.value,
+            "content": content,
+            "metadata": service_response.metadata,
+            "source_class_name": service_response.service_name,
         }
         self.conversations.append(conversation_entry)
 
     def log_human_message(self, message: str) -> None:
         """Logs a single entity message along with the service response."""
         conversation_entry = {
-            'timestamp': datetime.now().isoformat(),
-            'entity': EntityType.HUMAN.value,
-            'content': message,
+            "timestamp": datetime.now().isoformat(),
+            "entity": EntityType.HUMAN.value,
+            "content": message,
         }
         self.conversations.append(conversation_entry)
-
 
     def save_to_file(self):
         """
@@ -57,9 +55,9 @@ class BaseMemory:
 
         file_path = os.path.join(self.log_directory, self.filename)
 
-        with open(file_path, 'a') as file:
+        with open(file_path, "a") as file:
             for conversation in self.conversations:
-                file.write(json.dumps(conversation) + '\n')
+                file.write(json.dumps(conversation) + "\n")
 
         self.clear_memory()
 
@@ -84,14 +82,15 @@ class BaseMemory:
             logger.info(f"No chat history file found for session UUID {self.session_uuid}.")
             return
 
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             all_messages = [json.loads(line.strip()) for line in file]
-
 
         # Return the last `num_messages` entries from the chat history
         return all_messages[-num_messages:]
 
-    def get_last_messages_within_minutes(self, num_messages: int, minutes: int, offset: int = 1, entity: str = None) -> List[Dict[str, Any]]:
+    def get_last_messages_within_minutes(
+        self, num_messages: int, minutes: int, offset: int = 1, entity: str = None
+    ) -> List[Dict[str, Any]]:
         """
         A function to retrieve the last `num_messages` from Chat history within `minutes` minutes from now,
         optionally filtering by an entity type if specified.
@@ -116,13 +115,13 @@ class BaseMemory:
 
         filtered_messages = []
 
-        with open(file_path, 'r') as file:
+        with open(file_path, "r") as file:
             for line in file:
                 message = json.loads(line.strip())
-                message_time = datetime.fromisoformat(message['timestamp'])
+                message_time = datetime.fromisoformat(message["timestamp"])
                 if message_time > min_time:
                     # If entity is specified, check if the message's entity matches the given entity
-                    if entity is None or message.get('entity') == entity:
+                    if entity is None or message.get("entity") == entity:
                         filtered_messages.append(message)
 
         # Adjust the slice to include the offset

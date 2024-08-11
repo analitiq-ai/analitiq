@@ -16,45 +16,58 @@ from analitiq.base.llm.prompt import (
     EXTRACT_INFO_FROM_DB_DOCS,
     EXTRACT_INFO_FROM_DB_DDL,
     SUMMARISE_DDL,
-    SUMMARIZE_DOCUMENT_CHUNKS
+    SUMMARIZE_DOCUMENT_CHUNKS,
 )
 
 
 class PromptClarification(BaseModel):
     """
-        This class is used to capture primary product details of each task
+    This class is used to capture primary product details of each task
     """
-    Clear: bool = Field(description="True if query is clear. False if more input or clarification is needed. Make sure True or False is with initial caps.")
+
+    Clear: bool = Field(
+        description="True if query is clear. False if more input or clarification is needed. Make sure True or False is with initial caps."
+    )
     Query: str = Field(description="Properly worded query.")
-    Hints: str = Field(description="Extract here the hints from the user provided inside the double square brackets, if available.")
-    Feedback: Optional[str] = Field(description="If user query is clear, rephrase the user query here, while keeping all the details. If query is not clear, put your questions here.")
+    Hints: str = Field(
+        description="Extract here the hints from the user provided inside the double square brackets, if available."
+    )
+    Feedback: Optional[str] = Field(
+        description="If user query is clear, rephrase the user query here, while keeping all the details. If query is not clear, put your questions here."
+    )
 
 
 def fix_case(llm_output) -> str:
     """Parse the AI message."""
     return llm_output.replace(": true,", ": True,")
 
+
 class CombineTaskPair(Enum):
     """
-        This class is used to determine if tasks can be combined.
+    This class is used to determine if tasks can be combined.
     """
-    YES = 'Can combine tasks.'
-    NO = 'Cannot combine tasks.'
+
+    YES = "Can combine tasks."
+    NO = "Cannot combine tasks."
 
 
 class Task(BaseModel):
     """
-        This class is used to capture primary product details of each task
+    This class is used to capture primary product details of each task
     """
+
     Name: str = Field(description="Short name for the task to be done")
-    Using: str = Field(description="Name of a tool needed to complete this task. It can be only one tool per task.")
+    Using: str = Field(
+        description="Name of a tool needed to complete this task. It can be only one tool per task."
+    )
     Description: str = Field(description="Additional description of the task")
 
 
 class Tasks(BaseModel):
     """
-        This class is used to store the collection/list of tasks
+    This class is used to store the collection/list of tasks
     """
+
     TaskList: list[Task] = Field("List of tasks to be done to complete user query.")
 
 
@@ -66,7 +79,9 @@ class SelectedService(BaseModel):
 
 
 class SelectedServices(BaseModel):
-    ServiceList: List[SelectedService] = Field(description="A list of selected services from available services matched against required services to fulfill the users query")
+    ServiceList: List[SelectedService] = Field(
+        description="A list of selected services from available services matched against required services to fulfill the users query"
+    )
 
 
 class ServiceDependencies(BaseModel):
@@ -83,54 +98,60 @@ def get_prompt_extra_info(prompts):
 
     template = TASK_LIST
 
-    if len(prompts['refined']) > 10:
-        user_prompt = prompts['refined']
+    if len(prompts["refined"]) > 10:
+        user_prompt = prompts["refined"]
     else:
-        user_prompt = prompts['original']
+        user_prompt = prompts["original"]
 
-    if len(prompts['feedback']) > 10:
+    if len(prompts["feedback"]) > 10:
         extra_info = extra_info + f"Your previous thoughts about this query were '{prompts['feedback']}'.\n"
 
-    if len(prompts['hints']) > 10:
+    if len(prompts["hints"]) > 10:
         extra_info = extra_info + f"Your previous thoughts about this query were '{prompts['hints']}'.\n"
 
     return user_prompt, extra_info
 
 
 class BaseLlm:
-
     def __init__(self, params):
         self.llm_params = params
         self.llm = self._set_llm(params)
 
     def _set_llm(self, params):
-        if params['type'] == 'openai':
+        if params["type"] == "openai":
             from langchain_openai import ChatOpenAI
+
             logger.info(f"LLM is set to {params['type']}")
-            return ChatOpenAI(openai_api_key=params['api_key'], temperature=params['temperature'], model_name=params['llm_model_name'])
-        elif params['type'] == 'mistral':
+            return ChatOpenAI(
+                openai_api_key=params["api_key"],
+                temperature=params["temperature"],
+                model_name=params["llm_model_name"],
+            )
+        elif params["type"] == "mistral":
             from langchain_mistralai.chat_models import ChatMistralAI
+
             logger.info(f"LLM is set to {params['type']}")
 
-            return ChatMistralAI(mistral_api_key=params['llm_api_key'])
+            return ChatMistralAI(mistral_api_key=params["llm_api_key"])
 
-        elif params['type'] == 'bedrock':
+        elif params["type"] == "bedrock":
             from langchain_aws import BedrockLLM
             import boto3
 
             logger.info(f"LLM is set to {params['type']}")
-            client = boto3.client("bedrock-runtime",
-                                  aws_access_key_id=params['aws_access_key_id'],
-                                  aws_secret_access_key=params['aws_secret_access_key'],
-                                  region_name=params['region_name']
-                                  )
+            client = boto3.client(
+                "bedrock-runtime",
+                aws_access_key_id=params["aws_access_key_id"],
+                aws_secret_access_key=params["aws_secret_access_key"],
+                region_name=params["region_name"],
+            )
             return BedrockLLM(
                 client=client,
-                region_name=params['region_name'],
-                provider=params['provider'],
-                model_id=params['llm_model_name'],
-                model_kwargs={"temperature": params['temperature'], "max_tokens_to_sample": 10000},
-                streaming=False
+                region_name=params["region_name"],
+                provider=params["provider"],
+                model_id=params["llm_model_name"],
+                model_kwargs={"temperature": params["temperature"], "max_tokens_to_sample": 10000},
+                streaming=False,
             )
 
     def get_llm(self):
@@ -151,14 +172,13 @@ class BaseLlm:
         return response
 
     def extract_info_from_db_docs(self, user_query, schemas_list, docs: str = None):
-
         if docs is None:
             docs = ""
 
         prompt = PromptTemplate(
             template=EXTRACT_INFO_FROM_DB_DOCS,
             input_variables=["user_query"],
-            partial_variables={"schemas_list": schemas_list, "docs": docs}
+            partial_variables={"schemas_list": schemas_list, "docs": docs},
         )
         table_chain = prompt | self.llm
         response = table_chain.invoke({"user_query": user_query})
@@ -166,14 +186,13 @@ class BaseLlm:
         return response
 
     def extract_info_from_db_ddl(self, user_query: str, ddl: str, docs: str = None):
-
         if docs is not None:
             docs = f"\nHere is some documentation about tables that you might find useful:\n{docs}"
 
         prompt = PromptTemplate(
             template=EXTRACT_INFO_FROM_DB_DDL,
             input_variables=["user_query"],
-            partial_variables={"db_ddl": ddl, "db_docs": docs}
+            partial_variables={"db_ddl": ddl, "db_docs": docs},
         )
         table_chain = prompt | self.llm
         response = table_chain.invoke({"user_query": user_query})
@@ -181,17 +200,13 @@ class BaseLlm:
         return response
 
     def summ_info_from_db_ddl(self, user_query: str, responses: str):
-
         prompt = PromptTemplate(
-            template=SUMMARISE_DDL,
-            input_variables=["user_query"],
-            partial_variables={"responses": responses}
+            template=SUMMARISE_DDL, input_variables=["user_query"], partial_variables={"responses": responses}
         )
         table_chain = prompt | self.llm
         response = table_chain.invoke({"user_query": user_query})
 
         return response
-
 
     def llm_summ_user_prompts(self, user_prompt: str, user_prompt_hist: str):
         """
@@ -203,12 +218,9 @@ class BaseLlm:
         :param user_prompt_hist: History of user prompts, including current prompt
         :return: str
         """
-        prompt = PromptTemplate(
-            template=SUMMARISE_REQUEST,
-            input_variables=["user_prompt_hist"]
-        )
+        prompt = PromptTemplate(template=SUMMARISE_REQUEST, input_variables=["user_prompt_hist"])
         table_chain = prompt | self.llm
-        response = table_chain.invoke({"user_prompt_hist": user_prompt_hist +"\n"+ user_prompt})
+        response = table_chain.invoke({"user_prompt_hist": user_prompt_hist + "\n" + user_prompt})
 
         return response
 
@@ -222,20 +234,19 @@ class BaseLlm:
         """
 
         parser = PydanticOutputParser(pydantic_object=PromptClarification)
-        prompt = PromptTemplate(
-            template=PROMPT_CLARIFICATION,
-            input_variables=["user_prompt"]
-        )
+        prompt = PromptTemplate(template=PROMPT_CLARIFICATION, input_variables=["user_prompt"])
         table_chain = prompt | self.llm | parser
-        response = table_chain.invoke({"user_prompt": user_prompt
-                                            , "available_services": available_services
-                                            , "format_instructions": parser.get_format_instructions()}
-                                        )
+        response = table_chain.invoke(
+            {
+                "user_prompt": user_prompt,
+                "available_services": available_services,
+                "format_instructions": parser.get_format_instructions(),
+            }
+        )
 
         return response
 
     def llm_summ_docs(self, user_prompt: str, formatted_documents_string: str):
-
         prompt = PromptTemplate(
             template=SUMMARIZE_DOCUMENT_CHUNKS,
             input_variables=["user_query"],
@@ -265,14 +276,15 @@ class BaseLlm:
         prompt = PromptTemplate(
             template=SERVICE_SELECTION,
             input_variables=["user_prompt"],
-            partial_variables={"available_services": available_services,
-                               "extra_info": extra_info,
-                               "format_instructions": parser.get_format_instructions()
-                               },
+            partial_variables={
+                "available_services": available_services,
+                "extra_info": extra_info,
+                "format_instructions": parser.get_format_instructions(),
+            },
         )
 
         table_chain = prompt | self.llm | parser
-        response = table_chain.invoke({"user_prompt": prompts['refined']})
+        response = table_chain.invoke({"user_prompt": prompts["refined"]})
 
         return response.ServiceList
 
@@ -294,10 +306,10 @@ class BaseLlm:
             template=template,
             input_variables=["user_prompt"],
             partial_variables={
-                "format_instructions": parser.get_format_instructions()
-                , "available_services": avail_services_str
-                , "extra_info": extra_info
-            }
+                "format_instructions": parser.get_format_instructions(),
+                "available_services": avail_services_str,
+                "extra_info": extra_info,
+            },
         )
 
         table_chain = prompt | self.llm | parser
@@ -324,7 +336,7 @@ class BaseLlm:
         prompt = PromptTemplate(
             template=REFINE_TASK_LIST,
             input_variables=["user_prompt"],
-            partial_variables={"format_instructions": parser.get_format_instructions(), "tasks": tasks_list}
+            partial_variables={"format_instructions": parser.get_format_instructions(), "tasks": tasks_list},
         )
 
         table_chain = prompt | self.llm | parser
@@ -334,11 +346,7 @@ class BaseLlm:
 
     def llm_fix_json(self, text, error):
         prompt = PromptTemplate(
-            template=FIX_JSON,
-            input_variables=["string"],
-            partial_variables={
-                "error": error
-            }
+            template=FIX_JSON, input_variables=["string"], partial_variables={"error": error}
         )
         table_chain = prompt | self.llm
         response = table_chain.invoke({"string": text})

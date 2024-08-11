@@ -24,37 +24,38 @@ class DatabaseEngine:
         ValueError: If the provided database type is unsupported.
 
     """
+
     def __init__(self, params: Dict):
         self.params = params
         self.engine = self.create_engine()
 
     @lru_cache(maxsize=CACHE_SIZE)
     def create_engine(self):
-        if self.params['type'] in ['postgres', 'postgresql']:
+        if self.params["type"] in ["postgres", "postgresql"]:
             return self._create_postgres_engine()
-        elif self.params['type'] == 'redshift':
+        elif self.params["type"] == "redshift":
             return self._create_redshift_engine()
         else:
             raise ValueError(f"Unsupported database type {self.params['type']}")
 
     def _create_postgres_engine(self):
         engine_options = {}
-        if self.params['db_schemas'] is not None:
-            schemas_str = ",".join(self.params['db_schemas'])
-            engine_options['connect_args'] = {'options': f"-csearch_path={schemas_str}"}
+        if self.params["db_schemas"] is not None:
+            schemas_str = ",".join(self.params["db_schemas"])
+            engine_options["connect_args"] = {"options": f"-csearch_path={schemas_str}"}
         return create_engine(
             f"postgresql+psycopg2://{self.params['username']}:{self.params['password']}@{self.params['host']}:{self.params['port']}/{self.params['db_name']}",
-            **engine_options
+            **engine_options,
         )
 
     def _create_redshift_engine(self):
         url = URL.create(
             drivername="redshift+redshift_connector",
-            host=self.params['host'],
+            host=self.params["host"],
             port=5439,
-            database=self.params['db_name'],
-            username=self.params['username'],
-            password=self.params['password']
+            database=self.params["db_name"],
+            username=self.params["username"],
+            password=self.params["password"],
         )
         return create_engine(url, connect_args={"sslmode": "allow"})
 
@@ -68,6 +69,7 @@ class DatabaseSession:
 
     :param engine: The database engine to bind the session to.
     """
+
     def __init__(self, engine):
         self.session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
         self.Session = scoped_session(self.session_factory)
@@ -88,6 +90,7 @@ class Database:
     :param engine: The database engine to use.
     :type engine: str
     """
+
     def __init__(self, engine):
         self.engine = engine
         self.db = SQLDatabase(self.engine)
@@ -110,6 +113,7 @@ class DatabaseWrapper:
     :param params: A dictionary containing parameters required to connect to the database.
     :type params: Dict
     """
+
     def __init__(self, params: Dict):
         self.params = params
         self.engine = DatabaseEngine(params).engine
@@ -162,7 +166,9 @@ class DatabaseWrapper:
             if len(tables) > 0:
                 for table in tables:
                     columns = inspector.get_columns(table_name=table, schema=schema)
-                    column_details = ', '.join(f"{schema}.{table}.{column['name']} ({column['type']})" for column in columns)
+                    column_details = ", ".join(
+                        f"{schema}.{table}.{column['name']} ({column['type']})" for column in columns
+                    )
                     response.append(column_details)
 
         self.engine.dispose()

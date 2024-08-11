@@ -59,7 +59,6 @@ Error:
 """
 
 
-
 FIX_RESPONSE = """
 You were asked to crete an SQL to address a user query: {user_prompt}.
 Your response resulted in an error.

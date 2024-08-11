@@ -24,11 +24,12 @@ from pydantic import BaseModel
 
 from analitiq.vectordb import vectorizer
 
-ALLOWED_EXTENSIONS = ['py', 'yaml', 'yml', 'sql', 'txt', 'md', 'pdf']
+ALLOWED_EXTENSIONS = ["py", "yaml", "yml", "sql", "txt", "md", "pdf"]
 LOAD_DOC_CHUNK_SIZE = 2000
 LOAD_DOC_CHUNK_OVERLAP = 200
 VECTOR_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-QUERY_PROPERTIES = ['content'] # OR content_kw
+QUERY_PROPERTIES = ["content"]  # OR content_kw
+
 
 def search_only(func):
     """
@@ -37,9 +38,11 @@ def search_only(func):
 
     This method wraps the given function and returns a wrapper function. The wrapper function calls the original function with the given parameters and returns the result.
     """
+
     def wrapper(*args, **kwargs):
         # Call the original function
         return func(*args, **kwargs)
+
     return wrapper
 
 
@@ -48,12 +51,14 @@ def search_grouped(func):
     :param func: The function to be wrapped and executed.
     :return: The result of calling the original function after grouping the response.
     """
+
     def wrapper(*args, **kwargs):
         # Call the original function
         response = func(*args, **kwargs)
         # Call the grouping function on the response
         self = args[0]  # Assuming the first argument to the function is 'self'
-        return self._group_results_by_properties(response, ['document_name', 'source'])
+        return self._group_results_by_properties(response, ["document_name", "source"])
+
     return wrapper
 
 
@@ -77,6 +82,7 @@ class Chunk(BaseModel):
     :param content_kw: the keywords for keyword search in the chunks
     :type content_kw: str
     """
+
     project_name: str = None
     document_name: str = None
     document_type: Optional[str] = None
@@ -131,7 +137,7 @@ class WeaviateHandler(BaseVDBHandler):
         Connect to the Weaviate database.
         """
         self.client: weaviate.WeaviateClient = weaviate.connect_to_wcs(
-            cluster_url=self.params['host'], auth_credentials=AuthApiKey(self.params['api_key'])
+            cluster_url=self.params["host"], auth_credentials=AuthApiKey(self.params["api_key"])
         )
 
         if not self.client.collections.exists(self.collection_name):
@@ -142,20 +148,17 @@ class WeaviateHandler(BaseVDBHandler):
 
     def create_collection(self):
         """Create a collection if not existing."""
-        self.client.collections.create(self.collection_name,
-                                       # enable multi_tenancy_config                                       
-                                       multi_tenancy_config=Configure.multi_tenancy(enabled=True),
-                                       # vectorizer_config=Configure.Vectorizer.text2vec_cohere(),
+        self.client.collections.create(
+            self.collection_name,
+            # enable multi_tenancy_config
+            multi_tenancy_config=Configure.multi_tenancy(enabled=True),
+            # vectorizer_config=Configure.Vectorizer.text2vec_cohere(),
         )
 
         self.collection = self.client.collections.get(self.collection_name)
 
         # Add a tenant to the collection. Right now the tenant is the same as the collection. In the future, this could be users
-        self.collection.tenants.create(
-            tenants=[
-                Tenant(name=self.collection_name)
-            ]
-        )
+        self.collection.tenants.create(tenants=[Tenant(name=self.collection_name)])
 
     def close(self):
         """
@@ -163,29 +166,44 @@ class WeaviateHandler(BaseVDBHandler):
         """
         self.client.close()
 
-    def _chunk_load_file_or_directory(self, path: str, extension: Optional[str] = None, chunk_size: int = LOAD_DOC_CHUNK_SIZE, chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP):
+    def _chunk_load_file_or_directory(
+        self,
+        path: str,
+        extension: Optional[str] = None,
+        chunk_size: int = LOAD_DOC_CHUNK_SIZE,
+        chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP,
+    ):
         """
         Load files from a directory or a single file, split them into chunks, and insert them into Weaviate.
         """
-        documents_chunks, doc_lengths = self.chunk_processor.load_and_chunk_documents(path, extension, chunk_size, chunk_overlap)
+        documents_chunks, doc_lengths = self.chunk_processor.load_and_chunk_documents(
+            path, extension, chunk_size, chunk_overlap
+        )
 
         chunks = [
             Chunk(
                 content=chunk.page_content,
-                source=chunk.metadata['source'],
+                source=chunk.metadata["source"],
                 document_type=extension,
-                document_name=os.path.basename(chunk.metadata['source']),
-                document_num_char=doc_lengths[chunk.metadata['source']],
+                document_name=os.path.basename(chunk.metadata["source"]),
+                document_num_char=doc_lengths[chunk.metadata["source"]],
                 chunk_num_char=len(chunk.page_content),
                 date_loaded=datetime.now(timezone.utc),
-                content_kw=keyword_extractions.extract_keywords(chunk.page_content)
-            ) for chunk in documents_chunks
+                content_kw=keyword_extractions.extract_keywords(chunk.page_content),
+            )
+            for chunk in documents_chunks
         ]
-
 
         self.load_chunks_to_weaviate(chunks)
 
-    def _chunk_text(self, text, document_name, document_type: str = 'txt', chunk_size: int = LOAD_DOC_CHUNK_SIZE, chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP):
+    def _chunk_text(
+        self,
+        text,
+        document_name,
+        document_type: str = "txt",
+        chunk_size: int = LOAD_DOC_CHUNK_SIZE,
+        chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP,
+    ):
         """
         Chunk the given text into smaller chunks and load them to Weaviate.
 
@@ -199,32 +217,31 @@ class WeaviateHandler(BaseVDBHandler):
         chunks = [
             Chunk(
                 content=chunk,
-                source='loaded_text',
+                source="loaded_text",
                 document_type=document_type,
                 document_name=document_name,
                 document_num_char=len(text),
                 chunk_num_char=len(chunk),
-                date_loaded=datetime.now(timezone.utc)
-            ) for chunk in documents_chunks
+                date_loaded=datetime.now(timezone.utc),
+            )
+            for chunk in documents_chunks
         ]
 
         self.load_chunks_to_weaviate(chunks)
 
     @staticmethod
     def load_list_to_chunk(chunk: str, metadata: dict):
-
         return Chunk(
             content=chunk,
-            source=metadata['source'],
-            document_type=metadata['document_type'],
-            document_name=metadata['document_name'],
+            source=metadata["source"],
+            document_type=metadata["document_type"],
+            document_name=metadata["document_name"],
             document_num_char=len(chunk),
             chunk_num_char=len(chunk),
-            date_loaded=datetime.now(timezone.utc)
+            date_loaded=datetime.now(timezone.utc),
         )
 
     def load_chunks_to_weaviate(self, chunks):
-
         chunks_loaded = 0
 
         try:
@@ -236,15 +253,12 @@ class WeaviateHandler(BaseVDBHandler):
             for chunk in chunks:
                 uuid = generate_uuid5(chunk.model_dump())
                 hf_vector = self.vectorizer.vectorize(chunk.content)
-                response = batch.add_object(properties=chunk.model_dump(), uuid=uuid,
-                                            vector=hf_vector
-                                            )
+                response = batch.add_object(properties=chunk.model_dump(), uuid=uuid, vector=hf_vector)
                 print(response)
                 chunks_loaded += 1
 
         self.close()
         print(f"Loaded chunks: {chunks_loaded}")
-
 
     def load(self, _path: str, file_ext: str = None):
         """
@@ -322,21 +336,23 @@ class WeaviateHandler(BaseVDBHandler):
         allowed_keys = list(Chunk.__annotations__.keys())
 
         if not set(group_by_properties).issubset(set(allowed_keys)):
-            raise ValueError(f'The provided keys for grouping are not allowed. Allowed keys are: {allowed_keys}')
+            raise ValueError(
+                f"The provided keys for grouping are not allowed. Allowed keys are: {allowed_keys}"
+            )
 
         grouped_data = {}
         # put all chunks into the same key.
         for item in results.objects:
             key = tuple(item.properties[k] for k in group_by_properties)
             if key in grouped_data:
-                grouped_data[key].append(item.properties['content'])
+                grouped_data[key].append(item.properties["content"])
             else:
-                grouped_data[key] = [item.properties['content']]
+                grouped_data[key] = [item.properties["content"]]
 
         # format the data into more explicit dictionary
         reformatted_data = []
         for key, value in grouped_data.items():
-            data_dict = {'document_chunks': value}
+            data_dict = {"document_chunks": value}
             # key is a tuple, so we use enumerate to get indexes and use them to fetch property names
             for idx, item in enumerate(key):
                 data_dict[group_by_properties[idx]] = item
@@ -356,19 +372,18 @@ class WeaviateHandler(BaseVDBHandler):
                 query=search_kw,
                 query_properties=QUERY_PROPERTIES,
                 return_metadata=MetadataQuery(score=True, distance=True),
-                limit=limit
+                limit=limit,
             )
         except Exception as e:
             logger.error(f"Weaviate error {e}")
         finally:
             self.close()
 
-        #logger.info(f"Weaviate Keyword search result: {response}")
+        # logger.info(f"Weaviate Keyword search result: {response}")
         return response
-    
+
     @search_only
     def hybrid_search(self, query: str, limit: int = 3) -> QueryReturn:
-
         """Use Hybrid Search for document retrieval from Weaviate Database.
 
 
@@ -387,7 +402,7 @@ class WeaviateHandler(BaseVDBHandler):
             kw_results = self.kw_search(query, limit)
             self.client.connect()
             vector_results = self.vector_search(query, limit)
-            
+
             response = self.combine_and_rerank_results(kw_results, vector_results)
         except Exception as e:
             logger.error(f"Weaviate error {e}")
@@ -395,11 +410,10 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-        #logger.info(f"Weaviate Hybrid search result: {response}")
+        # logger.info(f"Weaviate Hybrid search result: {response}")
         return response
-    
-    def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
 
+    def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
         """Use Vector Search for document retrieval from Weaviate Database.
 
         :param query: A string representing the query to be performed.
@@ -428,22 +442,25 @@ class WeaviateHandler(BaseVDBHandler):
         try:
             query_vector = self.vectorizer.vectorize(query)
             response: QueryReturn = self.collection.query.near_vector(
-                    near_vector=query_vector,
-                    limit=limit,
-                    return_metadata=MetadataQuery(distance=True, score=True)
+                near_vector=query_vector,
+                limit=limit,
+                return_metadata=MetadataQuery(distance=True, score=True),
             )
         except Exception as e:
             logger.error(f"Weaviate error {e}")
         finally:
             self.close()
 
-        #logger.info(f"Weaviate vector search result: {response}")
+        # logger.info(f"Weaviate vector search result: {response}")
         return response
 
     @staticmethod
-    def combine_and_rerank_results(kw_results: QueryReturn
-                                   , vector_results: QueryReturn, limit: int = 3,
-                                    kw_vector_weights: Tuple[float, float] =[0.3, 0.7]) -> List[dict]:
+    def combine_and_rerank_results(
+        kw_results: QueryReturn,
+        vector_results: QueryReturn,
+        limit: int = 3,
+        kw_vector_weights: Tuple[float, float] = [0.3, 0.7],
+    ) -> List[dict]:
         """
         Combine and rerank keyword search and vector search results.
 
@@ -484,10 +501,10 @@ class WeaviateHandler(BaseVDBHandler):
 
         # Extract only the results (up to the specified limit)
         reranked_results = [item["result"] for item in combined_list[:limit]]
-        
+
         return QueryReturn(objects=reranked_results)
 
-    def delete_many_like(self, properties: list, match_type: str = 'like'):
+    def delete_many_like(self, properties: list, match_type: str = "like"):
         """
         Delete multiple documents from the collection where the given property value is similar.
 
@@ -531,11 +548,11 @@ class WeaviateHandler(BaseVDBHandler):
             response: QueryReturn = self.collection.query.near_vector(
                 near_vector=query_vector,
                 filters=(
-                    Filter.any_of([Filter.by_property('document_name').like(schema) for schema in schemas]) &
-                    Filter.by_property("document_type").equal('ddl')
+                    Filter.any_of([Filter.by_property("document_name").like(schema) for schema in schemas])
+                    & Filter.by_property("document_type").equal("ddl")
                 ),
                 limit=10,
-                return_metadata=MetadataQuery(distance=True, score=True)
+                return_metadata=MetadataQuery(distance=True, score=True),
             )
 
         except Exception as e:
@@ -547,9 +564,9 @@ class WeaviateHandler(BaseVDBHandler):
         if not response.objects:
             return None
         else:
-            return self._group_results_by_properties(response, ['document_name'])
+            return self._group_results_by_properties(response, ["document_name"])
 
-    def search_vdb_with_filter(self, query: str, properties: list, match_type: str = 'like'):
+    def search_vdb_with_filter(self, query: str, properties: list, match_type: str = "like"):
         """
         Retrieve objects from the collection that have a property whose value matches the given pattern.
         Example:
@@ -575,7 +592,7 @@ class WeaviateHandler(BaseVDBHandler):
                 near_vector=query_vector,
                 filters=(filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)),
                 limit=10,
-                return_metadata=MetadataQuery(distance=True, score=True)
+                return_metadata=MetadataQuery(distance=True, score=True),
             )
 
         except Exception as e:
@@ -587,9 +604,9 @@ class WeaviateHandler(BaseVDBHandler):
         if not response.objects:
             return None
         else:
-            return self._group_results_by_properties(response, ['document_name', 'document_type'])
+            return self._group_results_by_properties(response, ["document_name", "document_type"])
 
-    def fetch_objects_by_properties(self, properties, match_type: str = 'like'):
+    def fetch_objects_by_properties(self, properties, match_type: str = "like"):
         response = None
 
         try:
@@ -600,14 +617,13 @@ class WeaviateHandler(BaseVDBHandler):
         filters = self._create_filters(properties, match_type)
 
         response = self.collection.query.fetch_objects(
-            filters=(filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)),
-            limit=5
+            filters=(filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)), limit=5
         )
 
         self.close()
         return response
 
-    def count_objects_by_properties(self, properties, match_type: str = 'like'):
+    def count_objects_by_properties(self, properties, match_type: str = "like"):
         try:
             self.client.connect()
         except Exception as e:
@@ -626,12 +642,9 @@ class WeaviateHandler(BaseVDBHandler):
         return response
 
     def get_by_uuid(self, uuid: str):
+        return self.collection.query.fetch_object_by_id(uuid=uuid)
 
-        return self.collection.query.fetch_object_by_id(
-            uuid=uuid
-        )
-
-    def delete_objects(self, properties, match_type: str = 'like'):
+    def delete_objects(self, properties, match_type: str = "like"):
         """
         Deletes objects from the collection based on specified meta parameters.
 
@@ -641,7 +654,6 @@ class WeaviateHandler(BaseVDBHandler):
         :return: None
         """
         try:
-
             filters = self._create_filters(properties, match_type)
 
             response = self.collection.data.delete_many(
@@ -657,18 +669,18 @@ class WeaviateHandler(BaseVDBHandler):
             self.client.close()
 
     def delete_collection(self, collection_name: str):
-            # delete collection - THIS WILL DELETE THE COLLECTION AND ALL ITS DATA
-            try:
-                self.client.collections.delete(collection_name)
-                return True
-            except Exception:
-                return False
-            finally:
-                self.close()
+        # delete collection - THIS WILL DELETE THE COLLECTION AND ALL ITS DATA
+        try:
+            self.client.collections.delete(collection_name)
+            return True
+        except Exception:
+            return False
+        finally:
+            self.close()
 
     @staticmethod
     def _create_filters(properties: list, match_type: str):
-        if match_type == 'like':
+        if match_type == "like":
             filters = [Filter.by_property(name).like(value) for name, value in properties]
         else:
             filters = [Filter.by_property(name).equal(value) for name, value in properties]
@@ -712,11 +724,9 @@ class WeaviateHandler(BaseVDBHandler):
             logger.error(f"Error connecting to Weaviate: {e}")
             return None
 
-
         try:
             response = self.collection.aggregate.over_all(
-                group_by=GroupByAggregate(prop=group_by_property),
-                total_count=True
+                group_by=GroupByAggregate(prop=group_by_property), total_count=True
             )
 
         finally:

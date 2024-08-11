@@ -3,13 +3,16 @@ from analitiq.logger.logger import logger
 import inspect
 import json
 
+
 class InvalidServiceNameException(Exception):
     """Exception raised for invalid service names."""
+
     pass
 
 
 class ServiceNotFoundException(Exception):
     """Exception raised when a service is not found."""
+
     pass
 
 
@@ -28,8 +31,8 @@ class Node:
         """
         self.service_name = service_name  # Store the service name for dynamic loading
         self.name = service_name
-        self.instructions = instructions # instructions for this node
-        self.path = service_path # the service path that is invoked importlib
+        self.instructions = instructions  # instructions for this node
+        self.path = service_path  # the service path that is invoked importlib
         self.dependencies = []  # List of node names this node depends on
         self.consumers = []  # List of Node instances that depend on this node
 
@@ -72,20 +75,20 @@ class Graph:
         if service not in self.available_services:
             logger.warning(f"Trying to add non existent service: {service}")
             return
-        node = Node(service, self.available_services[service]['path'], details['Instructions'])
+        node = Node(service, self.available_services[service]["path"], details["Instructions"])
 
         self.nodes[node.name] = node
 
     def build_service_dependency(self, selected_services):
         # Then, set up dependencies based on the JSON response
         for service, details in selected_services.items():
-            if len(details['DependsOn']) > 0:
+            if len(details["DependsOn"]) > 0:
                 try:
                     dependency_node = self.nodes.get(service)
                 except Exception as e:
                     logger.warning(f"Dep node not found: {dependency_node}. {e}")
 
-                for master_name in details['DependsOn']:
+                for master_name in details["DependsOn"]:
                     try:
                         master_node = self.nodes.get(master_name)  # Retrieve the node from temporary storage
                     except Exception as e:
@@ -118,9 +121,17 @@ class Graph:
                 # Execute all ready nodes
                 for node in ready_nodes:
                     if node.name not in executed_nodes:  # Check if node has been executed
-                        logger.info(f"[Service][Run]: {node.name}\n Prompt: {node.instructions} \n Inputs: {str(node_outputs)}")  # Print the current node being executed
+                        logger.info(
+                            f"[Service][Run]: {node.name}\n Prompt: {node.instructions} \n Inputs: {str(node_outputs)}"
+                        )  # Print the current node being executed
 
-                        future = executor.submit(self.run_service, node, services[node.name]['class_inst'], node.instructions, node_outputs)
+                        future = executor.submit(
+                            self.run_service,
+                            node,
+                            services[node.name]["class_inst"],
+                            node.instructions,
+                            node_outputs,
+                        )
                         futures_to_nodes[future] = node
                         executed_nodes.add(node.name)  # Mark node as executed
                 ready_nodes.clear()
@@ -134,11 +145,16 @@ class Graph:
                     # node_outputs[completed_node.name] = result if result.content is not None else None
 
                     # Store the result for dependent nodes as a JSON.
-                    node_outputs[completed_node.name] = result.to_json() if result.content is not None else None
+                    node_outputs[completed_node.name] = (
+                        result.to_json() if result.content is not None else None
+                    )
 
                     # Check and schedule dependent nodes
                     for consumer in completed_node.consumers:
-                        if all(dep.name in node_outputs and node_outputs[dep.name] is not None for dep in consumer.dependencies):
+                        if all(
+                            dep.name in node_outputs and node_outputs[dep.name] is not None
+                            for dep in consumer.dependencies
+                        ):
                             if consumer.name not in executed_nodes:  # Check if consumer has been executed
                                 ready_nodes.append(consumer)
 
@@ -158,15 +174,15 @@ class Graph:
         params = {}
 
         for name, param in init_params.items():
-            #print(f"Parameter: {name} - Default: {param.default}")
-            if name == 'db':
-                params['db'] = self.db
+            # print(f"Parameter: {name} - Default: {param.default}")
+            if name == "db":
+                params["db"] = self.db
 
-            elif name == 'llm':
-                params['llm'] = self.llm
+            elif name == "llm":
+                params["llm"] = self.llm
 
-            elif name == 'vdb':
-                params['vdb'] = self.vdb
+            elif name == "vdb":
+                params["vdb"] = self.vdb
 
         # here we pass the prompt
         service_instance = service_class(**params)
@@ -174,12 +190,12 @@ class Graph:
         # Prepare parameters
         params = {}
         sig = inspect.signature(service_instance.run)
-        if 'user_prompt' in sig.parameters:
-            params['user_prompt'] = user_prompt
-        if 'service_input' in sig.parameters:
+        if "user_prompt" in sig.parameters:
+            params["user_prompt"] = user_prompt
+        if "service_input" in sig.parameters:
             # Aggregate inputs from dependencies
             inputs = [node_outputs[dep.name] for dep in node.dependencies if dep.name in node_outputs]
-            params['service_input'] = inputs if inputs else None
+            params["service_input"] = inputs if inputs else None
 
         response = service_instance.run(**params)
         logger.info(f"Response from service {node.service_name}: {response}")
@@ -189,16 +205,17 @@ class Graph:
 
     def get_dependency_tree(self):
         """Prints the dependency tree of the graph."""
+
         def create_tree(node, level=0):
-            tree = {'name': node.name, 'level': level, 'consumers': []}
+            tree = {"name": node.name, "level": level, "consumers": []}
             for consumer in node.consumers:
-                tree['consumers'].append(create_tree(consumer, level + 1))
+                tree["consumers"].append(create_tree(consumer, level + 1))
             return tree
 
         # Start from nodes without dependencies and print the tree
         root_nodes = [node for node in self.nodes.values() if not node.dependencies]
         trees = [create_tree(node) for node in root_nodes]
-        tree_text = ''
+        tree_text = ""
         for branch in trees:
             tree_text = tree_text + json.dumps(branch)
         logger.info(f"Node Dependency: {tree_text}")

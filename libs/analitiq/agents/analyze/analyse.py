@@ -5,9 +5,7 @@ from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from langchain_core.pydantic_v1 import BaseModel, Field
 
-from analitiq.agents.analyze.prompt import (
-    ANALYZE_DATA_PROMPT
-)
+from analitiq.agents.analyze.prompt import ANALYZE_DATA_PROMPT
 
 
 class AnalysisResponse(BaseModel):
@@ -16,15 +14,15 @@ class AnalysisResponse(BaseModel):
     Anomalies: str = Field(description="Anomalies you may have discovered in the data")
 
 
-class Analyze():
+class Analyze:
     """Class to determine what kind of char should be generated,"""
+
     def __init__(self) -> None:
-        """Initialize the service.
-        """
+        """Initialize the service."""
         self.llm = GlobalConfig().get_llm()
         self.response = BaseResponse(self.__class__.__name__)
 
-    def run(self, service_input: list, user_prompt=None,  **kwargs):
+    def run(self, service_input: list, user_prompt=None, **kwargs):
         """Initialize the Analyzer.
         Args:
           user_prompt: User prompt optional but can enhance results.
@@ -35,7 +33,7 @@ class Analyze():
             return self.response
 
         # we combine the responses from all higher level nodes
-        combined_responses = ''
+        combined_responses = ""
         for item in service_input:
             combined_responses = combined_responses + f"{item.content_format}:\n{item.content}"
 
@@ -44,7 +42,10 @@ class Analyze():
         prompt = PromptTemplate(
             template=ANALYZE_DATA_PROMPT,
             input_variables=["user_prompt"],
-            partial_variables={"data_to_analyze": combined_responses, "format_instructions": parser.get_format_instructions()},
+            partial_variables={
+                "data_to_analyze": combined_responses,
+                "format_instructions": parser.get_format_instructions(),
+            },
         )
 
         table_chain = prompt | self.llm | parser
@@ -52,6 +53,8 @@ class Analyze():
         logger.info(f"Response {llm_response}")
 
         # Package the result and metadata into a Response object
-        self.response.set_content(f"Summary: {llm_response.Summary}\nObservations: {llm_response.Observations}\nAnomalies: {llm_response.Anomalies}\n ")
+        self.response.set_content(
+            f"Summary: {llm_response.Summary}\nObservations: {llm_response.Observations}\nAnomalies: {llm_response.Anomalies}\n "
+        )
 
         return self.response

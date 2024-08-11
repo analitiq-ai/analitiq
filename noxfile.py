@@ -4,8 +4,8 @@
 import nox
 
 nox.options.sessions = (
-    # "install",  # this is mandatory to ensure, that all needed modules are installed by poetry first
-    # "ruff_format",
+    "install",  # this is mandatory to ensure, that all needed modules are installed by poetry first
+    "ruff_format",
     "ruff_check",
     "pylint",
     "mypy",

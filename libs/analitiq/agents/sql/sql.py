@@ -10,13 +10,10 @@ from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain.output_parsers import PydanticOutputParser
 from sqlalchemy.exc import DatabaseError
-from analitiq.agents.sql.prompt import (
-    RETURN_RELEVANT_TABLE_NAMES,
-    TEXT_TO_SQL_PROMPT
-)
+from analitiq.agents.sql.prompt import RETURN_RELEVANT_TABLE_NAMES, TEXT_TO_SQL_PROMPT
 
 MAX_ITERATIONS = 5
-DB_DESCRIPTION_METADATA_PARAM = 'document_name'
+DB_DESCRIPTION_METADATA_PARAM = "document_name"
 DB_DESCRIPTION_METADATA_VALUE = "schema.yml"
 CONTEXT_MAX_TOKENS = 100000
 CHUNK_OVERLAP = 200
@@ -60,10 +57,10 @@ class Sql:
             str: Extracted table name.
         """
         # Split the string by comma and take the first occurrence
-        first_part = input_string.split(',')[0]
+        first_part = input_string.split(",")[0]
 
         # Split the first part by dot and take the second occurrence
-        schema_table = first_part.split('.')[0] + '.' +first_part.split('.')[1]
+        schema_table = first_part.split(".")[0] + "." + first_part.split(".")[1]
 
         return schema_table
 
@@ -85,11 +82,10 @@ class Sql:
         response = []
         metadata = {}
 
-        metadata['source'] = f"{self.db.params['host']}/{self.db.params['db_name']}"
+        metadata["source"] = f"{self.db.params['host']}/{self.db.params['db_name']}"
 
-        document_type = 'ddl'
-        for schema_name in self.db.params['db_schemas']:
-
+        document_type = "ddl"
+        for schema_name in self.db.params["db_schemas"]:
             # for some reason ddl is a one item list []
             ddl = self.db.get_schemas_and_tables(schema_name)
             logger.info(f"Received DDL for {len(ddl)} tables in schema {schema_name}")
@@ -97,9 +93,9 @@ class Sql:
             # logger.info(f"DDL for {schema_name}: {ddl}")
 
             # Check if DDL in VDB
-            meta_parameters = [("document_name", schema_name),("document_type", document_type)]
+            meta_parameters = [("document_name", schema_name), ("document_type", document_type)]
 
-            response = self.vdb.count_objects_by_properties(meta_parameters, 'like')
+            response = self.vdb.count_objects_by_properties(meta_parameters, "like")
 
             if response.total_count and response.total_count > 0:
                 logger.info(f"[VDB] Found {response.total_count} ddl documents for schema {schema_name}.")
@@ -109,8 +105,8 @@ class Sql:
                 chunks = []
                 counter = 0
                 for table_ddl in ddl:
-                    metadata['document_name'] = self._extract_table_name(table_ddl)
-                    metadata['document_type'] = 'ddl'
+                    metadata["document_name"] = self._extract_table_name(table_ddl)
+                    metadata["document_type"] = "ddl"
                     chunk = self.vdb.load_list_to_chunk(table_ddl, metadata)
                     chunks.append(chunk)
                     counter = counter + 1
@@ -130,7 +126,7 @@ class Sql:
         Returns:
             List[Table]: A list of relevant tables.
         """
-        docs = f"Database Documentation:\n{docs}\n" if docs else ''
+        docs = f"Database Documentation:\n{docs}\n" if docs else ""
 
         parser = PydanticOutputParser(pydantic_object=Tables)
         prompt = PromptTemplate(
@@ -139,8 +135,8 @@ class Sql:
             partial_variables={
                 "ddl": ddl,
                 "db_docs": docs,
-                "format_instructions": parser.get_format_instructions()
-            }
+                "format_instructions": parser.get_format_instructions(),
+            },
         )
         response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
         logger.info(f"Relevant Tables: {response.to_json()}")
@@ -173,7 +169,9 @@ class Sql:
             output_lines.append(f"- Schema: {schema}")
             for table in tables:
                 output_lines.append(f"  - Table: {schema}.{table.TableName}")
-                column_details = ', '.join(f"{column.ColumnName} ({column.DataType})" for column in table.Columns)
+                column_details = ", ".join(
+                    f"{column.ColumnName} ({column.DataType})" for column in table.Columns
+                )
                 output_lines.append(f"    - Columns: {column_details}")
         return "\n".join(output_lines)
 
@@ -193,15 +191,15 @@ class Sql:
         parser = PydanticOutputParser(pydantic_object=TableCheck)
         prompt = PromptTemplate(
             template="You are a data analyst. You received user query: {user_prompt}.\n"
-                     "Does the table {schema_name}.{table_name} contain the data that might be relevant to answer the user's query? "
-                     "Below is some data from the table: \n {data_sample}. \n {format_instructions}.",
+            "Does the table {schema_name}.{table_name} contain the data that might be relevant to answer the user's query? "
+            "Below is some data from the table: \n {data_sample}. \n {format_instructions}.",
             input_variables=["user_prompt"],
             partial_variables={
                 "schema_name": schema_name,
                 "table_name": table_name,
                 "data_sample": result,
-                "format_instructions": parser.get_format_instructions()
-            }
+                "format_instructions": parser.get_format_instructions(),
+            },
         )
         response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
         return response
@@ -219,22 +217,26 @@ class Sql:
         if not self.vdb:
             return None
 
-        response = self.vdb.search_vdb_with_filter(query, [(DB_DESCRIPTION_METADATA_PARAM, DB_DESCRIPTION_METADATA_VALUE)])
+        response = self.vdb.search_vdb_with_filter(
+            query, [(DB_DESCRIPTION_METADATA_PARAM, DB_DESCRIPTION_METADATA_VALUE)]
+        )
 
         if not response:
-            logger.info(f"[VectorDB] No objects returned that match search query in {DB_DESCRIPTION_METADATA_PARAM}: {DB_DESCRIPTION_METADATA_VALUE}.")
+            logger.info(
+                f"[VectorDB] No objects returned that match search query in {DB_DESCRIPTION_METADATA_PARAM}: {DB_DESCRIPTION_METADATA_VALUE}."
+            )
             return None
 
         logger.info(f"[VDB] Context Documents found: {len(response)}")
 
-        #response = self.llm.extract_info_from_db_docs(self.user_prompt, response)
+        # response = self.llm.extract_info_from_db_docs(self.user_prompt, response)
 
-        #chat_logger.info(f"LLM: {response}")
-        #self.response.add_text_to_metadata(response)
+        # chat_logger.info(f"LLM: {response}")
+        # self.response.add_text_to_metadata(response)
 
-        #logger.info(f"LLM Info from Documents: {response}")
+        # logger.info(f"LLM Info from Documents: {response}")
 
-        #if 'ANALITQ___NO_ANSWER' in response:
+        # if 'ANALITQ___NO_ANSWER' in response:
         #    return None
 
         return response
@@ -293,12 +295,12 @@ class Sql:
             template=TEXT_TO_SQL_PROMPT,
             input_variables=["user_prompt"],
             partial_variables={
-                "dialect": self.db.params['type'],
+                "dialect": self.db.params["type"],
                 "docs_ddl": docs_ddl,
                 "docs_schema": docs_schema,
                 "top_k": 100,
-                "format_instructions": parser.get_format_instructions()
-            }
+                "format_instructions": parser.get_format_instructions(),
+            },
         )
 
         chat_logger.info(f"Human: {prompt.format(user_prompt=self.user_prompt)}")
@@ -307,7 +309,7 @@ class Sql:
 
         chat_logger.info(f"Assistant: {response}")
 
-        if not response.get('SQL_Code'):
+        if not response.get("SQL_Code"):
             raise ValueError("No SQL Code returned")
 
         return response
@@ -325,8 +327,8 @@ class Sql:
         """
         glued_documents = []
         for document in documents:
-            chunks = document.get('document_chunks', [])
-            glued_text = '\n\n'.join(chunks)  # Ensure each chunk starts on a new line
+            chunks = document.get("document_chunks", [])
+            glued_text = "\n\n".join(chunks)  # Ensure each chunk starts on a new line
             glued_documents.append(glued_text)
         return glued_documents
 
@@ -340,9 +342,11 @@ class Sql:
             explanation (str, optional): Explanation of the result. Defaults to None.
         """
 
-        self.response.set_content(result, 'dataframe')
+        self.response.set_content(result, "dataframe")
         if result.empty:
-            self.response.add_text_to_metadata("The query produced no result. Please review your query and SQL generated based on it and fine-tune your instructions.")
+            self.response.add_text_to_metadata(
+                "The query produced no result. Please review your query and SQL generated based on it and fine-tune your instructions."
+            )
         else:
             self.response.add_text_to_metadata(f"\n{explanation}")
             if sql:
@@ -365,7 +369,7 @@ class Sql:
 
         docs_schema = self.get_db_docs_schema(user_prompt)
 
-        if not docs_schema or docs_schema == 'ANALYTQ___NO_ANSWER':
+        if not docs_schema or docs_schema == "ANALYTQ___NO_ANSWER":
             # logger.info("No relevant documents in VDB located.", docs)
             docs_schema = None
         if docs_schema:
@@ -374,7 +378,7 @@ class Sql:
 
             if "```" in docs_schema:
                 extractor = CodeExtractor()
-                sql = extractor.extract_code(docs_schema, 'sql')
+                sql = extractor.extract_code(docs_schema, "sql")
                 if sql:
                     success, result = self.execute_sql(sql)
                     if success:
@@ -384,7 +388,7 @@ class Sql:
         # Check if DDL is already loaded in Vector DB
         self.load_ddl_into_vdb()
 
-        docs_ddl = self.vdb.search_vdb_ddl(user_prompt, self.db.params['db_schemas'])
+        docs_ddl = self.vdb.search_vdb_ddl(user_prompt, self.db.params["db_schemas"])
 
         # self.relevant_tables = self.get_relevant_tables(ddl, docs_schema)
         # chat_logger.info(f"Assistant: List of relevant tables and columns.\n{self.relevant_tables}")
@@ -404,7 +408,7 @@ class Sql:
 
         try:
             response = self.get_sql_from_llm(docs_ddl_formatted, docs_schema_formatted)
-            sql = response['SQL_Code']
+            sql = response["SQL_Code"]
         except RuntimeError as e:
             self.response.add_text_to_metadata(str(e))
             return self.response
@@ -417,7 +421,7 @@ class Sql:
         success, result = self.execute_sql(sql)
 
         if success:
-            self._set_result(result, sql, response['Explanation'])
+            self._set_result(result, sql, response["Explanation"])
         else:
             self.response.add_text_to_metadata(result)
 
@@ -440,7 +444,7 @@ class Sql:
 
         docs_schema = self.get_db_docs_schema(user_prompt)
 
-        if not docs_schema or docs_schema == 'ANALYTQ___NO_ANSWER':
+        if not docs_schema or docs_schema == "ANALYTQ___NO_ANSWER":
             # logger.info("No relevant documents in VDB located.", docs)
             docs_schema = None
         if docs_schema:
@@ -450,7 +454,7 @@ class Sql:
 
             if "```" in docs_schema:
                 extractor = CodeExtractor()
-                sql = extractor.extract_code(docs_schema, 'sql')
+                sql = extractor.extract_code(docs_schema, "sql")
                 if sql:
                     success, result = self.execute_sql(sql)
                     if success:
@@ -461,7 +465,7 @@ class Sql:
         # Check if DDL is already loaded in Vector DB
         self.load_ddl_into_vdb()
 
-        docs_ddl = self.vdb.search_vdb_ddl(user_prompt, self.db.params['db_schemas'])
+        docs_ddl = self.vdb.search_vdb_ddl(user_prompt, self.db.params["db_schemas"])
 
         # self.relevant_tables = self.get_relevant_tables(ddl, docs_schema)
         # chat_logger.info(f"Assistant: List of relevant tables and columns.\n{self.relevant_tables}")
@@ -484,7 +488,7 @@ class Sql:
 
         try:
             response = self.get_sql_from_llm(docs_ddl_formatted, docs_schema_formatted)
-            sql = response['SQL_Code']
+            sql = response["SQL_Code"]
         except RuntimeError as e:
             self.response.add_text_to_metadata(str(e))
 
@@ -500,7 +504,7 @@ class Sql:
         success, result = self.execute_sql(sql)
 
         if success:
-            self._set_result(result.to_markdown(), sql, response['Explanation'])
+            self._set_result(result.to_markdown(), sql, response["Explanation"])
         else:
             self.response.add_text_to_metadata(str(result))
 

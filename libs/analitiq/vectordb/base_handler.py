@@ -10,7 +10,7 @@ class BaseVDBHandler:
     def __init__(self, params):
         self.params = params
 
-        self.collection_name = params['collection_name']
+        self.collection_name = params["collection_name"]
         self.client = None
         self.connected = False
 
