@@ -5,6 +5,8 @@ import sqlparse
 
 
 class SQLRecursiveCharacterTextSplitter(RecursiveCharacterTextSplitter):
+    """A Recursive Character TextSplitter for SQL."""
+
     def __init__(
         self,
         separators: List[str] | None = None,
@@ -12,6 +14,7 @@ class SQLRecursiveCharacterTextSplitter(RecursiveCharacterTextSplitter):
         is_separator_regex: bool = False,
         **kwargs: Any,
     ):
+        """Initialize the Textsplitter class."""
         super().__init__(
             separators=separators,
             keep_separator=keep_separator,
@@ -21,8 +24,10 @@ class SQLRecursiveCharacterTextSplitter(RecursiveCharacterTextSplitter):
 
     @classmethod
     def from_language(cls, language: str = "SQL", **kwargs: Any) -> "SQLRecursiveCharacterTextSplitter":
+        """Get data from Language."""
         if language.upper() != "SQL":
-            raise ValueError("This splitter only supports SQL language.")
+            errmsg = "This splitter only supports SQL language."
+            raise ValueError(errmsg)
 
         # Define SQL-specific separators
         sql_separators = [
@@ -37,6 +42,7 @@ class SQLRecursiveCharacterTextSplitter(RecursiveCharacterTextSplitter):
         return cls(separators=sql_separators, **kwargs)
 
     def split_text(self, text: str) -> List[str]:
+        """Split text bei sql statements."""
         # Parse the SQL text using sqlparse
         parsed = sqlparse.parse(text)
         statements = []
@@ -45,6 +51,7 @@ class SQLRecursiveCharacterTextSplitter(RecursiveCharacterTextSplitter):
         return statements
 
     def _split_statement(self, statement: str) -> List[str]:
+        """Split text from parent class."""
         # Use the parent class method to split the statement recursively
         return super().split_text(statement)
 

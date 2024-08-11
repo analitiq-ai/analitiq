@@ -1,5 +1,4 @@
-"""This is an example of how to run this service as a standalone in order to test it or play with it.
-"""
+"""This is an example of how to run this service as a standalone in order to test it or play with it."""
 
 import os
 import sys
@@ -42,4 +41,3 @@ service_input.set_metadata({"sql": "SELECT * FROM public.my_electronics"})
 
 resp = inst.run(user_prompt="what are our sales by category?", service_input=[service_input])
 
-print(resp)

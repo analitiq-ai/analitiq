@@ -25,7 +25,7 @@ The user query is: {user_query}.
 Extract the necessary information and provide it in your response.
 If nothing in the database schema can be used to address users query or you are unable extract relevant information, return only the word "ANALITQ___NO_ANSWER" in your reponse.
 
-Chunks of relevant documentation in json format: 
+Chunks of relevant documentation in json format:
 {docs}
 """
 
@@ -51,7 +51,7 @@ LLM responses:
 """
 
 SERVICE_SELECTION = """
-You are an experienced Data Analyst. 
+You are an experienced Data Analyst.
 You received a user query "{user_prompt}".
 
 Create an action list based on the available list of services provided.
@@ -79,7 +79,7 @@ Your job is to examine users prompt, examine users hints, examine your previous 
 You can only select from the list provided.
 You must not select tools for tasks the user did not ask for explicitly.
 
-List of tools: 
+List of tools:
 {available_services}
 
 {format_instructions}
@@ -100,7 +100,7 @@ Each task could have only one tool.
 You can name the tasks as Task1, Task2 and so on.
 If multiple tasks are using the same tool consider combining these tasks into one task.
 
-You have access to the following tools: 
+You have access to the following tools:
 SQL - SQl tool to query data in the database or data warehouse.
 DataViz - Data visualization and charting tool.
 Search - Search company documentation and knowledge repository.
@@ -135,8 +135,8 @@ Chat History:
 """
 
 COMBINE_TASK_PAIR = """
-You are an expert as {task_using}. 
-Consider user query "{user_prompt}". 
+You are an expert as {task_using}.
+Consider user query "{user_prompt}".
 In pursuing a response to that query, could you combine the following steps together into a singular step?
 1. {Task1}.
 2. {Task2}.
@@ -146,7 +146,7 @@ In pursuing a response to that query, could you combine the following steps toge
 
 FIX_JSON = """
 Please convert this string into a proper JSON format.
-Use double quotes to define JSON object keys and string boundaries. 
+Use double quotes to define JSON object keys and string boundaries.
 Apply incorrect escaping of double quotes inside the string values of the JSON.
 Provide back only the corrected JSON.
 Do not maintain formatting inside the corrected JSON.
@@ -163,7 +163,7 @@ SUMMARIZE_DOCUMENT_CHUNKS = """
 The user has given a query: {user_query}
 You have searched the internal knowledge repository and found some documents that may relate to users query.
 Use these documents to answer users query the best you can.
-The relevant documents are provided as a python dictionary. 
+The relevant documents are provided as a python dictionary.
 The key will contain the name and the location of the complete file.
 The value will contain the excerpts containing the relevant chunk of text to the users query.
 

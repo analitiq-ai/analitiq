@@ -30,7 +30,8 @@ class GlobalConfig:
             self.services: Dict[str, Any] = serv_loader.load_services_from_config(self.project_config)
 
             if not self.services:
-                raise ValueError("The 'Available Services' dictionary is empty!")
+                msg = "The 'Available Services' dictionary is empty!"
+                raise ValueError(msg)
 
             # get the available services from the defined directory
             logger.info(f"[Services][Available] {self.services}")

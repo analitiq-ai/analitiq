@@ -38,7 +38,8 @@ class DatabaseEngine:
         elif self.params["type"] == "redshift":
             return self._create_redshift_engine()
         else:
-            raise ValueError(f"Unsupported database type {self.params['type']}")
+            msg = f"Unsupported database type {self.params['type']}"
+            raise ValueError(msg)
 
     def _create_postgres_engine(self):
         engine_options = {}

@@ -42,7 +42,7 @@ class BaseResponse:
         return {"content": self.get_content_str(), "metadata": self.metadata}
 
     def print_details(self):
-        print(self.__str__())
+        pass
 
     def get_content_str(self):
         if self.content_format == "dataframe":
@@ -57,8 +57,9 @@ class BaseResponse:
     def set_content(self, msg: str, msg_format: str = "text"):
         # validate the passed msg_format
         if msg_format not in self.ALLOWED_FORMATS:
+            msg = f"Invalid response content format: {msg_format}. Expected one of {self.ALLOWED_FORMATS}"
             raise ValueError(
-                f"Invalid response content format: {msg_format}. Expected one of {self.ALLOWED_FORMATS}"
+                msg
             )
         self.content = msg
         self.content_format = msg_format

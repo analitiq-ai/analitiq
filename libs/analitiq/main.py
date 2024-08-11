@@ -93,13 +93,15 @@ class Analitiq:
             try:
                 handler = WeaviateHandler(vdb_params)
             except Exception as e:
-                raise Exception(f"Failed to connect to the vector database: {e}{handler}")
+                msg = f"Failed to connect to the vector database: {e}{handler}"
+                raise Exception(msg)
         elif db_type == "chromadb":
             from .vectordb.chromadb import ChromaHandler
 
             handler = ChromaHandler(vdb_params)
         else:
-            raise ValueError(f"Unsupported database type: {db_type}")
+            msg = f"Unsupported database type: {db_type}"
+            raise ValueError(msg)
 
         if handler.connected:
             return handler
@@ -237,8 +239,7 @@ class Analitiq:
         :return:
         """
         session = BaseSession()
-        session_uuid = session.get_or_create_session_uuid()
-        print(user_prompt.lower())
+        session.get_or_create_session_uuid()
         # First, we check if user typed Help. If so, we can skiop the rest of the logic, for now
         if user_prompt.lower() == "help":
             text = HELP_RESPONSE.format(

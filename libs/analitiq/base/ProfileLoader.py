@@ -84,7 +84,8 @@ class Configuration(BaseModel):
             connection = next((conn for conn in connection_list if conn.name == name), None)
 
             if not connection:
-                raise ValueError(f"Specified connection '{name}' not found in category '{category}'")
+                msg = f"Specified connection '{name}' not found in category '{category}'"
+                raise ValueError(msg)
 
             specified_configs[category] = connection
 
@@ -102,14 +103,13 @@ class ProfileLoader:
         self.profile_config = profile_config
 
     def _validate_config(self, load_profile_name: str) -> Configuration:
-        """Validate profile configuration
+        """Validate profile configuration.
 
         :param load_profile_name: the name of the profile to load and validate the configuration for
         :return: the specified configurations for the loaded profile
         """
         specified_configs = None
-        validated_profiles = {}
-        for profile_name, config in self.profile_config.items():
+        for profile_name in self.profile_config:
             # skip profiles that user does not want to load
             if load_profile_name == profile_name:
                 try:
@@ -118,7 +118,7 @@ class ProfileLoader:
                     logger.info(
                         f"Configuration for profile '{profile_name}' loaded and validated successfully."
                     )
-                except ValidationError as e:
-                    print(f"Validation error for profile '{profile_name}':", e)
+                except ValidationError:
+                    pass
 
         return specified_configs

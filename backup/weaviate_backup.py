@@ -64,8 +64,7 @@ class Chunk(BaseModel):
 
 
 class WeaviateHandler():
-    """A class for interacting with a Weaviate vector database, including loading documents and performing searches.
-    """
+    """A class for interacting with a Weaviate vector database, including loading documents and performing searches."""
 
     def __init__(self, params):
         """Initializes a new instance of the class, setting up a connection to a Weaviate cluster and ensuring
@@ -133,20 +132,16 @@ class WeaviateHandler():
 
         """
         if os.path.isfile(path):
-            print(f"{path} is a file.")
             loader = TextLoader(path)
 
         elif os.path.isdir(path):
-            print(f"{path} is a directory.")
             loader = DirectoryLoader(path, glob=f"**/*.{extension}", loader_cls=TextLoader)
 
         else:
-            print(f"{path} does not exist or is a special file (e.g., socket, device file, etc.).")
             return False
 
         documents = loader.load()
         #print(documents)
-        print(f"Documents: {len(documents)}")
 
         doc_lengths = {doc.metadata["source"]: len(doc.page_content) for doc in documents}
 
@@ -155,7 +150,6 @@ class WeaviateHandler():
         )
 
         documents_chunks = doc_splitter.split_documents(documents)
-        print(f"Chunks: {len(documents_chunks)}")
 
         chunks = [
             Chunk(
@@ -179,9 +173,8 @@ class WeaviateHandler():
 
         self.client.close()
 
-        print(f"Loaded chunks: {chunks_loaded}")
 
-    def load(self, _path: str, file_ext: str = None):
+    def load(self, _path: str, file_ext: Optional[str] = None):
         """Loads a file or directory into Weaviate.
 
         Example:
@@ -198,17 +191,20 @@ class WeaviateHandler():
 
         # Check if the file exists
         if not os.path.exists(_path):
-            raise FileNotFoundError(f"The path {_path} does not exist.")
+            msg = f"The path {_path} does not exist."
+            raise FileNotFoundError(msg)
 
         if os.path.isdir(_path):
             if file_ext not in allowed_extensions:
-                raise ValueError(f"The file extension .{file_ext} is not allowed. Allowed extensions: {allowed_extensions}")
+                msg = f"The file extension .{file_ext} is not allowed. Allowed extensions: {allowed_extensions}"
+                raise ValueError(msg)
                 return False
         else:
             # Check if the file extension is allowed
             file_ext = os.path.splitext(_path)[1][1:]  # Extract the file extension without the dot
             if file_ext not in allowed_extensions:
-                raise ValueError(f"The file extension .{file_ext} is not allowed. Allowed extensions: {allowed_extensions}")
+                msg = f"The file extension .{file_ext} is not allowed. Allowed extensions: {allowed_extensions}"
+                raise ValueError(msg)
                 return False
 
         self.chunk_load_file_or_directory(_path, file_ext)
@@ -253,7 +249,7 @@ class WeaviateHandler():
     def kw_search(self, query: str, limit: int = 3) -> dict:
         """Perform a keyword search in the Weaviate database.
         Example:
-            response = vector_db_client.kw_search("project_name", "text to search")
+            response = vector_db_client.kw_search("project_name", "text to search").
 
         Parameters
         ----------
@@ -316,8 +312,7 @@ class WeaviateHandler():
                 filters=Filter.by_property("source").like(f"*{property_value}*")
             )
             return response
-        except Exception as e:
-            print(e)
+        except Exception:
             return None
         finally:
             self.client.close()  # Close client gracefully

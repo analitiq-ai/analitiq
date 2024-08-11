@@ -54,7 +54,7 @@ def safety(session):
 def pylint(session):
     """Run pylint."""
     args = session.posargs or locations
-    session.run("pylint", "--output-format=text", *args)
+    session.run("pylint", "--output-format=text", "--fail-under=8",*args)
 
 
 @nox.session(python=False)

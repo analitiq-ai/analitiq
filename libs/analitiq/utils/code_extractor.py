@@ -32,7 +32,8 @@ class CodeExtractor:
 
         """
         if code not in ["json", "sql", "python"]:
-            raise ValueError("Code parameter must be 'json', 'sql', or 'python'.")
+            msg = "Code parameter must be 'json', 'sql', or 'python'."
+            raise ValueError(msg)
 
         # Pattern to match code blocks that start with the specified code identifier
         pattern = rf"```{code}\n(.*?)```"

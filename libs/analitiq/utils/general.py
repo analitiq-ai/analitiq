@@ -29,7 +29,8 @@ def retry(max_retries, wait_time):
                     retries += 1
                     time.sleep(wait_time)
             logger.info(f"Max retries of function {func} exceeded")
-            raise Exception(f"Max retries of function {func} exceeded")
+            msg = f"Max retries of function {func} exceeded"
+            raise Exception(msg)
 
         return wrapper
 
@@ -43,10 +44,7 @@ def is_response_clear(response, chat_hist_exists):
     :param chat_hist_exists: A boolean indicating if the chat history exists.
     :return: True if the response is clear, False otherwise.
     """
-    if response.Clear or not response.Clear and not chat_hist_exists:
-        return True
-
-    return False
+    return bool(response.Clear or not response.Clear and not chat_hist_exists)
 
 
 def extract_hints(text):
@@ -86,9 +84,11 @@ def load_yaml(file_path: str) -> Dict[str, Any]:
         with open(file_path, "r") as f:
             configs = yaml.safe_load(f)
             if configs is None or configs == {}:
-                raise ValueError(f"The file is empty: {file_path}")
+                msg = f"The file is empty: {file_path}"
+                raise ValueError(msg)
     else:
-        raise FileNotFoundError(f"The file does not exist: {file_path}")
+        msg = f"The file does not exist: {file_path}"
+        raise FileNotFoundError(msg)
 
     return configs
 

@@ -58,7 +58,6 @@ class TestWeaviateHandler(unittest.TestCase):
         self.handler.collection.query.fetch_objects.return_value = mock_response
 
         result = self.handler.get_many_like("source", "test")
-        print(result)
         self.handler.collection.query.fetch_objects.assert_called_once_with(
             filters=Filter.by_property("source").like("*test*")
         )
@@ -67,6 +66,7 @@ class TestWeaviateHandler(unittest.TestCase):
 
     @patch.object(WeaviateHandler, "close")
     def test_delete_collection(self, mock_close):
+        """Test the delete collection method."""
         self.handler.collection.delete.return_value = True
 
         result = self.handler.delete_collection(self.params["collection_name"])
@@ -77,6 +77,7 @@ class TestWeaviateHandler(unittest.TestCase):
 
     @patch.object(WeaviateHandler, "close")
     def test_delete_many_like(self, mock_close):
+        """Test delete many like this function."""
         self.handler.collection.data.delete_many.return_value = None
 
         result = self.handler.delete_many_like("source", "test")
@@ -89,6 +90,7 @@ class TestWeaviateHandler(unittest.TestCase):
 
     @patch.object(WeaviateHandler, "close")
     def test_kw_search(self, mock_close):
+        """Test the kw search."""
         mock_response = MagicMock()
         self.handler.collection.query.bm25.return_value = mock_response
 

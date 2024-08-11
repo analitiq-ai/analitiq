@@ -34,10 +34,8 @@ QUERY_PROPERTIES = ["content"]  # OR content_kw
 def search_only(func):
     """Search Only functions.
 
-    :param func: the function to be wrapped
-    :return: the result of the original function
-
-    This method wraps the given function and returns a wrapper function. The wrapper function calls the original function with the given parameters and returns the result.
+    This method wraps the given function and returns a wrapper function.
+    The wrapper function calls the original function with the given parameters and returns the result.
     """
 
     def wrapper(*args, **kwargs):
@@ -48,11 +46,7 @@ def search_only(func):
 
 
 def search_grouped(func):
-    """Search a Batch function.
-
-    :param func: The function to be wrapped and executed.
-    :return: The result of calling the original function after grouping the response.
-    """
+    """Search a Batch function."""
 
     def wrapper(*args, **kwargs):
         """Wrap the function."""
@@ -139,7 +133,8 @@ class WeaviateHandler(BaseVDBHandler):
 
         self.collection = self.client.collections.get(self.collection_name)
 
-        # Add a tenant to the collection. Right now the tenant is the same as the collection. In the future, this could be users
+        # Add a tenant to the collection. Right now the tenant is the same as the collection.
+        # In the future, this could be users
         self.collection.tenants.create(tenants=[Tenant(name=self.collection_name)])
 
     def close(self):
@@ -249,8 +244,8 @@ class WeaviateHandler(BaseVDBHandler):
         """Load method.
 
         :param _path: The path of the file or directory to be loaded.
-        :param file_ext: The file extension of the files to be loaded. If None, all files in the directory will be loaded.
-        :return: None
+        :param file_ext: The file extension of the files to be loaded.
+        If None, all files in the directory will be loaded.
 
         Raises
         ------
@@ -259,7 +254,8 @@ class WeaviateHandler(BaseVDBHandler):
 
         """
         if not os.path.exists(_path):
-            raise FileNotFoundError(f"The path {_path} does not exist.")
+            msg = f"The path {_path} does not exist."
+            raise FileNotFoundError(msg)
 
         error_msg = f"The file extension .{file_ext} is not allowed. Allowed extensions: {ALLOWED_EXTENSIONS}"
 
@@ -322,8 +318,9 @@ class WeaviateHandler(BaseVDBHandler):
         allowed_keys = list(Chunk.__annotations__.keys())
 
         if not set(group_by_properties).issubset(set(allowed_keys)):
+            msg = f"The provided keys for grouping are not allowed. Allowed keys are: {allowed_keys}"
             raise ValueError(
-                f"The provided keys for grouping are not allowed. Allowed keys are: {allowed_keys}"
+                msg
             )
 
         grouped_data = {}
@@ -400,7 +397,8 @@ class WeaviateHandler(BaseVDBHandler):
         """Use Vector Search for document retrieval from Weaviate Database.
 
         :param query: A string representing the query to be performed.
-        :param limit: An optional integer representing the maximum number of results to return. Default value is 3.
+        :param limit: An optional integer representing the maximum number of results to return.
+        Default value is 3.
         :return: A QueryReturn object containing the search results.
 
         This method performs a vector search using the Weaviate API. It takes a query string and an optional limit parameter to specify the maximum number of results to return. The method returns
@@ -587,8 +585,7 @@ class WeaviateHandler(BaseVDBHandler):
 
         if not response.objects:
             return None
-        else:
-            return self._group_results_by_properties(response, ["document_name", "document_type"])
+        return self._group_results_by_properties(response, ["document_name", "document_type"])
 
     def fetch_objects_by_properties(self, properties, match_type: str = "like"):
         """Fetch objects with given properties."""
@@ -637,19 +634,16 @@ class WeaviateHandler(BaseVDBHandler):
         :param properties: The properties used to filter the objects to be deleted.
         :param match_type: The type of matching to perform. Defaults to 'like'.
         :type match_type: str Can be either 'like' or 'strict'
-        :return: None
         """
         try:
             filters = self._create_filters(properties, match_type)
 
-            response = self.collection.data.delete_many(
+            self.collection.data.delete_many(
                 where=(filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)),
                 verbose=True,
                 dry_run=False,
             )
 
-            print(f"Matched {response.matches} objects.")
-            print(f"Deleted {response.successful} objects.")
 
         finally:
             self.client.close()
@@ -693,7 +687,7 @@ class WeaviateHandler(BaseVDBHandler):
         try:
             for item in self.collection.iterator():
                 docs[item.uuid] = item.properties
-            response = self.collection.iterator()
+            self.collection.iterator()
         finally:
             self.client.close()
 

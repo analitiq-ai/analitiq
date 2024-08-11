@@ -7,7 +7,7 @@ DEFAULT_SEARCH_MODE = "hybrid"
 
 
 class SearchVdb:
-    """SearchVdb
+    """SearchVdb.
 
     This class represents a search agent that queries a Weaviate database based on a user prompt. It provides different search modes: keyword search, vector search, and hybrid search. It
     * also uses a Language Model (LLM) to summarize the documents retrieved from the search.

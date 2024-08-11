@@ -21,7 +21,7 @@ from analitiq.base.llm.prompt import (
 
 
 class PromptClarification(BaseModel):
-    """This class is used to capture primary product details of each task"""
+    """This class is used to capture primary product details of each task."""
 
     Clear: bool = Field(
         description="True if query is clear. False if more input or clarification is needed. Make sure True or False is with initial caps."
@@ -48,7 +48,7 @@ class CombineTaskPair(Enum):
 
 
 class Task(BaseModel):
-    """This class is used to capture primary product details of each task"""
+    """This class is used to capture primary product details of each task."""
 
     Name: str = Field(description="Short name for the task to be done")
     Using: str = Field(
@@ -58,7 +58,7 @@ class Task(BaseModel):
 
 
 class Tasks(BaseModel):
-    """This class is used to store the collection/list of tasks"""
+    """This class is used to store the collection/list of tasks."""
 
     TaskList: list[Task] = Field("List of tasks to be done to complete user query.")
 
@@ -88,7 +88,6 @@ class Service(BaseModel):
 def get_prompt_extra_info(prompts):
     extra_info = ""
 
-    template = TASK_LIST
 
     if len(prompts["refined"]) > 10:
         user_prompt = prompts["refined"]
@@ -150,7 +149,7 @@ class BaseLlm:
         return self.llm
 
     def llm_invoke(self, user_prompt: str, prompt: Any, parser: Any):
-        """Invokes a call to LLM with user_prompt, constructed_prompt and parser
+        """Invokes a call to LLM with user_prompt, constructed_prompt and parser.
 
         :param user_prompt: A string representing the user's prompt to be passed to the table chain.
         :param prompt: An object representing the prompt to be passed to the table chain.
@@ -162,7 +161,7 @@ class BaseLlm:
 
         return response
 
-    def extract_info_from_db_docs(self, user_query, schemas_list, docs: str = None):
+    def extract_info_from_db_docs(self, user_query, schemas_list, docs: Optional[str] = None):
         if docs is None:
             docs = ""
 
@@ -176,7 +175,7 @@ class BaseLlm:
 
         return response
 
-    def extract_info_from_db_ddl(self, user_query: str, ddl: str, docs: str = None):
+    def extract_info_from_db_ddl(self, user_query: str, ddl: str, docs: Optional[str] = None):
         if docs is not None:
             docs = f"\nHere is some documentation about tables that you might find useful:\n{docs}"
 
@@ -215,7 +214,7 @@ class BaseLlm:
         return response
 
     def llm_is_prompt_clear(self, user_prompt: str, available_services: str):
-        """This method asks LLM to check if the prompt is clear and it understands what needs to be done without any further user input
+        """This method asks LLM to check if the prompt is clear and it understands what needs to be done without any further user input.
 
         :param user_prompt: User prompt
         :param available_services: services available to the LLM

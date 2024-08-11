@@ -9,10 +9,11 @@ from langchain.output_parsers import OutputFixingParser
 from langchain.prompts import PromptTemplate
 
 from analitiq.agents.save.prompt import SAVE_ELEMENT_PROMPT
+import contextlib
 
 
 class ElementToSave(BaseModel):
-    """Define the desired data structure for llm response"""
+    """Define the desired data structure for llm response."""
 
     timestamp: str = Field(
         description="Timestamp of the element that best matches what the user wants to save"
@@ -78,10 +79,8 @@ class Save:
             parsed_response = parser.parse(response.content)
         except:
             new_parser = OutputFixingParser.from_llm(parser=parser, llm=self.llm)
-            try:
+            with contextlib.suppress(Exception):
                 parsed_response = new_parser.parse(response.content)
-            except:
-                print(f"Could not parse LLM response: {response.content}")
 
         return parsed_response
 

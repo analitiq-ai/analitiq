@@ -119,7 +119,7 @@ class Sql:
 
                 logger.info(f"Loaded {counter} chunks for schema {schema_name} into Vector Database.")
 
-    def get_relevant_tables(self, ddl: str, docs: str = None) -> List[Table]:
+    def get_relevant_tables(self, ddl: str, docs: Optional[str] = None) -> List[Table]:
         """Retrieves relevant tables based on the provided DDL and documentation.
 
         Args:
@@ -278,7 +278,7 @@ class Sql:
             chat_logger.error(f"Error executing SQL. {e!s}")
             return False, str(e)
 
-    def get_sql_from_llm(self, docs_ddl: str = None, docs_schema: str = None) -> str:
+    def get_sql_from_llm(self, docs_ddl: Optional[str] = None, docs_schema: Optional[str] = None) -> str:
         """Generates SQL from the LLM (Language Model) based on provided DDL and schema documentation.
 
         Args:
@@ -296,8 +296,8 @@ class Sql:
 
         """
         if docs_ddl:
-            docs_ddl = """Bellow is a list of relevant tables and columns for you to use to create an SQL query. 
-            Make sure you use only the available database tables and columns. 
+            docs_ddl = """Bellow is a list of relevant tables and columns for you to use to create an SQL query.
+            Make sure you use only the available database tables and columns.
             Each table is prepended with a schema name like this schema_name.table.name
             {docs_ddl_placeholder}
             """.format(docs_ddl_placeholder="\n".join(docs_ddl))
@@ -327,7 +327,8 @@ class Sql:
         chat_logger.info(f"Assistant: {response}")
 
         if not response.get("SQL_Code"):
-            raise ValueError("No SQL Code returned")
+            msg = "No SQL Code returned"
+            raise ValueError(msg)
 
         return response
 
@@ -435,7 +436,7 @@ class Sql:
             return self.response
 
         if sql:
-            print(f"SQL created:\n ```\n{sql}\n```")
+            pass
 
         logger.info(f"SQL: {sql}")
 

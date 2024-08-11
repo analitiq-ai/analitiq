@@ -53,5 +53,5 @@ if __name__ == "__main__":
     tree_generator = tree(dir_path)
 
     # Iterate over the generator and print each line
-    for line in tree_generator:
-        print(line)
+    for _line in tree_generator:
+        pass

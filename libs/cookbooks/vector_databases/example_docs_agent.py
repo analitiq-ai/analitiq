@@ -1,5 +1,4 @@
-"""This is an example of how to search documents using search services.
-"""
+"""This is an example of how to search documents using search services."""
 
 import os
 
@@ -22,7 +21,8 @@ AWS_SECRET_ACCESS_KEY=os.getenv("AWS_SECRET_ACCESS_KEY")
 REGION_NAME=os.getenv("REGION_NAME")
 
 if not WV_URL or not WV_CLIENT_SECRET:
-    raise KeyError("Environment Variables not set. Please set variables!")
+    msg = "Environment Variables not set. Please set variables!"
+    raise KeyError(msg)
 
 user_prompt = "Please give me revenues by month."
 
@@ -52,14 +52,12 @@ result_generator = agent.arun("Bikes")
 
 
 async def process_results():
-    final_response = None
     async for result in result_generator:
         if isinstance(result, str):
-            print(result)  # Print incremental results
+            pass  # Print incremental results
         else:
-            final_response = result  # Capture the final BaseResponse object
+            pass  # Capture the final BaseResponse object
 
-    print(final_response)  # Print the metadata of the final BaseResponse object
 
 # Run the async function
 asyncio.run(process_results())

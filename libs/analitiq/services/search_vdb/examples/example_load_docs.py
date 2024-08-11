@@ -12,7 +12,8 @@ WV_URL = os.getenv("WEAVIATE_URL")
 WV_CLIENT_SECRET = os.getenv("WEAVIATE_CLIENT_SECRET")
 
 if not WV_URL or not WV_CLIENT_SECRET:
-    raise KeyError("Environment Variables not set. Please set variables!")
+    msg = "Environment Variables not set. Please set variables!"
+    raise KeyError(msg)
 
 
 params = {"collection_name": "daniel_test", "host": WV_URL, "api_key": WV_CLIENT_SECRET}
@@ -25,4 +26,3 @@ FILE_DIR = pathlib.Path(CURRENT_DIR / "example_test_files")
 FILES = [file for file in FILE_DIR.iterdir() if file.is_file()]
 for file in FILES:
     wc.load(str(file))
-    print(file)

@@ -2,9 +2,9 @@ TEXT_TO_SQL_PROMPT = """
 You are a Data Analyst with a lot of experience in writing {dialect} queries in SQL.
 You have received the following user request: {user_prompt}.
 Your job is to create a proper SQL query for {dialect}.
-Unless the user specifies in the question a specific number of examples to obtain, query for at most {top_k} results using the LIMIT clause as per {dialect}. 
+Unless the user specifies in the question a specific number of examples to obtain, query for at most {top_k} results using the LIMIT clause as per {dialect}.
 You can order the results to return the most informative data in the database.
-Never query for all columns from a table. You must query only the columns that are needed to answer the question. 
+Never query for all columns from a table. You must query only the columns that are needed to answer the question.
 Quality each table name with a schema name, like this: schema_name.table_name.
 
 # Important considerations
@@ -48,7 +48,7 @@ Database Structure:\n
 
 FIX_SQL = """
 You are an SQL expert with specialty in {dialect}.
-The following SQL generates an error. 
+The following SQL generates an error.
 Please examine this SQL, fix it so it can be executed and return it back.
 
 sql:
@@ -75,8 +75,8 @@ CHAT_HISTORY_END
 
 RESPONSE_INSTRUCTIONS_START
 Your corrected response should be a properly formatted JSON.
-Use double quotes to define JSON object keys and string boundaries. 
-Apply incorrect escaping of double quotes inside the string values of the JSON. 
+Use double quotes to define JSON object keys and string boundaries.
+Apply incorrect escaping of double quotes inside the string values of the JSON.
 Do not add new line or tab characters.
 
 {format_instructions}

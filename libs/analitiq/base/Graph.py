@@ -152,9 +152,8 @@ class Graph:
                         if all(
                             dep.name in node_outputs and node_outputs[dep.name] is not None
                             for dep in consumer.dependencies
-                        ):
-                            if consumer.name not in executed_nodes:  # Check if consumer has been executed
-                                ready_nodes.append(consumer)
+                        ) and consumer.name not in executed_nodes:  # Check if consumer has been executed
+                            ready_nodes.append(consumer)
 
         return node_outputs  # Return the aggregated results
 
@@ -171,7 +170,7 @@ class Graph:
         # Prepare parameters
         params = {}
 
-        for name, param in init_params.items():
+        for name in init_params:
             # print(f"Parameter: {name} - Default: {param.default}")
             if name == "db":
                 params["db"] = self.db

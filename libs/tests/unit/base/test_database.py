@@ -4,7 +4,7 @@ from analitiq.base.Database import DatabaseWrapper
 
 
 class TestDatabaseWrapper(unittest.TestCase):
-    """:mod:`TestDatabaseWrapper` Module
+    """:mod:`TestDatabaseWrapper` Module.
     ==================================
 
     .. autoclass:: TestDatabaseWrapper(unittest.TestCase)
@@ -69,7 +69,6 @@ class TestDatabaseWrapper(unittest.TestCase):
 
         # Calling the method to test
         schemas_and_tables = self.database_wrapper.get_schemas_and_tables(["schema1", "schema2"])
-        print(schemas_and_tables)
         # Asserting the returned schema and table details
         expected_response = [
             "schema1.table2.column1 (TEXT)",

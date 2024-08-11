@@ -5,7 +5,7 @@ import pathlib
 import ast
 
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
-from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 
 from analitiq.utils import sql_recursive_text_splitter
 
@@ -23,6 +23,7 @@ class DocumentChunkLoader:
     """
 
     def __init__(self, project_name: str):
+        """Initialize the Document Chunkloader."""
         self.project_name = project_name
 
     def _is_python_code(self, text: str) -> bool:
@@ -50,10 +51,7 @@ class DocumentChunkLoader:
         ]
 
         # Check for SQL code patterns
-        for pattern in sql_patterns:
-            if re.search(pattern, text):
-                return True
-        return False
+        return any(re.search(pattern, text) for pattern in sql_patterns)
 
     def load_and_chunk_documents(
         self, path: str, extension: Optional[str] = None, chunk_size: int = 2000, chunk_overlap: int = 200
@@ -82,8 +80,9 @@ class DocumentChunkLoader:
         elif os.path.isdir(path):
             loader = DirectoryLoader(path, glob=f"**/*.{extension}", loader_cls=TextLoader)
         else:
+            msg = f"{path} does not exist or is a special file (e.g., socket, device file, etc.)."
             raise FileNotFoundError(
-                f"{path} does not exist or is a special file (e.g., socket, device file, etc.)."
+                msg
             )
 
         documents = loader.load()
@@ -157,11 +156,3 @@ class DocumentChunkLoader:
             start = end + 1 - chunk_overlap
 
         return chunks
-
-
-if __name__ == "__main__":
-    chunky = DocumentChunkLoader("my_project")
-    result, doc_leng = chunky.load_and_chunk_documents(
-        path=str(EXAMPLES), extension="*", chunk_size=200, chunk_overlap=10
-    )
-    print(result)

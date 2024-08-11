@@ -80,9 +80,8 @@ if __name__ == "__main__":
 
     for result in result_generator:
         if isinstance(result, str):
-            print(result)  # Print incremental results
+            pass  # Print incremental results
         else:
             final_response = result  # Capture the final BaseResponse object
 
-    print(final_response)  # Print the metadata of the final BaseResponse object
 

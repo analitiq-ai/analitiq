@@ -1,7 +1,7 @@
 from analitiq.logger.logger import logger
 import os
 import json
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.base.BaseSession import BaseSession
@@ -69,7 +69,8 @@ class BaseMemory:
         :return:
         """
         if not self.session_uuid:
-            raise ValueError("Session UUID is not set.")
+            msg = "Session UUID is not set."
+            raise ValueError(msg)
 
         file_path = os.path.join(self.log_directory, self.filename)
 
@@ -84,7 +85,7 @@ class BaseMemory:
         return all_messages[-num_messages:]
 
     def get_last_messages_within_minutes(
-        self, num_messages: int, minutes: int, offset: int = 1, entity: str = None
+        self, num_messages: int, minutes: int, offset: int = 1, entity: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """A function to retrieve the last `num_messages` from Chat history within `minutes` minutes from now,
         optionally filtering by an entity type if specified.
@@ -96,7 +97,8 @@ class BaseMemory:
         :return: A list of chat messages that meet the criteria
         """
         if not self.session_uuid:
-            raise ValueError("Session UUID is not set.")
+            msg = "Session UUID is not set."
+            raise ValueError(msg)
 
         file_path = os.path.join(self.log_directory, self.filename)
 

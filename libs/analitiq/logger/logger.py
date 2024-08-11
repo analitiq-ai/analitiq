@@ -34,8 +34,9 @@ if not proj_config.get("environment"):
     if env_var in allowed_envs:
         proj_config["environment"] = env_var
     else:
+        msg = "Environment not set or not valid. Please set to one of {}".format(allowed_envs)
         raise EnvironmentError(
-            "Environment not set or not valid. Please set to one of {}".format(allowed_envs)
+            msg
         )
 
 _log_dir = os.path.join(base_dir, "logs")
@@ -43,8 +44,6 @@ _log_dir = os.path.join(base_dir, "logs")
 log_file_path = os.path.join(_log_dir, log_config["handlers"]["file"]["filename"])
 chat_log_file_path = os.path.join(_log_dir, log_config["handlers"]["chat_file"]["filename"])
 
-print(f"Log file path: {log_file_path}")
-print(f"Log file path for chat: {chat_log_file_path}")
 
 log_config["handlers"]["file"]["filename"] = log_file_path
 log_config["handlers"]["chat_file"]["filename"] = chat_log_file_path
