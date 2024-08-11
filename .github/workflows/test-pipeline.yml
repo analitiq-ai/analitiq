@@ -3,10 +3,10 @@ name: Build and Test
 on:
   push:
     branches:
-      - '**'
+    - '**'
   pull_request:
     branches:
-      - '**'
+    - '**'
 
 jobs:
   nox-tests:
@@ -32,7 +32,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install nox
         pip install poetry
-    
+
     - name: Configure Poetry to not create virtualenvs
       run: poetry config virtualenvs.create false --local
 
@@ -44,13 +44,13 @@ jobs:
 
   yaml_lint:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Check out code
       uses: actions/checkout@v4
-    
+
     - name: Install yamllint
       run: pip install yamllint
-    
+
     - name: Run yamllint
       run: yamllint .

@@ -17,7 +17,12 @@ config:
 # Bellow is the list of CORE services that come pre-built with Analitiq and are located in analitiq/services directory.
 services:
 - name: QueryDatabase
-  description: "Use this service to query data from the company database. Useful for straightforward query asking for a specific piece of data or information. It requests the current or recent numerical value. This service should be used to calculate KPIs, metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. Use when users asks questions that require analysis or tabular data. Example questions: who are our top customers? What was our revenue last year? Show me the trend of our sales."
+  description: "Use this service to query data from the company database. |
+  Useful for straightforward query asking for a specific piece of data or information. |
+   It requests the current or recent numerical value. This service should be used to calculate KPIs, |
+   metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. |
+   Use when users asks questions that require analysis or tabular data. Example questions: |
+   who are our top customers? What was our revenue last year? Show me the trend of our sales."
   path: "analitiq/services/sql/sql.py"
   class: "Sql"
   method: "run"
