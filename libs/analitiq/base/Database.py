@@ -9,18 +9,20 @@ CACHE_SIZE = 64
 
 
 class DatabaseEngine:
-    """
-    The DatabaseEngine class is responsible for creating the engine based on the provided parameters.
+    """The DatabaseEngine class is responsible for creating the engine based on the provided parameters.
     It uses the factory method pattern to create the appropriate engine based on the database type.
 
     Args:
+    ----
         params (Dict): A dictionary containing the parameters for creating the engine.
 
     Attributes:
+    ----------
         params (Dict): A dictionary consisting of the parameters for creating the engine.
         engine (Engine): The created database engine.
 
     Raises:
+    ------
         ValueError: If the provided database type is unsupported.
 
     """
@@ -61,8 +63,7 @@ class DatabaseEngine:
 
 
 class DatabaseSession:
-    """
-    The DatabaseSession class is responsible for managing the database session.
+    """The DatabaseSession class is responsible for managing the database session.
     It uses the scoped session pattern to ensure that the same session is used within the same thread.
 
     This class is used as a context manager to manage the database session lifecycle.
@@ -83,8 +84,7 @@ class DatabaseSession:
 
 
 class Database:
-    """
-    The Database class is responsible for running queries on the database.
+    """The Database class is responsible for running queries on the database.
     It uses the SQLDatabase class from the langchain_community.utilities module to run queries.
 
     :param engine: The database engine to use.
@@ -106,8 +106,7 @@ class Database:
 
 
 class DatabaseWrapper:
-    """
-    The DatabaseWrapper class is the main class that uses the DatabaseEngine, DatabaseSession, and Database classes to perform database operations.
+    """The DatabaseWrapper class is the main class that uses the DatabaseEngine, DatabaseSession, and Database classes to perform database operations.
     It initializes these classes in its constructor and provides methods for getting schema names, tables in a schema, and schemas and tables.
 
     :param params: A dictionary containing parameters required to connect to the database.
@@ -121,8 +120,7 @@ class DatabaseWrapper:
         self.db = Database(self.engine)
 
     def get_schema_names(self) -> List[str]:
-        """
-        Retrieves the names of the database schemas.
+        """Retrieves the names of the database schemas.
 
         :return: A list of strings representing the schema names.
         :rtype: list[str]
@@ -136,8 +134,7 @@ class DatabaseWrapper:
             self.engine.dispose()
 
     def get_tables_in_schema(self, db_schema):
-        """
-        Get the names of all tables in a given database schema.
+        """Get the names of all tables in a given database schema.
 
         :param db_schema: The name of the database schema to retrieve table names from.
         :return: A list of table names in the specified database schema.
@@ -150,8 +147,7 @@ class DatabaseWrapper:
         return table_names
 
     def get_schemas_and_tables(self, target_schema_list: List) -> Dict:
-        """
-        Retrieve the schemas and tables from the database engine.
+        """Retrieve the schemas and tables from the database engine.
 
         :param target_schema_list: A list of schema names to consider.
         :type target_schema_list: List

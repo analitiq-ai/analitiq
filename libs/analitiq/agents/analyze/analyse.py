@@ -24,12 +24,14 @@ class Analyze:
 
     def run(self, service_input: list, user_prompt=None, **kwargs):
         """Initialize the Analyzer.
+
         Args:
+        ----
           user_prompt: User prompt optional but can enhance results.
           service_input: List of BaseResponse objects from previous nodes
-        """
 
-        if service_input is None or service_input is []:
+        """
+        if service_input is None or service_input == []:
             return self.response
 
         # we combine the responses from all higher level nodes

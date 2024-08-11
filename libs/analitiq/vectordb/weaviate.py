@@ -1,15 +1,13 @@
 from typing import Optional, List, Tuple
-
 import os
-from ..logger import logger
-import weaviate
-import weaviate.util
-import os
-from typing import Optional, List, Tuple
+import pathlib
 from functools import reduce
 from datetime import datetime, timezone
-from analitiq.logger.logger import logger
-from analitiq.vectordb import keyword_extractions
+
+from pydantic import BaseModel
+
+import weaviate
+import weaviate.util
 from weaviate.util import generate_uuid5
 from weaviate.auth import AuthApiKey
 from weaviate.classes.query import Filter, MetadataQuery
@@ -18,9 +16,11 @@ from weaviate.classes.tenants import Tenant
 from weaviate.classes.aggregate import GroupByAggregate
 from weaviate.collections.classes.internal import QueryReturn
 
-from .base_handler import BaseVDBHandler
-from ..utils.document_processor import DocumentChunkLoader
-from pydantic import BaseModel
+from analitiq.logger.logger import logger
+from analitiq.vectordb import keyword_extractions
+from analitiq.vectordb.base_handler import BaseVDBHandler
+from analitiq.utils.document_processor import DocumentChunkLoader
+
 
 from analitiq.vectordb import vectorizer
 
@@ -32,7 +32,8 @@ QUERY_PROPERTIES = ["content"]  # OR content_kw
 
 
 def search_only(func):
-    """
+    """Search Only functions.
+
     :param func: the function to be wrapped
     :return: the result of the original function
 
@@ -47,16 +48,16 @@ def search_only(func):
 
 
 def search_grouped(func):
-    """
+    """Search a Batch function.
+
     :param func: The function to be wrapped and executed.
     :return: The result of calling the original function after grouping the response.
     """
 
     def wrapper(*args, **kwargs):
-        # Call the original function
+        """Wrap the function."""
         response = func(*args, **kwargs)
-        # Call the grouping function on the response
-        self = args[0]  # Assuming the first argument to the function is 'self'
+        self = args[0]
         return self._group_results_by_properties(response, ["document_name", "source"])
 
     return wrapper
@@ -95,30 +96,14 @@ class Chunk(BaseModel):
 
 
 class WeaviateHandler(BaseVDBHandler):
-    """
-    :class: WeaviateHandler(BaseVDBHandler)
+    """The WeaviateHandler Class manages interactions with a Weaviate Vector Database.
 
-    Class for handling interactions with a Weaviate cluster and managing a collection within the cluster.
-
-    .. automethod:: __init__
-    .. automethod:: connect
-    .. automethod:: create_collection
-    .. automethod:: close
-    .. automethod:: _chunk_load_file_or_directory
-    .. automethod:: load
-    .. automethod:: _group_results_by_properties
-    .. automethod:: kw_search
-    .. automethod:: kw_search
-    .. automethod:: delete_many_like
-    .. automethod:: get_many_like
-    .. automethod:: delete_collection
+    This class provides methods to connect to a Weaviate cluster, manage collections,
+    load and chunk documents, and perform various types of searches and data manipulations.
     """
 
     def __init__(self, params):
-        """
-        Initializes a new instance of the class, setting up a connection to a Weaviate cluster and ensuring
-        a collection with the specified name exists within that cluster.
-        """
+        """Initialize a new instance of class."""
         super().__init__(params)
         if not self.try_connect():
             self.connected = False
@@ -133,9 +118,7 @@ class WeaviateHandler(BaseVDBHandler):
         self.chunk_processor = DocumentChunkLoader(self.collection_name)
 
     def connect(self):
-        """
-        Connect to the Weaviate database.
-        """
+        """Connect to the Weaviate database."""
         self.client: weaviate.WeaviateClient = weaviate.connect_to_wcs(
             cluster_url=self.params["host"], auth_credentials=AuthApiKey(self.params["api_key"])
         )
@@ -152,7 +135,6 @@ class WeaviateHandler(BaseVDBHandler):
             self.collection_name,
             # enable multi_tenancy_config
             multi_tenancy_config=Configure.multi_tenancy(enabled=True),
-            # vectorizer_config=Configure.Vectorizer.text2vec_cohere(),
         )
 
         self.collection = self.client.collections.get(self.collection_name)
@@ -161,9 +143,7 @@ class WeaviateHandler(BaseVDBHandler):
         self.collection.tenants.create(tenants=[Tenant(name=self.collection_name)])
 
     def close(self):
-        """
-        Close the Weaviate client connection.
-        """
+        """Close the Weaviate client connection."""
         self.client.close()
 
     def _chunk_load_file_or_directory(
@@ -173,8 +153,10 @@ class WeaviateHandler(BaseVDBHandler):
         chunk_size: int = LOAD_DOC_CHUNK_SIZE,
         chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP,
     ):
-        """
-        Load files from a directory or a single file, split them into chunks, and insert them into Weaviate.
+        """Chunk the data from file or directory.
+
+        Load files from a directory or a single file, 
+        split them into chunks, and insert them into Weaviate.
         """
         documents_chunks, doc_lengths = self.chunk_processor.load_and_chunk_documents(
             path, extension, chunk_size, chunk_overlap
@@ -185,7 +167,7 @@ class WeaviateHandler(BaseVDBHandler):
                 content=chunk.page_content,
                 source=chunk.metadata["source"],
                 document_type=extension,
-                document_name=os.path.basename(chunk.metadata["source"]),
+                document_name=pathlib.Path(chunk.metadata["source"]).name,
                 document_num_char=doc_lengths[chunk.metadata["source"]],
                 chunk_num_char=len(chunk.page_content),
                 date_loaded=datetime.now(timezone.utc),
@@ -204,8 +186,7 @@ class WeaviateHandler(BaseVDBHandler):
         chunk_size: int = LOAD_DOC_CHUNK_SIZE,
         chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP,
     ):
-        """
-        Chunk the given text into smaller chunks and load them to Weaviate.
+        """Chunk the given text into smaller chunks and load them to Weaviate.
 
         :param text: The text to be chunked.
         :param document_name: The name of the document.
@@ -223,6 +204,7 @@ class WeaviateHandler(BaseVDBHandler):
                 document_num_char=len(text),
                 chunk_num_char=len(chunk),
                 date_loaded=datetime.now(timezone.utc),
+                content_kw=keyword_extractions.extract_keywords(chunk.page_content),
             )
             for chunk in documents_chunks
         ]
@@ -231,6 +213,7 @@ class WeaviateHandler(BaseVDBHandler):
 
     @staticmethod
     def load_list_to_chunk(chunk: str, metadata: dict):
+        """Load a list to chunks."""
         return Chunk(
             content=chunk,
             source=metadata["source"],
@@ -239,43 +222,42 @@ class WeaviateHandler(BaseVDBHandler):
             document_num_char=len(chunk),
             chunk_num_char=len(chunk),
             date_loaded=datetime.now(timezone.utc),
+            content_kw=keyword_extractions.extract_keywords(chunk),
         )
 
     def load_chunks_to_weaviate(self, chunks):
+        """Load chunks into weaviate."""
         chunks_loaded = 0
 
         try:
             self.client.connect()
         except Exception as e:
-            print(e)
+            logger.error(e)
 
         with self.collection.batch.dynamic() as batch:
             for chunk in chunks:
                 uuid = generate_uuid5(chunk.model_dump())
                 hf_vector = self.vectorizer.vectorize(chunk.content)
                 response = batch.add_object(properties=chunk.model_dump(), uuid=uuid, vector=hf_vector)
-                print(response)
+                logger.info(response)
                 chunks_loaded += 1
 
         self.close()
-        print(f"Loaded chunks: {chunks_loaded}")
+        logger.info("Loaded chunks: %s", chunks_loaded)
 
-    def load(self, _path: str, file_ext: str = None):
-        """
-        Load method
-
-        Loads a file or directory into Weaviate.
+    def load(self, _path: str, file_ext: Optional[str] = None):
+        """Load method.
 
         :param _path: The path of the file or directory to be loaded.
         :param file_ext: The file extension of the files to be loaded. If None, all files in the directory will be loaded.
         :return: None
 
-        Raises:
+        Raises
+        ------
             FileNotFoundError: If the specified path does not exist.
             ValueError: If the file extension is not allowed.
 
         """
-
         if not os.path.exists(_path):
             raise FileNotFoundError(f"The path {_path} does not exist.")
 
@@ -293,26 +275,29 @@ class WeaviateHandler(BaseVDBHandler):
 
     @staticmethod
     def _group_results_by_properties(results: QueryReturn, group_by_properties: list) -> list:
-        """
-        Groups a list of dictionaries (chunks of data) by given keys and return the grouped data as a list of dictionaries.
+        """Groups a list of dictionaries (chunks of data) by given keys and return the grouped data as a list of dictionaries.
 
         Each dictionary in the returned list corresponds to a unique group as determined by `group_by_properties`. The keys of the
         dictionaries are the group properties and a special key 'document_chunks' which stores the associated chunks of data.
 
         Args:
+        ----
             results (Response): The original response object that includes 'objects' which is
                 a list of items, each having properties from which keys values are extracted.
             group_by_properties (list[str]): List of properties which are used to group data.
 
         Raises:
+        ------
             ValueError: If any key in `group_keys` is not in `allowed_keys`.
 
         Returns:
+        -------
             list[dict] : List of dictionaries. Each dictionary corresponds to a unique group.
             The keys of the dictionaries are the group keys and 'document_chunks' which stores
             the associated chunks of data.
 
         Example:
+        -------
             Given group_keys=['document_name', 'source'] and this item in `response.objects`:
 
             { 'properties' :
@@ -329,6 +314,7 @@ class WeaviateHandler(BaseVDBHandler):
                 },
                ...
             ]
+
         """
         if not results.objects:
             return None
@@ -361,8 +347,7 @@ class WeaviateHandler(BaseVDBHandler):
 
     @search_only
     def kw_search(self, query: str, limit: int = 3) -> QueryReturn:
-        """
-        Perform a keyword search in the Weaviate database.
+        """Perform a keyword search in the Weaviate database.
         """
         search_kw = keyword_extractions.extract_keywords(query)
         logger.info("Extracted keywords to search for: %s", search_kw)
@@ -385,7 +370,6 @@ class WeaviateHandler(BaseVDBHandler):
     @search_only
     def hybrid_search(self, query: str, limit: int = 3) -> QueryReturn:
         """Use Hybrid Search for document retrieval from Weaviate Database.
-
 
         Perform a hybrid search by combining keyword-based search and vector-based search.
 
@@ -436,7 +420,6 @@ class WeaviateHandler(BaseVDBHandler):
             print(result)
         ```
         """
-
         response = QueryReturn(objects=[])
 
         try:
@@ -461,8 +444,7 @@ class WeaviateHandler(BaseVDBHandler):
         limit: int = 3,
         kw_vector_weights: Tuple[float, float] = [0.3, 0.7],
     ) -> List[dict]:
-        """
-        Combine and rerank keyword search and vector search results.
+        """Combine and rerank keyword search and vector search results.
 
         :param kw_results: Keyword search results.
         :type kw_results: QueryReturn
@@ -505,8 +487,7 @@ class WeaviateHandler(BaseVDBHandler):
         return QueryReturn(objects=reranked_results)
 
     def delete_many_like(self, properties: list, match_type: str = "like"):
-        """
-        Delete multiple documents from the collection where the given property value is similar.
+        """Delete multiple documents from the collection where the given property value is similar.
 
         :param properties: The name of the property to filter by.
         :param match_type: The type of match for properties
@@ -526,9 +507,10 @@ class WeaviateHandler(BaseVDBHandler):
             self.close()
 
     def search_vdb_ddl(self, query: str, schemas: list):
-        """
-        Retrieve matches to the query string for DDl definition from VDB.
+        """Retrieve matches to the query string for DDl definition from VDB.
+
         Example:
+        -------
         response = vector_db_client.get_many_like("document_name", "schema")
 
         :param query: The search string.
@@ -536,6 +518,7 @@ class WeaviateHandler(BaseVDBHandler):
         :param match_type: the type of match to use for properties
         :return: A list of objects that have a property matching the pattern.
         :rtype: list or None
+
         """
         try:
             self.client.connect()
@@ -567,9 +550,10 @@ class WeaviateHandler(BaseVDBHandler):
             return self._group_results_by_properties(response, ["document_name"])
 
     def search_vdb_with_filter(self, query: str, properties: list, match_type: str = "like"):
-        """
-        Retrieve objects from the collection that have a property whose value matches the given pattern.
+        """Retrieve objects from the collection that have a property whose value matches the given pattern.
+
         Example:
+        -------
         response = vector_db_client.get_many_like("document_name", "schema")
 
         :param query: The search string.
@@ -577,6 +561,7 @@ class WeaviateHandler(BaseVDBHandler):
         :param match_type: the type of match to use for properties
         :return: A list of objects that have a property matching the pattern.
         :rtype: list or None
+
         """
         try:
             self.client.connect()
@@ -645,8 +630,7 @@ class WeaviateHandler(BaseVDBHandler):
         return self.collection.query.fetch_object_by_id(uuid=uuid)
 
     def delete_objects(self, properties, match_type: str = "like"):
-        """
-        Deletes objects from the collection based on specified meta parameters.
+        """Deletes objects from the collection based on specified meta parameters.
 
         :param properties: The properties used to filter the objects to be deleted.
         :param match_type: The type of matching to perform. Defaults to 'like'.
@@ -688,8 +672,7 @@ class WeaviateHandler(BaseVDBHandler):
         return filters
 
     def get_all_objects(self) -> dict:
-        """
-        Retrieve all objects from the collection.
+        """Retrieve all objects from the collection.
 
         :return: A list of dictionaries representing the objects.
         :rtype: dict
@@ -712,8 +695,7 @@ class WeaviateHandler(BaseVDBHandler):
         return docs
 
     def count_objects_grouped_by(self, group_by_property: str) -> List[dict]:
-        """
-        Count objects in Weaviate and group them by the specified property.
+        """Count objects in Weaviate and group them by the specified property.
 
         :param group_by_property: The property to group by.
         :return: A list of dictionaries with the group property and count.

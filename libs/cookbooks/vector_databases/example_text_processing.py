@@ -1,5 +1,4 @@
-"""
-This is an example of how to load documents into VectorDB before allowing analitiq access them.
+"""This is an example of how to load documents into VectorDB before allowing analitiq access them.
 """
 
 import pathlib

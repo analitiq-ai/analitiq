@@ -49,12 +49,16 @@ class SQLRecursiveCharacterTextSplitter(RecursiveCharacterTextSplitter):
         return super().split_text(statement)
 
     def split_documents(self, documents: List[Document]) -> List[Document]:
-        """
-        Split a list of documents into chunks.
+        """Split a list of documents into chunks.
+
         Args:
+        ----
             documents: A list of dictionaries, each containing a 'text' key.
+
         Returns:
+        -------
             A list of dictionaries, each containing a 'text' key with the split text.
+
         """
         split_docs: List[Optional[Document]] = []
         for doc in documents:

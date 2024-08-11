@@ -46,8 +46,7 @@ class BaseMemory:
         self.conversations.append(conversation_entry)
 
     def save_to_file(self):
-        """
-        Saves the current conversation history to a flat file.
+        """Saves the current conversation history to a flat file.
         """
         # Ensure log directory exists
         if not os.path.exists(self.log_directory):
@@ -62,14 +61,12 @@ class BaseMemory:
         self.clear_memory()
 
     def clear_memory(self):
-        """
-        Clears the in-memory conversation history.
+        """Clears the in-memory conversation history.
         """
         self.conversations = []
 
     def get_last_messages(self, num_messages: int) -> List[Dict[str, Any]]:
-        """
-        A function to retrieve the last number messages from Chat history. Number of messages is specified by the input param.
+        """A function to retrieve the last number messages from Chat history. Number of messages is specified by the input param.
         :param num_messages:
         :return:
         """
@@ -91,8 +88,7 @@ class BaseMemory:
     def get_last_messages_within_minutes(
         self, num_messages: int, minutes: int, offset: int = 1, entity: str = None
     ) -> List[Dict[str, Any]]:
-        """
-        A function to retrieve the last `num_messages` from Chat history within `minutes` minutes from now,
+        """A function to retrieve the last `num_messages` from Chat history within `minutes` minutes from now,
         optionally filtering by an entity type if specified.
 
         :param offset: How much to offset the search. usualy it is 1 because the last prompt was recorded and in most scenarios we want history before.

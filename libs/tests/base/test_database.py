@@ -4,8 +4,7 @@ from analitiq.base.Database import DatabaseWrapper
 
 
 class TestDatabaseWrapper(unittest.TestCase):
-    """
-    :mod:`TestDatabaseWrapper` Module
+    """:mod:`TestDatabaseWrapper` Module
     ==================================
 
     .. autoclass:: TestDatabaseWrapper(unittest.TestCase)

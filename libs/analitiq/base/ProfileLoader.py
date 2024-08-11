@@ -92,26 +92,22 @@ class Configuration(BaseModel):
 
 
 class ProfileLoader:
-    """
-    Initializes the ProfileLoader with the provided file path.
+    """Initializes the ProfileLoader with the provided file path.
 
     :param file_path: The path to the configuration file.
     """
 
     def __init__(self, profile_config):
-        """
-        Initializes the ProjectLoader with an empty list of services and a dictionary for profiles.
+        """Initializes the ProjectLoader with an empty list of services and a dictionary for profiles.
         """
         self.profile_config = profile_config
 
     def _validate_config(self, load_profile_name: str) -> Configuration:
-        """
-        Validate profile configuration
+        """Validate profile configuration
 
         :param load_profile_name: the name of the profile to load and validate the configuration for
         :return: the specified configurations for the loaded profile
         """
-
         specified_configs = None
         validated_profiles = {}
         for profile_name, config in self.profile_config.items():

@@ -1,5 +1,4 @@
-"""
-This is an example of how to query Analitiq for information.
+"""This is an example of how to query Analitiq for information.
 """
 
 from analitiq.main import Analitiq

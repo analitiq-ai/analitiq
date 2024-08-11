@@ -5,8 +5,7 @@ import re
 
 
 class ServicesLoader:
-    """
-    ConfigLoader is responsible for loading configuration files
+    """ConfigLoader is responsible for loading configuration files
     and dynamically importing the specified services.
     """
 
@@ -14,18 +13,19 @@ class ServicesLoader:
         """Parses the doc string to extract input and output information.
 
         Args:
+        ----
             doc_string (str): The documentation string of a method.
 
         Returns:
+        -------
             tuple: A tuple containing lists of inputs and outputs.
+
         """
         inputs, outputs = [], []
         lines = doc_string.split("\n")
         mode = None
         for line in lines:
-            if "Args:" in line:
-                mode = "inputs"
-            elif "Parameters:" in line:
+            if "Args:" in line or "Parameters:" in line:
                 mode = "inputs"
             elif "Returns:" in line:
                 mode = "outputs"
@@ -38,23 +38,26 @@ class ServicesLoader:
 
     @staticmethod
     def load_service_class(service_config: dict) -> bool:
-        """
-        This class runs checks on a service:
+        """This class runs checks on a service:
         1. whether service file and class exist
         2. whether it has the defined method.
         3. whether it is a duplicate of an existing service
         4. extract input and output definition from description
 
-        Parameters:
+        Parameters
+        ----------
         - service_config (dict): A dictionary containing the service configuration.
 
-        Returns:
+        Returns
+        -------
         - bool: True if all checks passed and service exists.
 
-        Raises:
+        Raises
+        ------
         - FileNotFoundError: If the specified file does not exist.
         - AttributeError: If the specified class or method does not exist within the file.
         - ValueError: If the service name is duplicate or invalid.
+
         """
         service_path = service_config["path"]
         class_name = service_config["class"]
@@ -91,13 +94,14 @@ class ServicesLoader:
         return service_class
 
     def load_services_from_config(self, config: dict) -> dict:
-        """
-        Loads all services defined in the configuration file.
+        """Loads all services defined in the configuration file.
 
-        Parameters:
+        Parameters
+        ----------
         - config (dict): The config dictionary
 
-        Returns:
+        Returns
+        -------
         - dict: Dictionary of verified services
 
         Example:
@@ -123,8 +127,8 @@ class ServicesLoader:
                     'outputs': ['- bool: True if all checks passed and service exists.', 'Raises:', '- FileNotFoundError: If the specified file does not exist.', '- AttributeError: If the specified class or method does not exist within the file.', '- ValueError: If the service name is duplicate or invalid.']
                 }
             }
-        """
 
+        """
         verified_services = {}
 
         if "services" not in config:

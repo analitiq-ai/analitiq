@@ -104,8 +104,7 @@ class Analitiq:
             raise Exception("Failed to establish a connection to the vector Database")
 
     def get_available_services_str(self, avail_services):
-        """
-        :param avail_services: A dictionary containing the available services. Each service should be represented by a key-value pair, with the key being the name of the service and the value
+        """:param avail_services: A dictionary containing the available services. Each service should be represented by a key-value pair, with the key being the name of the service and the value
         * being a dictionary containing the service details.
         :return: A string containing the formatted representation of the available services.
 
@@ -126,9 +125,7 @@ class Analitiq:
         return available_services_str
 
     def is_prompt_clear(self, user_prompt, msg_lookback: int = 2):
-        """
-
-        :param user_prompt:
+        """:param user_prompt:
         :param msg_lookback: Because the current prompt is already written to chat log, we need to go back 2 steps to get the previous prompt.
         :param feedback: Feedback to the LLM model after failed runs to help the model fix an issue.
         :return:
@@ -137,14 +134,14 @@ class Analitiq:
         try:
             response = self.llm.llm_is_prompt_clear(user_prompt, self.avail_services_str)
         except Exception as e:
-            logger.error(f"[Analitiq] Exception: '{e}'. Needs explanation:\n{str(response)}")
+            logger.error(f"[Analitiq] Exception: '{e}'. Needs explanation:\n{response!s}")
 
         # is LLM is clear with prompt, we return results
         if response.Clear:
             return response
 
         # Log that the model needs clarification
-        logger.info(f"[Analitiq] Prompt not clear: '{user_prompt}'. Needs explanation:\n{str(response)}")
+        logger.info(f"[Analitiq] Prompt not clear: '{user_prompt}'. Needs explanation:\n{response!s}")
 
         # we try to get Chat history for more context to the LLM
         try:
@@ -155,7 +152,7 @@ class Analitiq:
 
         # if response is not clear and there is no chat history, we exit with False
         if not chat_hist:
-            logger.info(f"[Analitiq] No chat history found.")
+            logger.info("[Analitiq] No chat history found.")
             return response
 
         # if there is chat history, we add it to the prompt to give LLM more context.
@@ -169,8 +166,7 @@ class Analitiq:
         return response
 
     def get_chat_hist(self, user_prompt, msg_lookback: int = 5):
-        """
-        Gets the chat history for a user prompt.
+        """Gets the chat history for a user prompt.
         This function retrieves recent user prompts from the conversation history,
         specifically those marked with an 'entity' value of 'Human', and within
         the last 5 minutes. It then combines these prompts with the current user
@@ -179,7 +175,9 @@ class Analitiq:
         into a single string, separated by periods. If the user prompt is the only
         prompt, or if it's the first unique prompt in the specified time frame,
         it is returned as is.
+
         Note:
+        ----
         - This function relies on `BaseMemory.get_last_messages_within_minutes` method to fetch
           historical prompts. Ensure `BaseMemory` is properly initialized and configured.
         - This function assumes that the `BaseMemory` method successfully returns a list of
@@ -191,8 +189,8 @@ class Analitiq:
         :param user_prompt: The user prompt.
         :param msg_lookback: The number of messages to look back in the chat history. Default is 5.
         :return: The response generated based on the chat history, or None if there is no chat history.
-        """
 
+        """
         user_prompt_hist = self.memory.get_last_messages_within_minutes(msg_lookback, 5, 1, "Human")
 
         response = None
@@ -212,8 +210,7 @@ class Analitiq:
         return response
 
     def return_response(self):
-        """
-        Example returned response:
+        """Example returned response:
         {
            "Analitiq": "{\"content\": \"Some Text\", \"metadata\": {}}"
         }
@@ -222,9 +219,7 @@ class Analitiq:
         return {"Analitiq": self.response.to_json()}
 
     def run(self, user_prompt):
-        """
-
-        :param user_prompt:
+        """:param user_prompt:
         :return:
         """
         session = BaseSession()

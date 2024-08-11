@@ -1,13 +1,14 @@
-from typing import List, Any, Dict
 import json
 
 
 class BaseResponse:
     """A class to encapsulate the response of service operations.
 
-    Attributes:
+    Attributes
+    ----------
         content (Any): The main content of the response, typically a DataFrame.
         metadata (Dict): Metadata about the operation, including relevant tables and executed SQL.
+
     """
 
     ALLOWED_FORMATS = ["text", "dataframe", "json", "sql"]
@@ -25,8 +26,7 @@ class BaseResponse:
         return f"Content: {content_str}\nMetadata: {metadata_str}"
 
     def to_json_str(self):
-        """
-        Returns a JSON string representation of the object.
+        """Returns a JSON string representation of the object.
 
         :return: A JSON string representation of the object.
         :rtype: str
@@ -34,8 +34,7 @@ class BaseResponse:
         return json.dumps({"content": self.get_content_str(), "metadata": self.metadata})
 
     def to_json(self):
-        """
-        Returns a JSON string representation of the object.
+        """Returns a JSON string representation of the object.
 
         :return: A JSON string representation of the object.
         :rtype: str
@@ -65,8 +64,7 @@ class BaseResponse:
         self.content_format = msg_format
 
     def set_metadata(self, metadata: dict):
-        """
-        Update the metadata of an object with the given metadata.
+        """Update the metadata of an object with the given metadata.
 
         :param metadata: A dictionary containing the metadata to be updated.
         :type metadata: dict
@@ -75,8 +73,7 @@ class BaseResponse:
         self.metadata.update(metadata)
 
     def add_text_to_metadata(self, text):
-        """
-        :param text: The text to be added to the metadata dictionary.
+        """:param text: The text to be added to the metadata dictionary.
         :return: None
 
         Add the given text to the existing value of the 'text' key in the metadata dictionary. If the 'text' key does not exist in the metadata dictionary, create a new key-value pair with the

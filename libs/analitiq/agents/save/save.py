@@ -23,8 +23,7 @@ class ElementToSave(BaseModel):
 
 
 class Save:
-    """
-    A class to process chat history and extract information based on user prompts.
+    """A class to process chat history and extract information based on user prompts.
 
     Disable:True
     Attributes:
@@ -34,11 +33,12 @@ class Save:
     """
 
     def __init__(self, output_directory: str = "./extracted"):
-        """
-        Initializes the ChatHistoryProcessor with a session UUID and output directory.
+        """Initializes the ChatHistoryProcessor with a session UUID and output directory.
 
-        Parameters:
+        Parameters
+        ----------
             output_directory (str): Directory where extracted objects are saved.
+
         """
         self.db = GlobalConfig().get_database()
         self.llm = GlobalConfig().get_llm()
@@ -47,14 +47,14 @@ class Save:
         self.response = BaseResponse(self.__class__.__name__)
 
     def extract_chat_entity(self, user_prompt, num_messages: int = 5) -> None:
-        """
-        Processes the user's prompt, retrieves recent chat messages, and extracts the requested information.
+        """Processes the user's prompt, retrieves recent chat messages, and extracts the requested information.
 
-        Parameters:
+        Parameters
+        ----------
             user_prompt (str): The prompt provided by the user, indicating what information to extract.
             num_messages (int): The number of recent messages to retrieve from chat history for analysis.
-        """
 
+        """
         # Load the recent messages from chat history
         chat_history = self.base_memory.get_last_messages(num_messages)
 
@@ -86,12 +86,13 @@ class Save:
         return parsed_response
 
     def save_object(self, filename: str, message: str) -> None:
-        """
-        Extracts the requested object from the key message and saves it to a file.
+        """Extracts the requested object from the key message and saves it to a file.
 
-        Parameters:
+        Parameters
+        ----------
             filename (str): The name of the file under which the information is saved.
             message (str): The message identified by the LLM as containing the requested information.
+
         """
         # Get the session ID
         session = BaseSession()
@@ -114,13 +115,15 @@ class Save:
         extracts that element from chat history and saves it in the directory.
 
         Args:
+        ----
             user_prompt (str): The user's description of the desired chart.
             service_input: The input data for chart generation, either as a DataFrame or a pickled string.
 
         Returns:
+        -------
             Response: BaseResponse object containing filename and description of the data that was saved.
-        """
 
+        """
         llm_response = self.extract_chat_entity(user_prompt)
 
         filename = self.save_object(llm_response["filename"], llm_response["content"])

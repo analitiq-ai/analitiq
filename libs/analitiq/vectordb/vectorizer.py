@@ -4,11 +4,10 @@ import numpy as np
 
 
 class AnalitiqVectorizer:
-    """
-    A class to handle vectorization of text using Hugging Face models.
+    """A class to handle vectorization of text using Hugging Face models.
 
-    Attributes:
-    -----------
+    Attributes
+    ----------
     model_name_or_path : str
         The name or path of the Hugging Face model.
     tokenizer : AutoTokenizer
@@ -16,24 +15,25 @@ class AnalitiqVectorizer:
     model : AutoModel
         The model for generating vectors.
 
-    Methods:
-    --------
+    Methods
+    -------
     __init__(model_name_or_path: str):
         Initializes the Vectorizer with the specified model.
     load_model():
         Loads the tokenizer and model.
     vectorize(text: Union[str, List[str]]) -> torch.Tensor:
         Generates vectors for the given input text.
+
     """
 
     def __init__(self, model_name_or_path: str):
-        """
-        Initializes the Vectorizer with the specified model.
+        """Initializes the Vectorizer with the specified model.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         model_name_or_path : str
             The name or path of the Hugging Face model to be used.
+
         """
         self.model_name_or_path = model_name_or_path
         self.tokenizer = None
@@ -41,28 +41,27 @@ class AnalitiqVectorizer:
         self.load_model()
 
     def load_model(self):
-        """
-        Loads the tokenizer and model from Hugging Face.
+        """Loads the tokenizer and model from Hugging Face.
         If the model is not present locally, it will be downloaded.
         """
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
         self.model = AutoModel.from_pretrained(self.model_name_or_path)
 
     def vectorize(self, text: Union[str, List[str]], flatten: bool = True) -> np.ndarray:
-        """
-        Generates vectors for the given input text.
+        """Generates vectors for the given input text.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         text : Union[str, List[str]]
             The input text or list of texts to be vectorized.
         flatten : bool
             To avoid potential issues with the FAISS index
 
-        Returns:
-        --------
+        Returns
+        -------
         torch.Tensor
             The vectors generated from the input text.
+
         """
         inputs = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True)
         outputs = self.model(**inputs)

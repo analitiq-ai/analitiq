@@ -9,8 +9,7 @@ last = "└── "
 
 
 def tree(dir_path: Path, prefix: str = ""):
-    """
-    :param dir_path: The path of the directory to be traversed.
+    """:param dir_path: The path of the directory to be traversed.
     :param prefix: The prefix to be added before each file/folder name in the tree structure.
     :return: A generator that yields each line of the tree structure in a formatted way.
 

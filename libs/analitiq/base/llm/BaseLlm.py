@@ -21,8 +21,7 @@ from analitiq.base.llm.prompt import (
 
 
 class PromptClarification(BaseModel):
-    """
-    This class is used to capture primary product details of each task
+    """This class is used to capture primary product details of each task
     """
 
     Clear: bool = Field(
@@ -43,8 +42,7 @@ def fix_case(llm_output) -> str:
 
 
 class CombineTaskPair(Enum):
-    """
-    This class is used to determine if tasks can be combined.
+    """This class is used to determine if tasks can be combined.
     """
 
     YES = "Can combine tasks."
@@ -52,8 +50,7 @@ class CombineTaskPair(Enum):
 
 
 class Task(BaseModel):
-    """
-    This class is used to capture primary product details of each task
+    """This class is used to capture primary product details of each task
     """
 
     Name: str = Field(description="Short name for the task to be done")
@@ -64,8 +61,7 @@ class Task(BaseModel):
 
 
 class Tasks(BaseModel):
-    """
-    This class is used to store the collection/list of tasks
+    """This class is used to store the collection/list of tasks
     """
 
     TaskList: list[Task] = Field("List of tasks to be done to complete user query.")
@@ -158,8 +154,7 @@ class BaseLlm:
         return self.llm
 
     def llm_invoke(self, user_prompt: str, prompt: Any, parser: Any):
-        """
-        Invokes a call to LLM with user_prompt, constructed_prompt and parser
+        """Invokes a call to LLM with user_prompt, constructed_prompt and parser
 
         :param user_prompt: A string representing the user's prompt to be passed to the table chain.
         :param prompt: An object representing the prompt to be passed to the table chain.
@@ -209,8 +204,7 @@ class BaseLlm:
         return response
 
     def llm_summ_user_prompts(self, user_prompt: str, user_prompt_hist: str):
-        """
-        This method asks LLM to summarise multiple disjoined user prompts. For example, if user asks "Give me top 10 customers"
+        """This method asks LLM to summarise multiple disjoined user prompts. For example, if user asks "Give me top 10 customers"
         and the model asks to clarify "based on what criteria?", the user can follow up with "based on sales volume".
         This method will take "Give me top 10 customers" and "based on sales volume" and try to make sense of joined requests.
 
@@ -225,14 +219,12 @@ class BaseLlm:
         return response
 
     def llm_is_prompt_clear(self, user_prompt: str, available_services: str):
-        """
-        This method asks LLM to check if the prompt is clear and it understands what needs to be done without any further user input
+        """This method asks LLM to check if the prompt is clear and it understands what needs to be done without any further user input
 
         :param user_prompt: User prompt
         :param available_services: services available to the LLM
         :return: str
         """
-
         parser = PydanticOutputParser(pydantic_object=PromptClarification)
         prompt = PromptTemplate(template=PROMPT_CLARIFICATION, input_variables=["user_prompt"])
         table_chain = prompt | self.llm | parser
@@ -289,8 +281,7 @@ class BaseLlm:
         return response.ServiceList
 
     def llm_create_task_list(self, prompts: dict, avail_services_str):
-        """
-        :param prompts: The the dictionary of prompts.
+        """:param prompts: The the dictionary of prompts.
         :param avail_services_str: A string representing the available services.
 
         :return: The generated task list as a response.
@@ -318,8 +309,7 @@ class BaseLlm:
         return response.TaskList
 
     def llm_refine_task_list(self, user_prompt: str, tasks_list: str):
-        """
-        :param user_prompt: the user prompt or question to refine the task list
+        """:param user_prompt: the user prompt or question to refine the task list
         :param tasks_list: the original list of tasks
         :return: the refined task list based on user input
 

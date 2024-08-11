@@ -1,15 +1,8 @@
-import os
 import unittest
-from unittest.mock import patch, MagicMock, create_autospec
+from unittest.mock import patch, MagicMock
 from analitiq.vectordb.weaviate import WeaviateHandler
-import weaviate
-from weaviate.util import generate_uuid5
 from weaviate.auth import AuthApiKey
 from weaviate.classes.query import Filter
-from weaviate.classes.config import Configure
-from weaviate.classes.tenants import Tenant
-from typing import Optional
-from pydantic import BaseModel
 
 # Existing WeaviateHandler class code
 # ... (paste the WeaviateHandler class code here) ...

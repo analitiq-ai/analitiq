@@ -1,5 +1,5 @@
 from langchain_core.pydantic_v1 import BaseModel, Field
-from typing import List, Optional
+from typing import List
 
 
 class Column(BaseModel):
