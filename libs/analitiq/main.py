@@ -31,8 +31,10 @@ sys.path.append("/analitiq")
 
 #  db_params: Dict = None, llm_params: Dict = None, vdb_params: Dict = None
 class Analitiq:
+    """Analitiq core Class."""
+
     def __init__(self, params: Dict = None):
-        """ """
+        """Initialize the Analitiq module."""
         self.response = BaseResponse(self.__class__.__name__)
 
         self.db: DatabaseWrapper() = None
@@ -64,6 +66,7 @@ class Analitiq:
         self.prompts = {"original": "", "refined": "", "feedback": ""}
 
     def load_connections(self):
+        """Load the connection."""
         failures = 0
         tasks = [
             ("db", DatabaseWrapper, self.db_params, "Unable to connect to the Database"),
@@ -100,14 +103,18 @@ class Analitiq:
         if handler.connected:
             return handler
         else:
-            logger.error("Failed to establish a connection to the vector database.")
-            raise Exception("Failed to establish a connection to the vector Database")
+            errmsg = "Failed to establish a connection to the vector database."
+            logger.error("%s", errmsg)
+            raise Exception(errmsg)
 
     def get_available_services_str(self, avail_services):
-        """:param avail_services: A dictionary containing the available services. Each service should be represented by a key-value pair, with the key being the name of the service and the value
+        """Get available Services.
+
+        :param avail_services: A dictionary containing the available services.
+        Each service should be represented by a key-value pair, with the key being the name of
+        the service and the value
         * being a dictionary containing the service details.
         :return: A string containing the formatted representation of the available services.
-
         """
         available_services_list = []
 
@@ -116,17 +123,20 @@ class Analitiq:
             # Determine the appropriate description to use
             description = details["description"]
             # Format and add the string to the list
-            available_services_list.append(
-                f"{name}: {description}. The input for this tools is {details['inputs']}. The output of this tools is {details['outputs']}."
-            )
+            service_msg = f"{name}: {description}. The input for this tools is {details['inputs']}."
+            service_msg = service_msg + f"The output of this tools is {details['outputs']}."
+            available_services_list.append(service_msg)
             # Join the list into a single string variable, separated by new lines
         available_services_str = "\n".join(available_services_list)
 
         return available_services_str
 
     def is_prompt_clear(self, user_prompt, msg_lookback: int = 2):
-        """:param user_prompt:
-        :param msg_lookback: Because the current prompt is already written to chat log, we need to go back 2 steps to get the previous prompt.
+        """Return if the prompt is clear.
+
+        :param user_prompt:
+        :param msg_lookback: Because the current prompt is already written to chat log,
+          we need to go back 2 steps to get the previous prompt.
         :param feedback: Feedback to the LLM model after failed runs to help the model fix an issue.
         :return:
         """
@@ -160,13 +170,11 @@ class Analitiq:
         user_prompt = chat_hist + "\n" + user_prompt
         response = self.llm.llm_is_prompt_clear(user_prompt, self.avail_services_str)
 
-        # Update feedback with the latest exception
-        # feedback = f"Check your output and make sure it conforms to instructions! Your previous response created an error:\n{str(e)}"
-
         return response
 
     def get_chat_hist(self, user_prompt, msg_lookback: int = 5):
-        """Gets the chat history for a user prompt.
+        """Get the chat history for a user prompt.
+
         This function retrieves recent user prompts from the conversation history,
         specifically those marked with an 'entity' value of 'Human', and within
         the last 5 minutes. It then combines these prompts with the current user
@@ -210,16 +218,21 @@ class Analitiq:
         return response
 
     def return_response(self):
-        """Example returned response:
+        r"""Return a response.
+
+        Example returned response:
         {
            "Analitiq": "{\"content\": \"Some Text\", \"metadata\": {}}"
         }
-        :return: a dictionary containing the "Analitiq" key with the value of `self.response` converted to JSON format
+        :return: a dictionary containing the "Analitiq" key with the value of `self.response`
+        converted to JSON format
         """
         return {"Analitiq": self.response.to_json()}
 
     def run(self, user_prompt):
-        """:param user_prompt:
+        """Run the Service.
+
+        :param user_prompt:
         :return:
         """
         session = BaseSession()
@@ -261,34 +274,36 @@ class Analitiq:
         # Step 1 - Is the task clear? IF not and there is no history to fall back on, exit with feedback.
         # because it is the first try of using LLM, we need to wrap it in TRY
         """
-        
         try:
             prompt_clear_response = self.is_prompt_clear(self.prompts['original'])
         except Exception as e:
             self.response.set_content("Error")
             self.response.add_text_to_metadata(f"{e}")
             return self.return_response()
-        
+
         if not prompt_clear_response.Clear:
             self.response.set_content(prompt_clear_response.Feedback)
             return self.return_response()
-        
+
         # add the refined prompts by the model.
         self.prompts['refined'] = prompt_clear_response.Query
         self.prompts['feedback'] = prompt_clear_response.Feedback
         user_prompt = self.prompts['refined']
-        
+
         logger.info(f"Refined prompt context: {self.prompts}")
         """
 
         self.prompts["refined"] = self.prompts["original"]
 
-        # TODO we still need to fix the selectin process, so for now we overide and default it to DocSearch service
+        # TODO we still need to fix the selectin process, so for now we overide and default
+        # it to DocSearch service
         """
         #selected_services = self.llm.llm_select_services(self.prompts, self.avail_services_str)
 
         # Convert list of objects into a dictionary where name is the key and description is the value
-        #selected_services = {service.Action: {'Action': service.Action, 'ActionInput': service.ActionInput, 'Instructions': service.Instructions, 'DependsOn': service.DependsOn} for service in selected_services}
+        #selected_services = {service.Action: {'Action': service.Action, 'ActionInput':
+        # service.ActionInput, 'Instructions': service.Instructions, 'DependsOn': service.DependsOn}
+        # for service in selected_services}
 
         #logger.info(f"[Services][Selected]: {selected_services}")
         """
