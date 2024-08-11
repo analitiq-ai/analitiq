@@ -1,15 +1,15 @@
 name: Build and Test
 
 on:
-  push:  # Dieser Workflow wird bei jedem Push auf irgendeinen Branch ausgelöst
+  push:
     branches:
-      - '**'  # '**' bedeutet, dass der Workflow auf alle Branches reagiert
-  pull_request:  # Dieser Workflow wird bei jedem Pull Request ausgelöst
+      - '**'
+  pull_request:
     branches:
-      - '**'  # '**' bedeutet, dass der Workflow auf alle Branches reagiert
+      - '**'
 
 jobs:
-  build:
+  nox-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -41,3 +41,16 @@ jobs:
 
     - name: Run Nox
       run: nox --sessions install ruff_format ruff_check pylint mypy pytest coverage
+
+  yaml_lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+    
+    - name: Install yamllint
+      run: pip install yamllint
+    
+    - name: Run yamllint
+      run: yamllint .

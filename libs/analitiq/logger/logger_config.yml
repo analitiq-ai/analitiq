@@ -13,7 +13,7 @@ formatters:
 handlers:
   console:
     class: logging.StreamHandler
-    level: INFO # INFO, DEBUG
+    level: INFO  # INFO, DEBUG
     formatter: simple
     stream: ext://sys.stdout
 
@@ -49,7 +49,7 @@ loggers:
 
   chat:
     level: INFO
-    handlers: [ chat_file ]
+    handlers: [chat_file]
     propagate: no
 
 root:

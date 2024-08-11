@@ -1,5 +1,8 @@
 import sys
-from typing import Dict
+from typing import Dict, Optional, Any
+
+from analitiq.vectordb.weaviate import WeaviateHandler
+
 from analitiq.logger.logger import logger
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.base.Database import DatabaseWrapper
@@ -33,7 +36,7 @@ sys.path.append("/analitiq")
 class Analitiq:
     """Analitiq core Class."""
 
-    def __init__(self, params: Dict = None):
+    def __init__(self, params: Optional[Dict[str, Any]] = None):
         """Initialize the Analitiq module."""
         self.response = BaseResponse(self.__class__.__name__)
 
@@ -87,8 +90,6 @@ class Analitiq:
         db_type = vdb_params["type"]
 
         if db_type == "weaviate":
-            from .vectordb.weaviate import WeaviateHandler
-
             try:
                 handler = WeaviateHandler(vdb_params)
             except Exception as e:

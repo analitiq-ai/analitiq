@@ -1,5 +1,5 @@
 ANALYZE_DATA_PROMPT = """
-You are a Data Analyst. 
+You are a Data Analyst.
 Your job is to analyse the information presented between tags INFO_START and INFO_END and share key insights.
 This information was gathered in response to user query {user_prompt}.
 

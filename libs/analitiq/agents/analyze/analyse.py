@@ -9,13 +9,15 @@ from analitiq.agents.analyze.prompt import ANALYZE_DATA_PROMPT
 
 
 class AnalysisResponse(BaseModel):
+    """Class for the Analysis Response."""
+
     Summary: str = Field(description="Summary of your findings and observations")
     Observations: str = Field(description="Interesting observations about the data")
     Anomalies: str = Field(description="Anomalies you may have discovered in the data")
 
 
 class Analyze:
-    """Class to determine what kind of char should be generated,"""
+    """Class to determine what kind of char should be generated."""
 
     def __init__(self) -> None:
         """Initialize the service."""
