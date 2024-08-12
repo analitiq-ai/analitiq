@@ -74,18 +74,36 @@ class AnalitiqVectorizer:
             return vectors.detach().cpu().numpy()
 
     def normalize(self, vectors: np.ndarray) -> np.ndarray:
-        """Normalize some vectors."""
+        """
+        Normalizes the input vectors.
+
+        :param vectors: A numpy array of vectors to be normalized.
+        :return: A numpy array of normalized vectors.
+        """
         norms = np.linalg.norm(vectors, axis=1, keepdims=True)
         return vectors / norms
 
     def create_embeddings(self, texts: List[str]):
-        """Create Embeddings after normalization."""
+        """
+        Create embeddings for the given texts.
+
+        :param texts: A list of strings representing the texts to create embeddings for.
+        :type texts: list[str]
+        :return: None
+        :rtype: None
+        """
         self.texts = texts
         embeddings = self.vectorize(texts, False)
         self.embeddings = self.normalize(embeddings)
 
     def search(self, query: str, k: int = 3):
-        """Search for embeddings."""
+        """
+        Search for similar texts based on the given query.
+
+        :param query: The text to search for similarities.
+        :param k: The number of most similar texts to return. Default is 3.
+        :return: A list of tuples containing the most similar texts and their similarity scores.
+        """
         if self.embeddings is None or self.texts is None:
             errmsg = "Embeddings have not been created. Call create_embeddings() first."
             raise ValueError(errmsg)

@@ -10,6 +10,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from langchain.output_parsers import PydanticOutputParser
 from sqlalchemy.exc import DatabaseError
 from analitiq.agents.sql.prompt import RETURN_RELEVANT_TABLE_NAMES, TEXT_TO_SQL_PROMPT
+from analitiq.utils.document_processor import string_to_chunk
 
 MAX_ITERATIONS = 5
 DB_DESCRIPTION_METADATA_PARAM = "document_name"
@@ -111,11 +112,11 @@ class Sql:
                 for table_ddl in ddl:
                     metadata["document_name"] = self._extract_table_name(table_ddl)
                     metadata["document_type"] = "ddl"
-                    chunk = self.vdb.load_list_to_chunk(table_ddl, metadata)
+                    chunk = string_to_chunk(table_ddl, metadata)
                     chunks.append(chunk)
                     counter = counter + 1
 
-                self.vdb.load_chunks_to_weaviate(chunks)
+                self.vdb.load_chunks(chunks)
 
                 logger.info(f"Loaded {counter} chunks for schema {schema_name} into Vector Database.")
 

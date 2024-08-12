@@ -29,6 +29,7 @@ params = {
 
 vdb=WeaviateHandler(params)
 FILE_PATH = './project/My_Project/sql'
+
 vdb.load(FILE_PATH, 'sql')
 ```
 
@@ -44,7 +45,7 @@ params = {
 
 vdb=WeaviateHandler(params)
 FILE_PATH = './project/My_Project/my_file.sql'
-vdb.load(FILE_PATH)
+vdb.load_file(FILE_PATH)
 ```
 
 ## Searching for data
