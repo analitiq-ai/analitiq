@@ -19,8 +19,7 @@ sys.path.insert(0, dynamic_path)
 Loading all SQL files from a directory into your Weaviate vectore store and indexing them for search
 
 ```python
-from analitiq.vectordb.weaviate import WeaviateHandler
-import os
+from analitiq.vectordb.weaviate_handler import WeaviateHandler
 params = {
     "project_name": "my_project",
     "host": "https://XXXXXXX.weaviate.network",
@@ -36,7 +35,7 @@ vdb.load(FILE_PATH, 'sql')
 Loading one file into your Weaviate vectore store and indexing it for search
 
 ```python
-from analitiq.vectordb.weaviate import WeaviateHandler
+from analitiq.vectordb.weaviate_handler import WeaviateHandler
 params = {
     "project_name": "my_project",
     "host": "https://XXXXXXX.weaviate.network",
@@ -56,7 +55,17 @@ The `kw_search` method performs a keyword search in the database and returns a l
 
 Usage Example:
 ```python
-search_results = vdb.kw_search("climate change", limit=5)
+from analitiq.vectordb.weaviate_handler import WeaviateHandler
+params = {
+    "project_name": "my_project",
+    "host": "https://XXXXXXX.weaviate.network",
+    "api_key": "XXXXXX"
+}
+
+weaviate_handler=WeaviateHandler(params)
+FILE_PATH = './project/My_Project/my_file.sql'
+weaviate_handler.load_file(FILE_PATH)
+search_results = weaviate_handler.kw_search("climate change", limit=5)
 ```
 Returned Data Format:
 The method returns a dictionary containing the search results. Each item in the dictionary represents a document matching the query.
@@ -80,7 +89,17 @@ The `kw_search_grouped` method extends the keyword search functionality by group
 
 Usage Example:
 ```python
-grouped_results = vdb.kw_search_grouped("sustainable energy", limit=5)
+from analitiq.vectordb.weaviate_handler import WeaviateHandler
+params = {
+    "project_name": "my_project",
+    "host": "https://XXXXXXX.weaviate.network",
+    "api_key": "XXXXXX"
+}
+
+weaviate_handler=WeaviateHandler(params)
+FILE_PATH = './project/My_Project/my_file.sql'
+weaviate_handler.load_file(FILE_PATH)
+grouped_results = weaviate_handler.kw_search_grouped("sustainable energy", limit=5)
 ```
 Returned Data Format:
 This method returns a dictionary where each key is a tuple of (document_name, source), and the value is a list of documents that belong to that document name and source.

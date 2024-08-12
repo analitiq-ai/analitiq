@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from functools import reduce
 import weaviate
 import weaviate.util
@@ -198,6 +198,7 @@ class WeaviateHandler(BaseVDBHandler):
 
         Examples:
         --------
+        >>> params = {...}
         >>> weaviate_handler = WeaviateHandler(params)
         >>> weaviate_handler.create_collection("MyCollection")
         "MyCollection"
@@ -430,7 +431,7 @@ class WeaviateHandler(BaseVDBHandler):
 
         :param query: The query string used for searching.
         :param limit: The maximum number of results to return. Default is 3.
-        :return: A dictionary containing the search results.
+        :return: A QueryReturn object containing the search results.
 
         :raises Exception: If there is an error during the search.
 
@@ -552,9 +553,8 @@ class WeaviateHandler(BaseVDBHandler):
         """
         filters = self._create_filters(properties, match_type)
 
-        collection = self.get_tenant_collection_object(self.collection_name, self.collection_name)
-
         try:
+            collection = self.get_tenant_collection_object(self.collection_name, self.collection_name)
             collection.data.delete_many(
                 where=(filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)),
             )
@@ -565,7 +565,7 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-    def search_vdb_ddl(self, query: str, schemas: list):
+    def search_vdb_ddl(self, query: str, schemas: list) -> List[Dict]:
         """Retrieve matches to the query string for DDl definition from VDB.
 
         Example:
@@ -573,8 +573,8 @@ class WeaviateHandler(BaseVDBHandler):
         response = vector_db_client.get_many_like("document_name", "schema")
 
         :param query: The search string.
-        :param properties: The name of the property used for filtering.
-        :param match_type: the type of match to use for properties
+        :param schemas: Lists of schemas to search DDL for
+
         :return: A list of objects that have a property matching the pattern.
         :rtype: list or None
 

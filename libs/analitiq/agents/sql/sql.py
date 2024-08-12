@@ -67,7 +67,7 @@ class Sql:
 
         return schema_table
 
-    def load_ddl_into_vdb(self) -> List[str]:
+    def load_ddl_into_vdb(self) -> int:
         """Loads DDL (Data Definition Language) into the Vector Database (VDB).
 
         Notes
@@ -116,9 +116,11 @@ class Sql:
                     chunks.append(chunk)
                     counter = counter + 1
 
-                self.vdb.load_chunks(chunks)
+                chunks_loaded = self.vdb.load_chunks(chunks)
 
                 logger.info(f"Loaded {counter} chunks for schema {schema_name} into Vector Database.")
+
+        return chunks_loaded
 
     def get_relevant_tables(self, ddl: str, docs: Optional[str] = None) -> List[Table]:
         """Retrieves relevant tables based on the provided DDL and documentation.
@@ -391,6 +393,7 @@ class Sql:
         logger.info(f"[Sql Agent] Query: {user_prompt}")
 
         docs_schema = self.get_db_docs_schema(user_prompt)
+        docs_schema_formatted: str = None
 
         if not docs_schema or docs_schema == "ANALYTQ___NO_ANSWER":
             # logger.info("No relevant documents in VDB located.", docs)
@@ -420,6 +423,8 @@ class Sql:
         # self.response.set_metadata({"relevant_tables": self.relevant_tables})
 
         # if we do not have ddl_docs docs_schema and context, there is little point trying to create SQL.
+
+        docs_ddl_formatted: str = None
 
         if not docs_ddl and not docs_schema:
             self.response.add_text_to_metadata("No supporting documents found in Vector DB to query data.")
