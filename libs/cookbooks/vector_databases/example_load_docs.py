@@ -1,10 +1,9 @@
-"""
-This is an example of how to load documents into VectorDB before allowing analitiq access them.
-"""
+"""This is an example of how to load documents into VectorDB before allowing analitiq access them."""
 
 import os
 from libs.analitiq.vectordb.weaviate import WeaviateHandler
 from dotenv import load_dotenv
+import sys
 
 load_dotenv()
 
@@ -17,7 +16,8 @@ def load_env_variables():
 
     for var, value in env_vars.items():
         if value is None:
-            raise EnvironmentError(f"Environment variable {var} not loaded.")
+            msg = f"Environment variable {var} not loaded."
+            raise EnvironmentError(msg)
     return env_vars
 
 
@@ -37,14 +37,14 @@ vdb = WeaviateHandler(vdb_params)
 
 
 response = vdb.get_all_objects()
-for item in response:
-    print(item)
+for _item in response:
+    pass
 #for g in response.groups:
 #    print(g.total_count)
     #print(g.properties)
     #print(g.grouped_by)
 
-exit()
+sys.exit()
 """
 Load a directory
 """

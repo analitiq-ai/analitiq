@@ -2,28 +2,31 @@ from typing import Literal, AsyncGenerator, Union
 from analitiq.logger.logger import logger as alogger
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.vectordb import weaviate
-import time
-DEFAULT_SEARCH_MODE = 'hybrid'
+
+DEFAULT_SEARCH_MODE = "hybrid"
+
 
 class SearchVdb:
-    """
-    SearchVdb
+    """SearchVdb.
 
     This class represents a search agent that queries a Weaviate database based on a user prompt. It provides different search modes: keyword search, vector search, and hybrid search. It
     * also uses a Language Model (LLM) to summarize the documents retrieved from the search.
 
-    Attributes:
+    Attributes
+    ----------
         - llm: An instance of the Language Model used for document summarization.
         - vdb: An instance of the Weaviate database handler.
         - search_mode: The search mode to be used. Valid values are "kw" (keyword search), "vector" (vector search), or "hybrid" (hybrid search). Default value is "hybrid".
         - user_prompt: The user prompt for the search.
         - response: An instance of the BaseResponse class that holds the response content and metadata.
 
-    Methods:
+    Methods
+    -------
         - __init__(self, llm, vdb: weaviate.WeaviateHandler, search_mode: Literal["kw", "vector", "hybrid"] = DEFAULT_SEARCH_MODE) -> None:
             Initializes a new instance of SearchVdb.
 
-            Parameters:
+    Parameters
+    ----------
                 - llm: An instance of the Language Model used for document summarization.
                 - vdb: An instance of the Weaviate database handler.
                 - search_mode: The search mode to be used. Default value is "hybrid".
@@ -31,15 +34,22 @@ class SearchVdb:
         - run(self, user_prompt):
             Runs the search with the given user prompt.
 
-            Parameters:
+    Parameters
+    ----------
                 - user_prompt: The user prompt for the search.
 
-            Returns:
+    Returns
+    -------
                 - response: An instance of the BaseResponse class that holds the response content and metadata.
 
     """
 
-    def __init__(self, llm, vdb: weaviate.WeaviateHandler, search_mode: Literal["kw", "vector", "hybrid"] = DEFAULT_SEARCH_MODE) -> None:
+    def __init__(
+        self,
+        llm,
+        vdb: weaviate.WeaviateHandler,
+        search_mode: Literal["kw", "vector", "hybrid"] = DEFAULT_SEARCH_MODE,
+    ) -> None:
         self.llm = llm
         self.client = vdb
         self.user_prompt: str = None
@@ -53,12 +63,11 @@ class SearchVdb:
         formatted_documents_string = ""
         for o in docs:
             # Extract the document name and content from each object
-            document_name_list.append(o.properties['document_name'])
+            document_name_list.append(o.properties["document_name"])
             # Append the document name and content to the formatted string with the desired formatting
             formatted_documents_string += f"Document name: {o.properties['document_name']}\nDocument content:\n{o.properties['content']}\n\n"
 
         return document_name_list, formatted_documents_string
-
 
     def run(self, user_prompt):
         self.user_prompt = user_prompt
@@ -73,17 +82,17 @@ class SearchVdb:
 
         try:
             docs = response.objects
-        except Exception as e:
-            alogger.error(f"[Body: Vector Search] Error: No objects returned")
-            self.response.set_content('Search failed')
+        except Exception:
+            alogger.error("[Body: Vector Search] Error: No objects returned")
+            self.response.set_content("Search failed")
             return self.response
 
         # Initialize an empty string to hold the formatted content
-        document_name_list, formatted_documents_string=self.format_docs_into_string(docs)
+        document_name_list, formatted_documents_string = self.format_docs_into_string(docs)
         if self.llm is not None:
             ai_response = self.llm.llm_summ_docs(user_prompt, formatted_documents_string)
             self.response.set_content(ai_response)
-            self.response.set_metadata({"documents": ', '.join(document_name_list)})
+            self.response.set_metadata({"documents": ", ".join(document_name_list)})
         else:
             logger.error("ERROR: No llm set")
 
@@ -102,18 +111,18 @@ class SearchVdb:
 
         try:
             docs = response.objects
-        except Exception as e:
-            alogger.error(f"[Body: Vector Search] Error: No objects returned")
-            self.response.set_content('Search produced no results')
+        except Exception:
+            alogger.error("[Body: Vector Search] Error: No objects returned")
+            self.response.set_content("Search produced no results")
             yield self.response.to_json()
 
             return
 
-        document_name_list, formatted_documents_string=self.format_docs_into_string(docs)
+        document_name_list, formatted_documents_string = self.format_docs_into_string(docs)
         if self.llm is not None:
             ai_response = self.llm.llm_summ_docs(user_prompt, formatted_documents_string)
             self.response.set_content(ai_response)
-            self.response.set_metadata({"documents": ', '.join(document_name_list)})
+            self.response.set_metadata({"documents": ", ".join(document_name_list)})
         else:
             logger.error("ERROR: No llm set")
 

@@ -6,8 +6,8 @@ from analitiq.agents.sql.sql import Sql
 class TestSqlMethods(unittest.TestCase):
     def setUp(self):
         # Patch the dependencies
-        self.patcher_db = patch('analitiq.base.GlobalConfig.get_database')
-        self.patcher_llm = patch('analitiq.base.GlobalConfig.get_llm')
+        self.patcher_db = patch("analitiq.base.GlobalConfig.get_database")
+        self.patcher_llm = patch("analitiq.base.GlobalConfig.get_llm")
         self.mock_db = self.patcher_db.start()
         self.mock_llm = self.patcher_llm.start()
 
@@ -28,9 +28,11 @@ class TestSqlMethods(unittest.TestCase):
         relevant_tables = "sales: customer, sales_amount"
 
         # Mock LLM response
-        self.sql_instance.llm.invoke = MagicMock(return_value={
-            "sql": "SELECT customer, SUM(sales_amount) AS total_sales FROM sales GROUP BY customer ORDER BY total_sales DESC LIMIT 10"
-        })
+        self.sql_instance.llm.invoke = MagicMock(
+            return_value={
+                "sql": "SELECT customer, SUM(sales_amount) AS total_sales FROM sales GROUP BY customer ORDER BY total_sales DESC LIMIT 10"
+            }
+        )
 
         # Execute the method
         sql_query = self.sql_instance.get_sql_v2(user_prompt, relevant_tables)
@@ -68,9 +70,9 @@ class TestSqlMethods(unittest.TestCase):
         """
 
         # Simulate failover scenario
-        self.sql_instance.llm.invoke = MagicMock(return_value={
-            "sql": "SELECT customer, SUM(sales_amount) FROM sales GROUP BY customer"
-        })
+        self.sql_instance.llm.invoke = MagicMock(
+            return_value={"sql": "SELECT customer, SUM(sales_amount) FROM sales GROUP BY customer"}
+        )
 
         # Execute the method
         sql_query = self.sql_instance.get_sql_failover(user_prompt, relevant_tables)
@@ -90,5 +92,6 @@ class TestSqlMethods(unittest.TestCase):
         sql_query = self.sql_instance.get_sql_failover(user_prompt, relevant_tables)
         self.assertIn("FROM sales", sql_query)  # Assuming the fallback generates a valid SQL still
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

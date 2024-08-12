@@ -1,40 +1,46 @@
 import re
 import json
 
+
 class CodeExtractor:
-    """
-    Extracts code blocks from text that are fenced by triple backticks,
+    """Extracts code blocks from text that are fenced by triple backticks,
     according to a specified code language identifier.
 
-    Methods:
+    Methods
+    -------
         extract_code: Extracts the code block that matches a given language identifier.
+
     """
 
     def extract_code(self, text: str, code: str) -> str:
-        """
-        Extracts a code block from the provided text, based on the specified language.
+        """Extracts a code block from the provided text, based on the specified language.
 
         Args:
+        ----
             code (str): A keyword that can be 'json', 'sql', or 'python', indicating
                         the type of code block to extract.
             text (str): The text containing the code block enclosed in triple backticks.
 
         Returns:
+        -------
             str: The extracted code block as a string. If no matching block is found,
                  returns an empty string.
 
         Raises:
+        ------
             ValueError: If the `code` parameter is not one of the expected keywords.
+
         """
-        if code not in ['json', 'sql', 'python']:
-            raise ValueError("Code parameter must be 'json', 'sql', or 'python'.")
+        if code not in ["json", "sql", "python"]:
+            msg = "Code parameter must be 'json', 'sql', or 'python'."
+            raise ValueError(msg)
 
         # Pattern to match code blocks that start with the specified code identifier
         pattern = rf"```{code}\n(.*?)```"
         try:
             match = re.search(pattern, text, re.DOTALL)
         except Exception as e:
-            self.logger.error(f"Error extracting SQL from text: {str(e)}")
+            self.logger.error(f"Error extracting SQL from text: {e!s}")
 
         if match and len(match.group(1).strip()) > 5:
             return match.group(1).strip()
@@ -42,8 +48,7 @@ class CodeExtractor:
             return None  # Return an empty string if no matching code block is found
 
     def CodeAndDictionaryExtractor(self, input_string):
-        """
-        :param input_string: a string containing the input data
+        """:param input_string: a string containing the input data
         :return: a tuple indicating success of extraction and the extracted dictionary or an error message
 
         This method extracts the content between the first '{' and the last '}' in the given input string. It first searches for a substring enclosed in curly braces using regular expression
@@ -56,8 +61,7 @@ class CodeExtractor:
         If no matching pattern is found in the input string, the method returns a tuple with the first element being False, and the second element being a "No matching pattern found." error
         * message.
         """
-
-        match = re.search(r'\{.*\}', input_string, re.DOTALL)
+        match = re.search(r"\{.*\}", input_string, re.DOTALL)
         if match:
             substring = match.group(0)
             # Remove newlines and tabs

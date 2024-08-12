@@ -16,9 +16,9 @@ class DatabaseConnection(BaseModel):
     keepalives_idle: Optional[int] = 240
     connect_timeout: Optional[int] = 10
 
-    @field_validator('type')
+    @field_validator("type")
     def validate_type(cls, v):
-        assert v in ['postgres', 'redshift'], f"Invalid database type: {v}"
+        assert v in ["postgres", "redshift"], f"Invalid database type: {v}"
         return v
 
 
@@ -34,9 +34,9 @@ class LLMConnection(BaseModel):
     aws_secret_access_key: Optional[str] = None
     region_name: Optional[str] = None
 
-    @field_validator('type')
+    @field_validator("type")
     def validate_type(cls, v):
-        assert v in ['openai', 'mistral', 'bedrock'], f"Invalid LLM type: {v}"
+        assert v in ["openai", "mistral", "bedrock"], f"Invalid LLM type: {v}"
         return v
 
 
@@ -47,9 +47,9 @@ class VectorDBConnection(BaseModel):
     host: str
     api_key: str
 
-    @field_validator('type')
+    @field_validator("type")
     def validate_type(cls, v):
-        assert v in ['weaviate', 'chromadb'], f"Invalid Vector DB type: {v}"
+        assert v in ["weaviate", "chromadb"], f"Invalid Vector DB type: {v}"
         return v
 
 
@@ -71,7 +71,9 @@ class Configuration(BaseModel):
 
     def validate_and_load(self):
         # Validates usage against connections and loads the specified configs
-        usage_dict = self.usage.model_dump(exclude_none=True)  # exclude_none=True to skip optional fields that are not set
+        usage_dict = self.usage.model_dump(
+            exclude_none=True
+        )  # exclude_none=True to skip optional fields that are not set
         specified_configs = {}
         for category, name in usage_dict.items():
             # Correctly access the connections based on the category
@@ -82,7 +84,8 @@ class Configuration(BaseModel):
             connection = next((conn for conn in connection_list if conn.name == name), None)
 
             if not connection:
-                raise ValueError(f"Specified connection '{name}' not found in category '{category}'")
+                msg = f"Specified connection '{name}' not found in category '{category}'"
+                raise ValueError(msg)
 
             specified_configs[category] = connection
 
@@ -90,39 +93,32 @@ class Configuration(BaseModel):
 
 
 class ProfileLoader:
-    """
-    Initializes the ProfileLoader with the provided file path.
+    """Initializes the ProfileLoader with the provided file path.
 
     :param file_path: The path to the configuration file.
     """
 
     def __init__(self, profile_config):
-        """
-        Initializes the ProjectLoader with an empty list of services and a dictionary for profiles.
-        """
+        """Initializes the ProjectLoader with an empty list of services and a dictionary for profiles."""
         self.profile_config = profile_config
 
     def _validate_config(self, load_profile_name: str) -> Configuration:
-        """
-        Validate profile configuration
+        """Validate profile configuration.
 
         :param load_profile_name: the name of the profile to load and validate the configuration for
         :return: the specified configurations for the loaded profile
         """
-
         specified_configs = None
-        validated_profiles = {}
-        for profile_name, config in self.profile_config.items():
+        for profile_name in self.profile_config:
             # skip profiles that user does not want to load
             if load_profile_name == profile_name:
                 try:
                     validated_config = Configuration(**self.profile_config[profile_name])
                     specified_configs = validated_config.validate_and_load()
-                    logger.info(f"Configuration for profile '{profile_name}' loaded and validated successfully.")
-                except ValidationError as e:
-                    print(f"Validation error for profile '{profile_name}':", e)
+                    logger.info(
+                        f"Configuration for profile '{profile_name}' loaded and validated successfully."
+                    )
+                except ValidationError:
+                    pass
 
         return specified_configs
-
-
-

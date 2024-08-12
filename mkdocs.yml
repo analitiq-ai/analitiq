@@ -2,83 +2,83 @@ site_name: Analitiq Documentation
 site_url: https://analitiq.ai
 
 nav:
-  - Intro: index.md
-  - 'Self-hosted':
-    - 'Quick Start': getting_started/hosted/quick_start.md
-    - 'Config files':
-      - 'Profiles YAML': getting_started/hosted/profiles.md
-      - 'Project YAML': getting_started/hosted/project.md
-  - 'Cloud':
-    - 'Registration': getting_started/cloud/registration.md
-    - 'Connecting to Data Warehouse': getting_started/cloud/analitiq_add_data_warehouse.md
-    - 'Loading Documents': getting_started/cloud/analitiq_add_documents.md
-    - 'Slack':
-      - 'Installing Slack App': getting_started/cloud/analitiq_add_to_slack.md
-      - 'Slack Commands': getting_started/cloud/analitiq_slack_commands.md
-  - 'Agents':
-    - 'Query Data': agents/sql.md
-    - 'Document Search': agents/doc_search.md
-  - 'Cookbooks':
-    - 'Loading Data': cookbooks/load_documents.md
-  - 'Framework Docs':
-    - 'Vector Databases':
-      - 'Weaviate': framework/vector_databases/weaviate.md
+- Intro: index.md
+- 'Self-hosted':
+  - 'Quick Start': getting_started/hosted/quick_start.md
+  - 'Config files':
+    - 'Profiles YAML': getting_started/hosted/profiles.md
+    - 'Project YAML': getting_started/hosted/project.md
+- 'Cloud':
+  - 'Registration': getting_started/cloud/registration.md
+  - 'Connecting to Data Warehouse': getting_started/cloud/analitiq_add_data_warehouse.md
+  - 'Loading Documents': getting_started/cloud/analitiq_add_documents.md
+  - 'Slack':
+    - 'Installing Slack App': getting_started/cloud/analitiq_add_to_slack.md
+    - 'Slack Commands': getting_started/cloud/analitiq_slack_commands.md
+- 'Agents':
+  - 'Query Data': agents/sql.md
+  - 'Document Search': agents/doc_search.md
+- 'Cookbooks':
+  - 'Loading Data': cookbooks/load_documents.md
+- 'Framework Docs':
+  - 'Vector Databases':
+    - 'Weaviate': framework/vector_databases/weaviate.md
 
 theme:
   name: material
   logo: assets/images/analitiq-logo-transparent.png
   favicon: assets/images/favicon.ico
   features:
-    - navigation.tabs
-    - navigation.sections
-    - toc.integrate
-    - navigation.top
-    - search.suggest
-    - search.highlight
-    - content.tabs.link
-    - content.code.annotation
-    - content.code.copy
+  - navigation.tabs
+  - navigation.sections
+  - toc.integrate
+  - navigation.top
+  - search.suggest
+  - search.highlight
+  - content.tabs.link
+  - content.code.annotation
+  - content.code.copy
   language: en
   palette:
-    - scheme: default
-      toggle:
-        icon: material/toggle-switch-off-outline
-        name: Switch to dark mode
-      primary: white
-      accent: purple
-    - scheme: slate
-      toggle:
-        icon: material/toggle-switch
-        name: Switch to light mode
-      primary: teal
-      accent: lime
+  - scheme: default
+    toggle:
+      icon: material/toggle-switch-off-outline
+      name: Switch to dark mode
+    primary: white
+    accent: purple
+  - scheme: slate
+    toggle:
+      icon: material/toggle-switch
+      name: Switch to light mode
+    primary: teal
+    accent: lime
 
 plugins:
-  - search
+- search
 
 extra:
   social:
-    - icon: fontawesome/brands/github-alt
-      link: https://github.com/analitiq-ai
-    - icon: fontawesome/brands/linkedin
-      link: https://www.linkedin.com/company/analitiq-labs
+  - icon: fontawesome/brands/github-alt
+    link: https://github.com/analitiq-ai
+  - icon: fontawesome/brands/linkedin
+    link: https://www.linkedin.com/company/analitiq-labs
 
 markdown_extensions:
-  - pymdownx.highlight:
-      anchor_linenums: true
-  - pymdownx.inlinehilite
-  - pymdownx.snippets
-  - admonition
-  - pymdownx.arithmatex:
-      generic: true
-  - footnotes
-  - pymdownx.details
-  - pymdownx.superfences
-  - pymdownx.mark
-  - attr_list
-  - pymdownx.emoji:
-      emoji_index: !!python/name:material.extensions.emoji.twemoji
-      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+- pymdownx.highlight:
+    anchor_linenums: true
+- pymdownx.inlinehilite
+- pymdownx.snippets
+- admonition
+- pymdownx.arithmatex:
+    generic: true
+- footnotes
+- pymdownx.details
+- pymdownx.superfences
+- pymdownx.mark
+- attr_list
+- pymdownx.emoji:
+    emoji_index: !!python/name:material.extensions.emoji.twemoji
+    emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 copyright: |
   &copy; 2024 <a href="https://github.com/analitiq-ai/analitiq"  target="_blank" rel="noopener">Analitiq</a>

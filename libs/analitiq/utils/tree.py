@@ -1,16 +1,15 @@
 from pathlib import Path
 
 # prefix components:
-space = '    '
-branch = '│   '
+space = "    "
+branch = "│   "
 # pointers:
-tee = '├── '
-last = '└── '
+tee = "├── "
+last = "└── "
 
 
-def tree(dir_path: Path, prefix: str=''):
-    """
-    :param dir_path: The path of the directory to be traversed.
+def tree(dir_path: Path, prefix: str = ""):
+    """:param dir_path: The path of the directory to be traversed.
     :param prefix: The prefix to be added before each file/folder name in the tree structure.
     :return: A generator that yields each line of the tree structure in a formatted way.
 
@@ -22,7 +21,7 @@ def tree(dir_path: Path, prefix: str=''):
     from pathlib import Path
 
     # Create a Path object for the directory
-    dir_path = Path('/path/to/directory')
+    dir_path = Path("/path/to/directory")
 
     # Generate the tree structure
     tree_generator = tree(dir_path)
@@ -32,7 +31,7 @@ def tree(dir_path: Path, prefix: str=''):
         print(line)
     ```
     """
-    prefixes = ['.', '__', 'venv', 'env']
+    prefixes = [".", "__", "venv", "env"]
     contents = list(dir_path.iterdir())
     # contents each get pointers that are ├── with a final └── :
     pointers = [tee] * (len(contents) - 1) + [last]
@@ -40,19 +39,19 @@ def tree(dir_path: Path, prefix: str=''):
         if any(path.name.startswith(prefix) for prefix in prefixes):
             continue
         yield prefix + pointer + path.name
-        if path.is_dir(): # extend the prefix and recurse:
+        if path.is_dir():  # extend the prefix and recurse:
             extension = branch if pointer == tee else space
             # i.e. space because last, └── , above so no more |
-            yield from tree(path, prefix=prefix+extension)
+            yield from tree(path, prefix=prefix + extension)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Create a Path object for the directory
-    dir_path = Path('/Users/kirillandriychuk/Documents/Projects/analitiq')
+    dir_path = Path("/Users/kirillandriychuk/Documents/Projects/analitiq")
 
     # Generate the tree structure
     tree_generator = tree(dir_path)
 
     # Iterate over the generator and print each line
-    for line in tree_generator:
-        print(line)
+    for _line in tree_generator:
+        pass
