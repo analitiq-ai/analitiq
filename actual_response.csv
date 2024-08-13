@@ -1,0 +1,40 @@
+Category,Question,Expected Response,actual_response,Correct_Service
+Information Retrieval,What is the definition of 'machine learning'?,GeneralKnowledger,GeneralKnowledger,1
+Information Retrieval,Who is the CEO of Amazon?,GeneralKnowledger,GeneralKnowledger,1
+Information Retrieval,What is the capital of Australia?,GeneralKnowledger,GeneralKnowledger,1
+Information Retrieval,What is the definition of 'artificial intelligence'?,GeneralKnowledger,GeneralKnowledger,1
+Information Retrieval,Who is the author of the book 'To Kill a Mockingbird'?,GeneralKnowledger,GeneralKnowledger,1
+Information Retrieval,What is the capital of France?,SearchDocs,GeneralKnowledger,0
+Information Retrieval,What is the definition of 'natural language processing'?,GeneralKnowledger,GeneralKnowledger,1
+Information Retrieval,Who is the founder of Google?,GeneralKnowledger,GeneralKnowledger,1
+Information Retrieval,What is the capital of Japan?,GeneralKnowledger,GeneralKnowledger,1
+Information Retrieval,How do we calculate revenue?,SearchDocs,QueryDatabase,0
+Information Retrieval,What other tables does table X depend on?,GeneralKnowledger,QueryDatabase,0
+Information Retrieval,Where do we apply currency conversion?,SearchDocs,QueryDatabase,0
+Information Retrieval,What tables have tax information?,GeneralKnowledger,QueryDatabase,0
+Information Retrieval,Where do we store UK customers infomration?,SearchDocs,QueryDatabase,0
+SQL Generation,Write a SQL query to retrieve the top 5 customers with the highest total sales.,QueryDatabase,QueryDatabase,1
+SQL Generation,Create a SQL query to retrieve all orders for a specific customer.,QueryDatabase,QueryDatabase,1
+SQL Generation,Write a SQL query to retrieve the average order value for a specific product category.,QueryDatabase,QueryDatabase,1
+SQL Generation,Write a SQL query to retrieve the total sales for a specific product.,QueryDatabase,QueryDatabase,1
+SQL Generation,Create a SQL query to retrieve the top 3 products with the highest sales.,QueryDatabase,QueryDatabase,1
+SQL Generation,Write a SQL query to retrieve the top 5 customers with the highest total sales.,QueryDatabase,QueryDatabase,1
+SQL Generation,Create a SQL query to retrieve all orders for a specific customer.,QueryDatabase,QueryDatabase,1
+SQL Generation,Write a SQL query to retrieve the average order value for a specific product category.,QueryDatabase,QueryDatabase,1
+SQL Generation,Write a SQL query to retrieve the total sales for a specific product.,QueryDatabase,QueryDatabase,1
+SQL Generation,Create a SQL query to retrieve the top 3 products with the highest sales.,QueryDatabase,QueryDatabase,1
+SQL Generation,Show me revenues by month for the past 12 months.,QueryDatabase,QueryDatabase,1
+SQL Generation,Who are our top 10 customers?,QueryDatabase,QueryDatabase,1
+General Knowledge,What is the definition of artificial intelligence?,GeneralKnowledger,GeneralKnowledger,1
+General Knowledge,Who is the author of the book '1984'?,GeneralKnowledger,GeneralKnowledger,1
+General Knowledge,What is the capital of China?,GeneralKnowledger,GeneralKnowledger,1
+General Knowledge,What is the definition of 'cloud computing'?,GeneralKnowledger,GeneralKnowledger,1
+General Knowledge,Who is the CEO of Microsoft?,GeneralKnowledger,GeneralKnowledger,1
+Error Handling,Can you retrieve information on a topic that does not exist in the knowledge store?,topic not found,GeneralKnowledger,0
+Error Handling,Can you generate a SQL query with an invalid syntax?,invalid query,GeneralKnowledger,0
+Error Handling,Can you retrieve information on a topic with a typo?,topic not found,SearchDocs,0
+Data Management,Referesh table X,DataManager,DataManager,1
+Data Management,Refresh table X and all other tables that depend on it,DataManager,DataManager,1
+Data Management,Refresh table X and all tables it depend on,DataManager,DataManager,1
+Data Management,Re-run the daily ETL,DataManager,DataManager,1
+Data Management,Run the hourly DAG now,DataManager,DataManager,1
