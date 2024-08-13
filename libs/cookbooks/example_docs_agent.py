@@ -5,7 +5,7 @@ import os
 
 from analitiq.base.llm.BaseLlm import BaseLlm
 from analitiq.agents.search_vdb.search_vdb import SearchVdb
-from analitiq.vectordb.weaviate import WeaviateHandler
+from analitiq.vectordb.weaviate_handler import WeaviateHandler
 import asyncio
 from dotenv import load_dotenv
 
