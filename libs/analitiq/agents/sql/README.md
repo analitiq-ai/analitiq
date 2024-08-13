@@ -51,7 +51,7 @@ We need 3 things for SQL service to work with:
 from sql import Sql
 from analitiq.base.Database import DatabaseWrapper
 from analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.base.vectordb.weaviate.weaviate_vs import WeaviateHandler
+from analitiq.vectordb.weaviate_handler import WeaviateHandler
 
 user_prompt = "Please give me revenues by month."
 

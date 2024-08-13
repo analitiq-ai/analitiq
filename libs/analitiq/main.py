@@ -1,7 +1,7 @@
 import sys
 from typing import Dict, Optional, Any
 
-from analitiq.vectordb.weaviate import WeaviateHandler
+from analitiq.vectordb.weaviate_handler import WeaviateHandler
 
 from analitiq.logger.logger import logger
 from analitiq.base.BaseMemory import BaseMemory

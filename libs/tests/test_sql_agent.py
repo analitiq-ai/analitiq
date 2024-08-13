@@ -1,10 +1,13 @@
+import pytest
 import os
+
 import sys
-from analitiq.agents.sql.sql import Sql
-from analitiq.base.Database import DatabaseWrapper
-from analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.vectordb.weaviate_handler import WeaviateHandler
+from libs.analitiq.agents.sql.sql import Sql
+from libs.analitiq.base.Database import DatabaseWrapper
+from libs.analitiq.base.llm.BaseLlm import BaseLlm
+from libs.analitiq.vectordb.weaviate import WeaviateHandler
 from dotenv import load_dotenv
+
 
 ENV_VARIABLES = ["WEAVIATE_COLLECTION", "WEAVIATE_URL", "WEAVIATE_CLIENT_SECRET", "LLM_MODEL_NAME",
                  "CREDENTIALS_PROFILE_NAME",
@@ -62,8 +65,7 @@ def define_vdb_params(env_vars):
         "api_key": env_vars.get("WEAVIATE_CLIENT_SECRET")
     }
 
-
-if __name__ == "__main__":
+def sql_run():
     add_to_sys_path()
     env_vars = load_env_variables()
 
@@ -78,6 +80,8 @@ if __name__ == "__main__":
     agent = Sql(db, llm, vdb=vdb)
     result_generator = agent.run("show me sales by venue.")
 
-    print(str(result_generator))
-
-
+    for result in result_generator:
+        if isinstance(result, str):
+            pass  # Print incremental results
+        else:
+            final_response = result  # Capture the final BaseResponse object

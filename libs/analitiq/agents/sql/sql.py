@@ -107,25 +107,26 @@ class Sql:
             }
             response = self.vdb.count_with_filter(filter_expression)
 
+            loaded_chunk_counter = 0
             if response.total_count and response.total_count > 0:
                 logger.info(f"[VDB] Found {response.total_count} ddl documents for schema {schema_name}.")
                 # TODO add checking here for when it was last loaded
 
             else:  # if the DDL does not exist in VDB, we load it
                 chunks = []
-                counter = 0
+
                 for table_ddl in ddl:
                     metadata["document_name"] = self._extract_table_name(table_ddl)
                     metadata["document_type"] = "ddl"
                     chunk = string_to_chunk(table_ddl, metadata)
                     chunks.append(chunk)
-                    counter = counter + 1
+                    loaded_chunk_counter += + 1
 
                 chunks_loaded = self.vdb.load_chunks(chunks)
 
                 logger.info(f"Loaded {counter} chunks for schema {schema_name} into Vector Database.")
 
-        return chunks_loaded
+        return loaded_chunk_counter
 
     def get_relevant_tables(self, ddl: str, docs: Optional[str] = None) -> List[Table]:
         """Retrieves relevant tables based on the provided DDL and documentation.

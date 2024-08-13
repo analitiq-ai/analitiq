@@ -605,7 +605,7 @@ class WeaviateHandler(BaseVDBHandler):
             return None
 
         if group_properties:
-            return group_results_by_properties(response, )
+            return group_results_by_properties(response, group_properties)
         else:
             return response
 
