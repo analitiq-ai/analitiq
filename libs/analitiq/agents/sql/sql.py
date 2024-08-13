@@ -99,8 +99,13 @@ class Sql:
 
             # Check if DDL in VDB
             meta_parameters = [("document_name", schema_name), ("document_type", document_type)]
-
-            response = self.vdb.count_objects_by_properties(meta_parameters, "like")
+            filter_expression = {
+                "and": [
+                    {"property": "document_name", "operator": "like", "value": schema_name},
+                    {"property": "document_type", "operator": "=", "value": document_type}
+                ]
+            }
+            response = self.vdb.count_with_filter(filter_expression)
 
             if response.total_count and response.total_count > 0:
                 logger.info(f"[VDB] Found {response.total_count} ddl documents for schema {schema_name}.")
@@ -232,8 +237,14 @@ class Sql:
         if not self.vdb:
             return None
 
-        response = self.vdb.search_vdb_with_filter(
-            query, [(DB_DESCRIPTION_METADATA_PARAM, DB_DESCRIPTION_METADATA_VALUE)]
+        filter_expression = {
+            "and": [
+                {"property": DB_DESCRIPTION_METADATA_PARAM, "operator": "=", "value": DB_DESCRIPTION_METADATA_VALUE}
+            ]
+        }
+
+        response = self.vdb.search_with_filter(
+            query, filter_expression, ["document_name", "document_type"]
         )
 
         if not response:
@@ -375,6 +386,23 @@ class Sql:
             if sql:
                 self.response.add_text_to_metadata(f"\n```\n{sql}\n```")
 
+    def __get_ddl_from_vdb(self, user_prompt):
+        # Build filters for Weaviate DB to use to find DB Schemas
+        schema_filters = []
+        for schema in self.db.params["db_schemas"]:
+            schema_filters.append({"property": "document_name", "operator": "like", "value": schema})
+
+        filter_expression = {
+            "and": [
+                {"property": "document_type", "operator": "=", "value": "ddl"},
+                {
+                    "or": schema_filters
+                }
+            ]
+        }
+
+        return self.vdb.search_with_filter(user_prompt, filter_expression, ["document_name"])
+
     def run(self, user_prompt: str) -> BaseResponse:
         """Main method to run the SQL agent based on the user's prompt.
 
@@ -414,7 +442,7 @@ class Sql:
         # Check if DDL is already loaded in Vector DB
         self.load_ddl_into_vdb()
 
-        docs_ddl = self.vdb.search_vdb_ddl(user_prompt, self.db.params["db_schemas"])
+        docs_ddl = self.__get_ddl_from_vdb(user_prompt)
 
         # self.relevant_tables = self.get_relevant_tables(ddl, docs_schema)
         # chat_logger.info(f"Assistant: List of relevant tables and columns.\n{self.relevant_tables}")
@@ -495,7 +523,7 @@ class Sql:
         # Check if DDL is already loaded in Vector DB
         self.load_ddl_into_vdb()
 
-        docs_ddl = self.vdb.search_vdb_ddl(user_prompt, self.db.params["db_schemas"])
+        docs_ddl = self.__get_ddl_from_vdb(user_prompt)
 
         # self.relevant_tables = self.get_relevant_tables(ddl, docs_schema)
         # chat_logger.info(f"Assistant: List of relevant tables and columns.\n{self.relevant_tables}")

@@ -7,7 +7,7 @@ from weaviate.auth import AuthApiKey
 from weaviate.classes.query import Filter, MetadataQuery
 from weaviate.classes.config import Configure
 from weaviate.classes.tenants import Tenant
-from weaviate.classes.aggregate import GroupByAggregate
+from analitiq.vectordb.weaviate.query_builder import QueryBuilder
 from weaviate.collections.classes.internal import QueryReturn
 
 from analitiq.logger.logger import logger
@@ -158,7 +158,7 @@ class WeaviateHandler(BaseVDBHandler):
         else:
             logger.info(f"Existing VDB Collection name: {self.collection_name}")
 
-    def get_tenant_collection_object(self, collection_name: str, tenant_name: str) -> object:
+    def __get_tenant_collection_object(self, collection_name: str, tenant_name: str) -> object:
         """
         Returns the collection object for multi tenancy collection
 
@@ -280,7 +280,7 @@ class WeaviateHandler(BaseVDBHandler):
         except Exception as e:
             logger.error(e)
 
-        collection = self.get_tenant_collection_object(self.collection_name, self.collection_name)
+        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
 
         with collection.batch.dynamic() as batch:
             for chunk in chunks:
@@ -408,7 +408,7 @@ class WeaviateHandler(BaseVDBHandler):
 
         try:
             self.client.connect()
-            collection = self.get_tenant_collection_object(self.collection_name, self.collection_name)
+            collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
             response: QueryReturn = collection.query.bm25(
                 query=search_kw,
                 query_properties=QUERY_PROPERTIES,
@@ -442,7 +442,7 @@ class WeaviateHandler(BaseVDBHandler):
             kw_results = self.kw_search(query, limit)
             vector_results = self.vector_search(query, limit)
 
-            response = self.combine_and_rerank_results(kw_results, vector_results)
+            response = self.__combine_and_rerank_results(kw_results, vector_results)
         except Exception as e:
             logger.error(f"Weaviate error {e}")
             raise e
@@ -481,7 +481,7 @@ class WeaviateHandler(BaseVDBHandler):
         try:
             query_vector = self.vectorizer.vectorize(query)
             self.client.connect()
-            collection = self.get_tenant_collection_object(self.collection_name, self.collection_name)
+            collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
             response: QueryReturn = collection.query.near_vector(
                 near_vector=query_vector,
                 limit=limit,
@@ -496,7 +496,7 @@ class WeaviateHandler(BaseVDBHandler):
         return response
 
     @staticmethod
-    def combine_and_rerank_results(
+    def __combine_and_rerank_results(
         kw_results: QueryReturn,
         vector_results: QueryReturn,
         limit: int = 3,
@@ -544,71 +544,7 @@ class WeaviateHandler(BaseVDBHandler):
 
         return QueryReturn(objects=reranked_results)
 
-    def delete_many_like(self, properties: list, match_type: str = "like"):
-        """Delete multiple documents from the collection where the given property value is similar.
-
-        :param properties: The name of the property to filter by.
-        :param match_type: The type of match for properties
-        :return: True if the documents are successfully deleted, False otherwise.
-        """
-        filters = self._create_filters(properties, match_type)
-
-        try:
-            collection = self.get_tenant_collection_object(self.collection_name, self.collection_name)
-            collection.data.delete_many(
-                where=(filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)),
-            )
-            return True
-        except Exception as e:
-            logger.error(f"Error deleting documents: {e}")
-            return False
-        finally:
-            self.close()
-
-    def search_vdb_ddl(self, query: str, schemas: list) -> List[Dict]:
-        """Retrieve matches to the query string for DDl definition from VDB.
-
-        Example:
-        -------
-        response = vector_db_client.get_many_like("document_name", "schema")
-
-        :param query: The search string.
-        :param schemas: Lists of schemas to search DDL for
-
-        :return: A list of objects that have a property matching the pattern.
-        :rtype: list or None
-
-        """
-        try:
-            self.client.connect()
-        except Exception as e:
-            logger.error(f"Error retrieving documents: {e}")
-
-        try:
-            query_vector = self.vectorizer.vectorize(query)
-
-            response: QueryReturn = self.collection.query.near_vector(
-                near_vector=query_vector,
-                filters=(
-                    Filter.any_of([Filter.by_property("document_name").like(schema) for schema in schemas])
-                    & Filter.by_property("document_type").equal("ddl")
-                ),
-                limit=10,
-                return_metadata=MetadataQuery(distance=True, score=True),
-            )
-
-        except Exception as e:
-            logger.error(f"Error retrieving documents: {e}")
-            return None
-        finally:
-            self.close()
-
-        if not response.objects:
-            return None
-        else:
-            return group_results_by_properties(response, ["document_name"])
-
-    def search_vdb_with_filter(self, query: str, properties: list, match_type: str = "like"):
+    def search_with_filter(self, query: str, filter_expression: dict = None, group_properties: list = None):
         """Retrieve objects from the collection that have a property whose value matches the given pattern.
 
         Example:
@@ -616,25 +552,45 @@ class WeaviateHandler(BaseVDBHandler):
         response = vector_db_client.get_many_like("document_name", "schema")
 
         :param query: The search string.
-        :param properties: The name of the property used for filtering.
-        :param match_type: the type of match to use for properties
+        :param filter_expression: The name of the property used for filtering.
+        :param group_properties: Properties by which to group the results, if needed
+
         :return: A list of objects that have a property matching the pattern.
         :rtype: list or None
-
+        Examples:
+            --------
+            >>> handler = WeaviateHandler(params)
+            >>> filter_expression = filter_expression = {
+                    "or": [
+                        {
+                            "and": [
+                                {"property": "param1", "operator": "like", "value": "hello"},
+                                {"property": "param4", "operator": "not like", "value": "Good Day"}
+                            ]
+                        },
+                        {
+                            "and": [
+                                {"property": "param2", "operator": "=", "value": "ola"},
+                                {"property": "param3", "operator": "=", "value": 1}
+                            ]
+                        }
+                    ]
+                }
         """
         try:
             self.client.connect()
         except Exception as e:
             logger.error(f"Error retrieving documents: {e}")
 
+        query_builder = QueryBuilder()
+        filters = query_builder.construct_query(filter_expression)
+        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
         try:
             query_vector = self.vectorizer.vectorize(query)
 
-            filters = self._create_filters(properties, match_type)
-
-            response: QueryReturn = self.collection.query.near_vector(
+            response: QueryReturn = collection.query.near_vector(
                 near_vector=query_vector,
-                filters=(filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)),
+                filters=filters,
                 limit=10,
                 return_metadata=MetadataQuery(distance=True, score=True),
             )
@@ -647,29 +603,15 @@ class WeaviateHandler(BaseVDBHandler):
 
         if not response.objects:
             return None
-        return group_results_by_properties(response, ["document_name", "document_type"])
 
-    def fetch_objects_by_properties(self, properties, match_type: str = "like"):
-        """Fetch objects with given properties."""
-        response = None
+        if group_properties:
+            return group_results_by_properties(response, )
+        else:
+            return response
 
-        try:
-            self.client.connect()
-        except Exception as e:
-            logger.error(f"Error retrieving documents: {e}")
-
-        filters = self._create_filters(properties, match_type)
-
-        response = self.collection.query.fetch_objects(
-            filters=(filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)), limit=5
-        )
-
-        self.close()
-        return response
-
-    def count_objects_by_properties(self, properties, match_type: str = "like"):
+    def count_with_filter(self, filter_expression: dict):
         """
-            Count the number of objects in a Weaviate collection by applying filters based on the given properties.
+            Count the number of objects in a Weaviate collection by applying filters based on the given filter expression.
 
             Opens a connection to the Weaviate client and count the objects using passed properties as filters.
             The filters are created by invoking the _create_filters() method (static method).
@@ -705,7 +647,22 @@ class WeaviateHandler(BaseVDBHandler):
             Examples:
             --------
             >>> handler = WeaviateHandler(params)
-            >>> properties = [("document_type", "test_type"), ("source", "host/database")]
+            >>> filter_expression = filter_expression = {
+                    "or": [
+                        {
+                            "and": [
+                                {"property": "param1", "operator": "like", "value": "hello"},
+                                {"property": "param4", "operator": "not like", "value": "Good Day"}
+                            ]
+                        },
+                        {
+                            "and": [
+                                {"property": "param2", "operator": "=", "value": "ola"},
+                                {"property": "param3", "operator": "=", "value": 1}
+                            ]
+                        }
+                    ]
+                }
             >>> handler.count_objects_by_properties(properties, "like")
                 WeaviateObjectsBatchGetResponse({"totalCount": 100})
 
@@ -713,117 +670,26 @@ class WeaviateHandler(BaseVDBHandler):
                 WeaviateObjectsBatchGetResponse({"totalCount": 0})
 
         """
+        query_builder = QueryBuilder()
+        filters = query_builder.construct_query(filter_expression)
 
+        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
         try:
             self.client.connect()
         except Exception as e:
             logger.error(f"Error connecting to Weaviate: {e}")
             return None
 
-        filters = self._create_filters(properties, match_type)
+        #filters = self._create_filters(properties, match_type)
 
-        response = self.collection.aggregate.over_all(
+        response = collection.aggregate.over_all(
             total_count=True,
-            filters=(filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)),
+            filters=filters  # Pass the generated filters directly here
         )
 
         self.close()
 
         return response
-
-    def get_by_uuid(self, uuid: str):
-        """
-        Fetches an entry in the Weaviate database by its unique identifier (UUID).
-
-        This method is a part of the `WeaviateHandler` class which manages interactions with a Weaviate Vector Database.
-        It utilizes the `fetch_object_by_id` method from the `collection.query` instance to retrieve the entry with the specified UUID.
-
-        Parameters:
-        ----------
-        uuid: str
-            The unique identifier of the entry to fetch from the Weaviate Vector Database.
-
-        Returns:
-        -------
-        dict
-            A dictionary representing the fetched entry. The structure and contents of this dictionary depend on the nature of the stored data.
-
-        Raises:
-        ------
-        weaviate.exceptions.ObjectNotFound
-            If an object with the given UUID does not exist in the database.
-
-        Examples:
-        --------
-        >>> handler = WeaviateHandler(params)
-        >>> handler.get_by_uuid("123e4567-e89b-12d3-a456-426614174000")
-        {
-            "class": "Article",
-            "id": "123e4567-e89b-12d3-a456-426614174000",
-            "properties": {
-                "title": "How to use Python",
-                "content": "Python is a popular programming language...",
-                "date": "2022-01-01T00:00:00Z",
-            }
-        }
-        """
-        return self.collection.query.fetch_object_by_id(uuid=uuid)
-
-    def delete_objects(self, properties, match_type: str = "like"):
-        """
-        Delete objects from the collection based on specified meta parameters.
-
-        This method removes objects from a BSON collection based on some specified parameters.
-        The primary driver of the match process is the `match_type` parameter which if 'like', leads to a
-        partial matching of the properties while 'strict' leads to an exact match.
-
-        Parameters:
-        ----------
-        properties : dict
-            The properties set as criteria for the selection and eventual deletion of documents. These properties
-            are typically key-value pairs that are attributes of the objects in the collection.
-
-        match_type : str, default is 'like'
-            This parameter guides the level of strictness employed in the match process. It can be either 'strict' or 'like'.
-            The 'strict' type would require an exact match while the 'like' type would perform partial matches.
-
-        Returns:
-        --------
-        None
-            Does not return any explicit value. However, it removes matching objects from the connected collection.
-
-        Raises:
-        ------
-        A connection or operation error is likely if the database or collection is not available or
-        if the provided properties are not properly formatted or typed.
-
-        Examples:
-        --------
-        Given a collection has the following documents:
-            [{name: "John", age: 30, city: "New York"},
-             {name: "Peter", age: 35, city: "Chicago"},
-             {name: "Mary", age: 30, city: "Chicago"},
-             {name: "John", age: 40, city: "Chicago"}]
-
-        Using this method in this manner:
-            delete_objects({"name": "John", "city": "Chicago"})
-        Will remove the document {name: "John", age: 40, city: "Chicago"}.
-
-        Note:
-        ----
-        Please note, this process would impact the state of the database and permanently remove the matching documents.
-        """
-        try:
-            filters = self._create_filters(properties, match_type)
-
-            self.collection.data.delete_many(
-                where=(filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)),
-                verbose=True,
-                dry_run=False,
-            )
-
-        finally:
-            self.client.close()
 
     def delete_collection(self, collection_name: str):
         """
@@ -878,47 +744,4 @@ class WeaviateHandler(BaseVDBHandler):
 
         return filters
 
-    def get_all_objects(self) -> dict:
-        """Retrieve all objects from the collection.
 
-        :return: A list of dictionaries representing the objects.
-        :rtype: dict
-        """
-        try:
-            self.client.connect()
-        except Exception as e:
-            logger.error(f"Error connecting to Weaviate: {e}")
-            return None
-
-        docs = {}
-
-        try:
-            for item in self.collection.iterator():
-                docs[item.uuid] = item.properties
-            self.collection.iterator()
-        finally:
-            self.client.close()
-
-        return docs
-
-    def count_objects_grouped_by(self, group_by_property: str) -> List[dict]:
-        """Count objects in Weaviate and group them by the specified property.
-
-        :param group_by_property: The property to group by.
-        :return: A list of dictionaries with the group property and count.
-        """
-        try:
-            self.client.connect()
-        except Exception as e:
-            logger.error(f"Error connecting to Weaviate: {e}")
-            return None
-
-        try:
-            response = self.collection.aggregate.over_all(
-                group_by=GroupByAggregate(prop=group_by_property), total_count=True
-            )
-
-        finally:
-            self.client.close()
-
-        return response

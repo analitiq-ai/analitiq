@@ -35,13 +35,28 @@ vdb_params = define_vdb_params(env_vars)
 weaviate_handler = WeaviateHandler(vdb_params)
 
 weaviate_handler.client.connect()
-response = weaviate_handler.delete_collection("test_collection")
+#response = weaviate_handler.delete_collection("test_collection")
 #weaviate_handler.client.connect()
 #response = weaviate_handler.create_collection("test_collection")
 #response = weaviate_handler.load_dir('/Users/kirillandriychuk/Documents/Projects/analitiq/libs/tests/vectordb/test_dir', 'txt')
 
-response = weaviate_handler.count_objects_grouped_by("document_name")
-weaviate_handler.client.connect()
+filter_expression = {
+    "and": [
+        {
+            "or": [
+                {"property": "document_name", "operator": "like", "value": "test"},
+                {"property": "content", "operator": "!=", "value": "This is the first test document."}
+            ]
+        },
+        {
+            "or": [
+                {"property": "document_name", "operator": "=", "value": "project_plan.txt"},
+                {"property": "content", "operator": "like", "value": 'project'}
+            ]
+        }
+    ]
+}
+response = weaviate_handler.count_with_filter(filter_expression)
 print(response)
 
 #for g in response.groups:
