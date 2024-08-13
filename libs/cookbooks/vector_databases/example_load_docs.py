@@ -26,8 +26,8 @@ env_vars = load_env_variables()
 def define_vdb_params(env_vars):
     return {
         "collection_name": 'test_collection',
-        "host": "https://gfypabwerr6kjeih1h2n7a.c0.europe-west3.gcp.weaviate.cloud",
-        "api_key": "q9K1RP97dZpvWFNIh6BEbxziR9G5uWVsWg0I",
+        "host": "xxxx",
+        "api_key": "xxxxx",
     }
 
 
