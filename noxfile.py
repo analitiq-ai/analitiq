@@ -54,7 +54,7 @@ def safety(session):
 def pylint(session):
     """Run pylint."""
     args = session.posargs or locations
-    session.run("pylint", "--output-format=text", "--fail-under=8",*args)
+    session.run("pylint", "--output-format=text", "--fail-under=8", *args)
 
 
 @nox.session(python=False)
@@ -72,10 +72,10 @@ def pytest(session):
         "--timeout=60",
         "--capture=sys",
         "--junitxml=pytest-report.xml",
-        "--cov=src",
+        "--cov=libs/analitiq",
         # "--cov-fail-under=80",
         # "--cov-omit=src/demo/*",
-        "tests/unit/",
+        "libs/tests/unit/",
         # "--ignore=tests/unit/demo",
     )  # in order to see output to stdout set: --capture=tee-sys
 

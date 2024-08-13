@@ -88,7 +88,6 @@ class Service(BaseModel):
 def get_prompt_extra_info(prompts):
     extra_info = ""
 
-
     if len(prompts["refined"]) > 10:
         user_prompt = prompts["refined"]
     else:

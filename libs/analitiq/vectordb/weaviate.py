@@ -319,9 +319,7 @@ class WeaviateHandler(BaseVDBHandler):
 
         if not set(group_by_properties).issubset(set(allowed_keys)):
             msg = f"The provided keys for grouping are not allowed. Allowed keys are: {allowed_keys}"
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         grouped_data = {}
         # put all chunks into the same key.
@@ -643,7 +641,6 @@ class WeaviateHandler(BaseVDBHandler):
                 verbose=True,
                 dry_run=False,
             )
-
 
         finally:
             self.client.close()

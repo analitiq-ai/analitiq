@@ -81,9 +81,7 @@ class DocumentChunkLoader:
             loader = DirectoryLoader(path, glob=f"**/*.{extension}", loader_cls=TextLoader)
         else:
             msg = f"{path} does not exist or is a special file (e.g., socket, device file, etc.)."
-            raise FileNotFoundError(
-                msg
-            )
+            raise FileNotFoundError(msg)
 
         documents = loader.load()
         doc_lengths = {doc.metadata["source"]: len(doc.page_content) for doc in documents}

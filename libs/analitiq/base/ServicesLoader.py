@@ -5,7 +5,6 @@ import re
 from analitiq.logger.logger import logger
 
 
-
 class ServicesLoader:
     """ConfigLoader is responsible for loading configuration files
     and dynamically importing the specified services.

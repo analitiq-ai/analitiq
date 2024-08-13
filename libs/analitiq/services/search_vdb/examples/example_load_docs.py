@@ -25,4 +25,5 @@ CURRENT_DIR = pathlib.Path(__file__).resolve().parent
 FILE_DIR = pathlib.Path(CURRENT_DIR / "example_test_files")
 FILES = [file for file in FILE_DIR.iterdir() if file.is_file()]
 for file in FILES:
-    wc.load(str(file))
+    print(file)
+    # wc.load(str(file))

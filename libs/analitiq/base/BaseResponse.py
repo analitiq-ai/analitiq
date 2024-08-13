@@ -58,9 +58,7 @@ class BaseResponse:
         # validate the passed msg_format
         if msg_format not in self.ALLOWED_FORMATS:
             msg = f"Invalid response content format: {msg_format}. Expected one of {self.ALLOWED_FORMATS}"
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
         self.content = msg
         self.content_format = msg_format
 
