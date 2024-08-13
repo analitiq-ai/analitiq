@@ -1,7 +1,7 @@
 from typing import Literal, AsyncGenerator, Union
 from analitiq.logger.logger import logger as alogger
 from analitiq.base.BaseResponse import BaseResponse
-from analitiq.vectordb import weaviate
+from analitiq.vectordb.weaviate_handler import WeaviateHandler
 
 DEFAULT_SEARCH_MODE = "hybrid"
 
@@ -22,7 +22,7 @@ class SearchVdb:
 
     Methods
     -------
-        - __init__(self, llm, vdb: weaviate.WeaviateHandler, search_mode: Literal["kw", "vector", "hybrid"] = DEFAULT_SEARCH_MODE) -> None:
+        - __init__(self, llm, vdb: WeaviateHandler, search_mode: Literal["kw", "vector", "hybrid"] = DEFAULT_SEARCH_MODE) -> None:
             Initializes a new instance of SearchVdb.
 
     Parameters
@@ -47,7 +47,7 @@ class SearchVdb:
     def __init__(
         self,
         llm,
-        vdb: weaviate.WeaviateHandler,
+        vdb: WeaviateHandler,
         search_mode: Literal["kw", "vector", "hybrid"] = DEFAULT_SEARCH_MODE,
     ) -> None:
         self.llm = llm
