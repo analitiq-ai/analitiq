@@ -60,7 +60,6 @@ class QueryBuilder:
                 value = clause["value"]
 
                 if operator == "like":
-                    print()
                     filters.append(PropertyFilter(prop_name).like(value))
                 elif operator == "=":
                     filters.append(PropertyFilter(prop_name).equal(value))

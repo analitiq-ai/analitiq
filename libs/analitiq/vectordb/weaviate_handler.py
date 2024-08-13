@@ -560,7 +560,7 @@ class WeaviateHandler(BaseVDBHandler):
         Examples:
             --------
             >>> handler = WeaviateHandler(params)
-            >>> filter_expression = filter_expression = {
+            >>> filter_expression = {
                     "or": [
                         {
                             "and": [
