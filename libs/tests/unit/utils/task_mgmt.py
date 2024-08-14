@@ -47,6 +47,7 @@ class TestCombineTasksPairwise(unittest.TestCase):
         self.assertEqual(combined_tasks, tasks)
 
     def test_do_combine_only_consecutive_tools(self):
+        """Test do combine only consecutiry_tools."""
         tasks = {
             "Task1": {"Name": "Query data", "Using": "SQL", "Description": "Query sales database"},
             "Task2": {"Name": "Aggregate data", "Using": "SQL", "Description": "Aggregate sales data"},

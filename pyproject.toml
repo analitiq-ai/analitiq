@@ -9,6 +9,7 @@ authors = ["Kirill Andriychuk <kirill@analitiq.ai>"]
 license = "MIT"
 keywords = ["analitiq", "llms", "data management", "nl2sql"]
 readme = "README.md"
+
 classifiers= [
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -24,7 +25,7 @@ packages = [
 line-length = 110
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = [
+"libs/tests/**/*.py" = [
     # at least this three should be fine in tests:
     "S101", # asserts allowed in tests...
     "ARG", # Unused function args -> fixtures nevertheless are functionally relevant...

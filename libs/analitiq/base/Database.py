@@ -10,6 +10,7 @@ CACHE_SIZE = 64
 
 class DatabaseEngine:
     """The DatabaseEngine class is responsible for creating the engine based on the provided parameters.
+
     It uses the factory method pattern to create the appropriate engine based on the database type.
 
     Args:
@@ -65,6 +66,7 @@ class DatabaseEngine:
 
 class DatabaseSession:
     """The DatabaseSession class is responsible for managing the database session.
+
     It uses the scoped session pattern to ensure that the same session is used within the same thread.
 
     This class is used as a context manager to manage the database session lifecycle.
@@ -86,6 +88,7 @@ class DatabaseSession:
 
 class Database:
     """The Database class is responsible for running queries on the database.
+
     It uses the SQLDatabase class from the langchain_community.utilities module to run queries.
 
     :param engine: The database engine to use.
@@ -108,6 +111,7 @@ class Database:
 
 class DatabaseWrapper:
     """The DatabaseWrapper class is the main class that uses the DatabaseEngine, DatabaseSession, and Database classes to perform database operations.
+
     It initializes these classes in its constructor and provides methods for getting schema names, tables in a schema, and schemas and tables.
 
     :param params: A dictionary containing parameters required to connect to the database.

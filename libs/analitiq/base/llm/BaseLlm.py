@@ -275,7 +275,9 @@ class BaseLlm:
         return response.ServiceList
 
     def llm_create_task_list(self, prompts: dict, avail_services_str):
-        """:param prompts: The the dictionary of prompts.
+        """Create a llm task list.
+
+        :param prompts: The the dictionary of prompts.
         :param avail_services_str: A string representing the available services.
 
         :return: The generated task list as a response.
@@ -303,15 +305,22 @@ class BaseLlm:
         return response.TaskList
 
     def llm_refine_task_list(self, user_prompt: str, tasks_list: str):
-        """:param user_prompt: the user prompt or question to refine the task list
+        """Refine the task list.
+
+        :param user_prompt: the user prompt or question to refine the task list
         :param tasks_list: the original list of tasks
         :return: the refined task list based on user input
 
-        This method refines the given task list based on user input. It uses the PydanticOutputParser class to parse the output in Pydantic format.
-        It creates a PromptTemplate with the 'REFINE_TASK_LIST' template and sets 'user_prompt' as the input variable. It also sets 'format_instructions' and 'tasks' as partial variables in
-        * the template using the PydanticOutputParser's 'get_format_instructions' method and the 'tasks_list' parameter respectively.
+        This method refines the given task list based on user input.
+        It uses the PydanticOutputParser class to parse the output in Pydantic format.
+        It creates a PromptTemplate with the 'REFINE_TASK_LIST' template and sets 'user_prompt'
+        as the input variable. It also sets 'format_instructions' and 'tasks' as partial variables in
+        * the template using the PydanticOutputParser's 'get_format_instructions' method and the
+          'tasks_list' parameter respectively.
 
-        Next, it creates a table_chain using the PromptTemplate, the 'llm' method, and the PydanticOutputParser. It then invokes the table_chain by passing the 'user_prompt' parameter as a dictionary
+        Next, it creates a table_chain using the PromptTemplate, the 'llm' method,
+        and the PydanticOutputParser. It then invokes the table_chain by passing the 'user_prompt'
+        parameter as a dictionary
         *.
 
         Finally, the method returns the response.
