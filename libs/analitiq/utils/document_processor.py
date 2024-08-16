@@ -138,19 +138,21 @@ class DocumentChunkLoader:
         -------
             A list of text chunks.
 
+        Raises
+        ------
+            ValueError: If chunk_size or chunk_overlap is less than 1.
+            TypeError: If text is not a string.
+
         """
-        text_length = len(text)
         chunks = []
-
         start = 0
-        while start < text_length:
-            # Find the next token after the chunk size
-            end = start + chunk_size
-            if end < text_length:
-                end = text.rfind(token, start, end)
-                if end == -1:
-                    end = min(start + chunk_size, text_length)
-            chunks.append(text[start:end])
-            start = end + 1 - chunk_overlap
-
+        while start < len(text):
+            end = min(start + chunk_size, len(text))
+            if end > len(text):
+                end = len(text)
+            chunk = text[start:end]
+            if token and start != 0:
+                chunk = token + chunk
+            chunks.append(chunk)
+            start += chunk_size - chunk_overlap
         return chunks
