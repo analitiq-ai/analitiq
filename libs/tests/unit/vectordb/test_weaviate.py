@@ -1,10 +1,11 @@
 import tempfile
 import pathlib
 
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 import pytest
 
-from analitiq.vectordb.weaviate import WeaviateHandler
+from analitiq.vectordb.weaviate import WeaviateHandler, QUERY_PROPERTIES
+from weaviate.classes.query import Filter, MetadataQuery
 
 
 @pytest.fixture(name="mock_client", autouse=True)
@@ -70,3 +71,31 @@ def test_load(handler):
     # Test case for missing file
     with pytest.raises(FileNotFoundError):
         handler.load("test_file.txt", file_ext="invalid")
+
+
+def test_delete_many_like(handler, mock_client):
+    """Test delete many like this function."""
+    mock_client.collections.exists.return_value = True
+    handler.connect()
+
+    result = handler.delete_many_like({"source":"test"}, "like")
+    assert result is True
+
+    handler.collection.data.delete_many.assert_called_once()
+    handler.collection.data.delete_many.assert_called_once_with(
+        where=Filter.by_property("source").like("test")
+    )
+
+
+def test_kw_search(handler):
+    """Test the kw search."""
+    mock_response = MagicMock()
+    handler.collection.query.bm25.return_value = mock_response
+
+    result = handler.kw_search("test query", limit=5)
+
+    handler.collection.query.bm25.assert_called_once_with(
+        query="test queri", query_properties=QUERY_PROPERTIES, limit=5,
+        return_metadata=MetadataQuery(score=True, distance=True)
+    )
+    assert result == mock_response
