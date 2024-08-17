@@ -346,7 +346,6 @@ class WeaviateHandler(BaseVDBHandler):
         search_kw = keyword_extractions.extract_keywords(query)
         logger.info("Extracted keywords to search for: %s", search_kw)
         response = QueryReturn(objects=[])
-        print(search_kw, QUERY_PROPERTIES, MetadataQuery(score=True, distance=True), limit)
         try:
             response: QueryReturn = self.collection.query.bm25(
                 query=search_kw,
@@ -354,12 +353,11 @@ class WeaviateHandler(BaseVDBHandler):
                 return_metadata=MetadataQuery(score=True, distance=True),
                 limit=limit,
             )
-            print(response)
+
         except Exception as e:
             logger.error(f"Weaviate error {e}")
         finally:
             self.close()
-
         # logger.info(f"Weaviate Keyword search result: {response}")
         return response
 
