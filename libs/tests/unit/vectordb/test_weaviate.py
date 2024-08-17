@@ -8,7 +8,6 @@ from weaviate.classes.query import Filter, MetadataQuery
 from analitiq.vectordb.weaviate import WeaviateHandler, QUERY_PROPERTIES
 
 
-
 @pytest.fixture(name="mock_client", autouse=True)
 def mock_client_fixture():
     """Mock the client."""
@@ -87,7 +86,6 @@ def test_delete_many_like(handler, mock_client):
         where=Filter.by_property("source").like("test")
     )
 
-
 def test_kw_search(handler):
     """Test the kw search."""
     mock_response = MagicMock()
@@ -100,5 +98,21 @@ def test_kw_search(handler):
         query_properties=QUERY_PROPERTIES,
         limit=5,
         return_metadata=MetadataQuery(score=True, distance=True),
+    )
+    assert result == mock_response
+
+def test_kw_search_with_filters(handler):
+    """Test the kw search."""
+    mock_response = MagicMock()
+    handler.collection.query.bm25.return_value = mock_response
+
+    result = handler.kw_search("test query", limit=5, filter_properties={"source":"test"})
+
+    handler.collection.query.bm25.assert_called_once_with(
+        query="test queri",
+        query_properties=QUERY_PROPERTIES,
+        limit=5,
+        return_metadata=MetadataQuery(score=True, distance=True),
+        filters=Filter.by_property("source").like("test")
     )
     assert result == mock_response

@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Iterable
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.docstore.document import Document
 import sqlparse
@@ -55,7 +55,7 @@ class SQLRecursiveCharacterTextSplitter(RecursiveCharacterTextSplitter):
         # Use the parent class method to split the statement recursively
         return super().split_text(statement)
 
-    def split_documents(self, documents: List[Document]) -> List[Document]:
+    def split_documents(self, documents: Iterable[Document]) -> List[Document]:
         """Split a list of documents into chunks.
 
         Args:
@@ -67,7 +67,7 @@ class SQLRecursiveCharacterTextSplitter(RecursiveCharacterTextSplitter):
             A list of dictionaries, each containing a 'text' key with the split text.
 
         """
-        split_docs: List[Optional[Document]] = []
+        split_docs: List[Document] = []
         for doc in documents:
             text = doc.page_content
             chunks = self.split_text(text)
