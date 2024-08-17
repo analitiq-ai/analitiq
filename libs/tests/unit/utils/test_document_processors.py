@@ -1,4 +1,3 @@
-import pytest
 from analitiq.utils import document_processor
 
 

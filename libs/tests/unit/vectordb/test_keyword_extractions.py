@@ -1,5 +1,4 @@
-import pytest
-from analitiq.vectordb.keyword_extractions import extract_keywords, is_resource_downloaded
+from analitiq.vectordb.keyword_extractions import extract_keywords
 
 
 def test_extract_keywords():

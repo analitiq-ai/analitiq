@@ -3,9 +3,10 @@ import pathlib
 
 from unittest.mock import patch, MagicMock
 import pytest
+from weaviate.classes.query import Filter, MetadataQuery
 
 from analitiq.vectordb.weaviate import WeaviateHandler, QUERY_PROPERTIES
-from weaviate.classes.query import Filter, MetadataQuery
+
 
 
 @pytest.fixture(name="mock_client", autouse=True)
@@ -78,7 +79,7 @@ def test_delete_many_like(handler, mock_client):
     mock_client.collections.exists.return_value = True
     handler.connect()
 
-    result = handler.delete_many_like({"source":"test"}, "like")
+    result = handler.delete_many_like({"source": "test"}, "like")
     assert result is True
 
     handler.collection.data.delete_many.assert_called_once()
@@ -95,7 +96,9 @@ def test_kw_search(handler):
     result = handler.kw_search("test query", limit=5)
 
     handler.collection.query.bm25.assert_called_once_with(
-        query="test queri", query_properties=QUERY_PROPERTIES, limit=5,
-        return_metadata=MetadataQuery(score=True, distance=True)
+        query="test queri",
+        query_properties=QUERY_PROPERTIES,
+        limit=5,
+        return_metadata=MetadataQuery(score=True, distance=True),
     )
     assert result == mock_response
