@@ -74,4 +74,8 @@ class GlobalConfig:
         return self.project_config["config"]["general"]["session_uuid_file"]
 
     def get_chat_log_dir(self):
-        return self.project_config["config"]["general"]["chat_log_dir"]
+        general_conf = self.project_config.get("config", {}).get("general", {})
+        if "chat_log_dir" in general_conf:
+            return general_conf["chat_log_dir"]
+        else:
+            return '/'
