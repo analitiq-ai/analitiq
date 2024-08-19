@@ -86,7 +86,6 @@ def test_delete_many_like(handler, mock_client):
         where=Filter.by_property("source").like("test")
     )
 
-
 def test_kw_search(handler):
     """Test the kw search."""
     mock_response = MagicMock()
