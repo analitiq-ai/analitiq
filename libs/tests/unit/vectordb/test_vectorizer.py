@@ -5,43 +5,47 @@ from analitiq.vectordb import vectorizer
 
 def test_init_and_load_model():
     """Test the init and loading of the model."""
-    vcz = vectorizer.AnalitiqVectorizer('bert-base-uncased')
-    assert vcz.model_name_or_path == 'bert-base-uncased'
+    vcz = vectorizer.AnalitiqVectorizer("bert-base-uncased")
+    assert vcz.model_name_or_path == "bert-base-uncased"
     assert vcz.tokenizer is not None
     assert vcz.model is not None
 
+
 def test_vectorize():
     """Test the vectorization."""
-    vcz = vectorizer.AnalitiqVectorizer('bert-base-uncased')
+    vcz = vectorizer.AnalitiqVectorizer("bert-base-uncased")
     # Test with a single string
     vector = vcz.vectorize("Hello, world!", flatten=False)
     assert isinstance(vector, np.ndarray)
     assert vector.shape[0] == 1
-    
+
     # Test with a list of strings
     vectors = vcz.vectorize(["Hello, world!", "This is a test."], flatten=False)
     assert isinstance(vectors, np.ndarray)
     assert vectors.shape[0] == 2
 
+
 def test_normalize():
     """Test the normaliztion of the data."""
-    vcz = vectorizer.AnalitiqVectorizer('bert-base-uncased')
-    vectors = np.array([[3, 4], [0, 0]])
+    vcz = vectorizer.AnalitiqVectorizer("bert-base-uncased")
+    vectors = np.array([[3, 4], [7, 8]])
     normalized_vectors = vcz.normalize(vectors)
     assert np.allclose(np.linalg.norm(normalized_vectors, axis=1), 1)
 
+
 def test_create_embeddings():
     """Test the creation of embeddings."""
-    vcz = vectorizer.AnalitiqVectorizer('bert-base-uncased')
+    vcz = vectorizer.AnalitiqVectorizer("bert-base-uncased")
     texts = ["Hello, world!", "This is a test."]
     vcz.create_embeddings(texts)
-    assert hasattr(vcz, 'embeddings')
+    assert hasattr(vcz, "embeddings")
     assert isinstance(vcz.embeddings, np.ndarray)
     assert vcz.embeddings.shape[0] == len(texts)
 
+
 def test_search():
     """Test the search instances."""
-    vcz = vectorizer.AnalitiqVectorizer('bert-base-uncased')
+    vcz = vectorizer.AnalitiqVectorizer("bert-base-uncased")
     texts = ["Hello, world!", "This is a test.", "Another test."]
     vcz.create_embeddings(texts)
     query = "test"

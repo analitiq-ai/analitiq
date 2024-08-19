@@ -454,7 +454,6 @@ class WeaviateHandler(BaseVDBHandler):
                 query_param["filters"] = (
                     filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)
                 )
-
             response = self.collection.query.near_vector(**query_param)
         except Exception as e:
             logger.error(f"Weaviate error {e}")
