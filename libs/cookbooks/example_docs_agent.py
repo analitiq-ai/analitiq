@@ -50,12 +50,13 @@ vdb = WeaviateHandler(vdb_params)
 agent = SearchVdb(llm, vdb=vdb, search_mode="hybrid")
 result_generator = agent.arun("Bikes")
 
-
 async def process_results():
     async for result in result_generator:
         if isinstance(result, str):
+            print(result)
             pass  # Print incremental results
         else:
+            print(result)
             pass  # Capture the final BaseResponse object
 
 

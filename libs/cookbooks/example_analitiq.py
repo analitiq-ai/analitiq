@@ -6,7 +6,7 @@ user_prompt = "Bikes"
 
 a = Analitiq()
 agent_responses = a.run(user_prompt)
-#print(agent_responses)
+
 for response in agent_responses.values():
     if response:
         pass
