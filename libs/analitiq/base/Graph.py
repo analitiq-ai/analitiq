@@ -149,10 +149,13 @@ class Graph:
 
                     # Check and schedule dependent nodes
                     for consumer in completed_node.consumers:
-                        if all(
-                            dep.name in node_outputs and node_outputs[dep.name] is not None
-                            for dep in consumer.dependencies
-                        ) and consumer.name not in executed_nodes:  # Check if consumer has been executed
+                        if (
+                            all(
+                                dep.name in node_outputs and node_outputs[dep.name] is not None
+                                for dep in consumer.dependencies
+                            )
+                            and consumer.name not in executed_nodes
+                        ):  # Check if consumer has been executed
                             ready_nodes.append(consumer)
 
         return node_outputs  # Return the aggregated results

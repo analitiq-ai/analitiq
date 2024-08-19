@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict, Any
 import os
 import pathlib
 from functools import reduce
@@ -319,9 +319,7 @@ class WeaviateHandler(BaseVDBHandler):
 
         if not set(group_by_properties).issubset(set(allowed_keys)):
             msg = f"The provided keys for grouping are not allowed. Allowed keys are: {allowed_keys}"
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         grouped_data = {}
         # put all chunks into the same key.
@@ -355,11 +353,11 @@ class WeaviateHandler(BaseVDBHandler):
                 return_metadata=MetadataQuery(score=True, distance=True),
                 limit=limit,
             )
+
         except Exception as e:
             logger.error(f"Weaviate error {e}")
         finally:
             self.close()
-
         # logger.info(f"Weaviate Keyword search result: {response}")
         return response
 
@@ -483,7 +481,7 @@ class WeaviateHandler(BaseVDBHandler):
 
         return QueryReturn(objects=reranked_results)
 
-    def delete_many_like(self, properties: list, match_type: str = "like"):
+    def delete_many_like(self, properties: Dict[str, Any], match_type: str = "like"):
         """Delete multiple documents from the collection where the given property value is similar.
 
         :param properties: The name of the property to filter by.
@@ -546,7 +544,7 @@ class WeaviateHandler(BaseVDBHandler):
         else:
             return self._group_results_by_properties(response, ["document_name"])
 
-    def search_vdb_with_filter(self, query: str, properties: list, match_type: str = "like"):
+    def search_vdb_with_filter(self, query: str, properties: Dict[str, Any], match_type: str = "like"):
         """Retrieve objects from the collection that have a property whose value matches the given pattern.
 
         Example:
@@ -587,7 +585,7 @@ class WeaviateHandler(BaseVDBHandler):
             return None
         return self._group_results_by_properties(response, ["document_name", "document_type"])
 
-    def fetch_objects_by_properties(self, properties, match_type: str = "like"):
+    def fetch_objects_by_properties(self, properties: Dict[str, Any], match_type: str = "like"):
         """Fetch objects with given properties."""
         response = None
 
@@ -605,7 +603,7 @@ class WeaviateHandler(BaseVDBHandler):
         self.close()
         return response
 
-    def count_objects_by_properties(self, properties, match_type: str = "like"):
+    def count_objects_by_properties(self, properties: Dict[str, Any], match_type: str = "like"):
         """Count objects by properties."""
         try:
             self.client.connect()
@@ -628,7 +626,7 @@ class WeaviateHandler(BaseVDBHandler):
         """Get entrys by uuid."""
         return self.collection.query.fetch_object_by_id(uuid=uuid)
 
-    def delete_objects(self, properties, match_type: str = "like"):
+    def delete_objects(self, properties: Dict[str, Any], match_type: str = "like"):
         """Delete objects from the collection based on specified meta parameters.
 
         :param properties: The properties used to filter the objects to be deleted.
@@ -643,7 +641,6 @@ class WeaviateHandler(BaseVDBHandler):
                 verbose=True,
                 dry_run=False,
             )
-
 
         finally:
             self.client.close()
@@ -662,9 +659,10 @@ class WeaviateHandler(BaseVDBHandler):
             self.close()
 
     @staticmethod
-    def _create_filters(properties: list, match_type: str):
+    def _create_filters(properties: Dict[str, Any], match_type: str):
+        """Create filter for filtering the datasets."""
         if match_type == "like":
-            filters = [Filter.by_property(name).like(value) for name, value in properties]
+            filters = [Filter.by_property(name).like(value) for name, value in properties.items()]
         else:
             filters = [Filter.by_property(name).equal(value) for name, value in properties]
 

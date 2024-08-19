@@ -48,7 +48,9 @@ class CodeExtractor:
             return None  # Return an empty string if no matching code block is found
 
     def CodeAndDictionaryExtractor(self, input_string):
-        """:param input_string: a string containing the input data
+        """Extract Code and Dictionarys.
+
+        :param input_string: a string containing the input data
         :return: a tuple indicating success of extraction and the extracted dictionary or an error message
 
         This method extracts the content between the first '{' and the last '}' in the given input string. It first searches for a substring enclosed in curly braces using regular expression

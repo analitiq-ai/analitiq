@@ -1,8 +1,10 @@
-from analitiq.logger.logger import logger
-import chromadb
-import os
-from chromadb.api import ClientAPI
 from typing import Optional
+import os
+
+import chromadb
+from chromadb.api import ClientAPI
+
+from analitiq.logger.logger import logger
 from schemas.vector_store import VectoreStoreCollection
 
 
@@ -22,7 +24,7 @@ class ChromaHandler:
         document_metadata: object,
         document_ids: list,
     ):
-        """Saves a document in a specified collection.
+        """Save a document in a specified collection.
 
         Args:
         ----
@@ -43,11 +45,11 @@ class ChromaHandler:
             )
             return response
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to create document: {e}")
+            raise HTTPException(status_code=500, detail=f"Failed to create document: {e}") from e
         return False
 
     def delete_document(client: ClientAPI, collection_name: str, document_uuid: str) -> bool:
-        """Deletes a document from a specified collection.
+        """Delete a document from a specified collection.
 
         Args:
         ----
@@ -71,7 +73,7 @@ class ChromaHandler:
     def get_document_by_metadata(
         client: ClientAPI, collection_name: str, metadata: object
     ) -> Optional[list[VectoreStoreCollection]]:
-        """Retrieves documents from a specified collection based on metadata.
+        """Retrieve documents from a specified collection based on metadata.
 
         Args:
         ----
@@ -94,7 +96,7 @@ class ChromaHandler:
     def get_document_by_id(
         client: ClientAPI, collection_name: str, document_uuid: str
     ) -> Optional[VectoreStoreCollection]:
-        """Retrieves a document from a specified collection based on its ID.
+        """Retrieve a document from a specified collection based on its ID.
 
         Args:
         ----
@@ -115,7 +117,7 @@ class ChromaHandler:
             return None
 
     def get_all_documents(client: ClientAPI, collection_name: str) -> list[VectoreStoreCollection]:
-        """Retrieves all documents from a specified collection.
+        """Retrieve all documents from a specified collection.
 
         Args:
         ----

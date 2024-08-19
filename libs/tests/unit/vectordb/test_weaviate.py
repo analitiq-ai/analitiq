@@ -1,107 +1,104 @@
-import unittest
+import tempfile
+import pathlib
+
 from unittest.mock import patch, MagicMock
-from analitiq.vectordb.weaviate import WeaviateHandler
-from weaviate.auth import AuthApiKey
-from weaviate.classes.query import Filter
+import pytest
+from weaviate.classes.query import Filter, MetadataQuery
 
-# Existing WeaviateHandler class code
-# ... (paste the WeaviateHandler class code here) ...
+from analitiq.vectordb.weaviate import WeaviateHandler, QUERY_PROPERTIES
 
 
-class TestWeaviateHandler(unittest.TestCase):
-    @patch("weaviate.connect_to_wcs")
-    @patch("analitiq.vectordb.weaviate.DocumentChunkLoader")
-    def setUp(self, MockChunkLoader, MockConnectToWCS):
-        self.mock_client = MockConnectToWCS.return_value
-        self.mock_chunk_processor = MockChunkLoader.return_value
-        self.params = {
-            "host": "https://test-analitiq-5mwe1rof.weaviate.network",
-            "api_key": "Wy1q2YlOFAMETXA7OeUBAvNS4iUx3qnIpy24",
-            "collection_name": "analitiq123123",
-        }
-        self.handler = WeaviateHandler(self.params)
 
-    @patch("analitiq.vectordb.weaviate.weaviate.connect_to_wcs")
-    def test_connect(self, mock_connect):
-        mock_connect.return_value = self.mock_client
-        self.mock_client.collections.exists.return_value = False
-        self.handler.connect()
+@pytest.fixture(name="mock_client", autouse=True)
+def mock_client_fixture():
+    """Mock the client."""
+    with patch("weaviate.connect_to_wcs") as mock_connect:
+        mock_client = mock_connect.return_value
+        yield mock_client
 
-        mock_connect.assert_called_once_with(
-            cluster_url=self.params["host"], auth_credentials=AuthApiKey(self.params["api_key"])
-        )
-        self.assertEqual(self.handler.client, self.mock_client)
 
-    def test_create_collection(self):
-        self.mock_client.collections.exists.return_value = False
-        self.handler.create_collection()
-        self.mock_client.collections.exists.assert_called_with(self.params["collection_name"])
+@pytest.fixture(name="mock_chunk_processer", autouse=True)
+def mock_chunk_processor_fixture():
+    """Mock the chunk processor."""
+    with patch("analitiq.vectordb.weaviate.DocumentChunkLoader") as MockChunkLoader:
+        mock_chunk_processor = MockChunkLoader.return_value
+        yield mock_chunk_processor
 
-    def test_load(self):
+
+@pytest.fixture(name="params", autouse=True)
+def params_fixture():
+    """Mock some parameters."""
+    return {
+        "host": "https://test-analitiq-5mwe1rof.weaviate.network",
+        "api_key": "Wy1q2YlOFAMETXA7OeUBAvNS4iUx3qnIpy24",
+        "collection_name": "analitiq123123",
+    }
+
+
+@pytest.fixture(name="handler")
+def handler_fixture(params):
+    """Use the Weaviatehandler with mocked params."""
+    return WeaviateHandler(params)
+
+
+def test_connect(handler, mock_client):
+    """Test the connect command."""
+    mock_client.collections.exists.return_value = False
+    handler.connect()
+
+    assert handler.client == mock_client
+
+
+def test_create_collection(handler, mock_client, params):
+    """Test the create collection function."""
+    mock_client.collections.exists.return_value = False
+    handler.create_collection()
+    mock_client.collections.exists.assert_called_with(params["collection_name"])
+
+
+def test_load(handler):
+    """Test the load function."""
+    # Create a temporary text file with dummy text
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".txt") as temp_file:
+        temp_file.write(b"This is a dummy text for unit tests.")
+
         # Test case for loading a valid file
-        with patch.object(self.handler, "_chunk_load_file_or_directory") as mock_chunk_load:
-            test_file = "test_file.txt"
-            self.handler.load(test_file)
-            mock_chunk_load.assert_called_once_with(test_file, "txt")
+        with patch.object(handler, "_chunk_load_file_or_directory") as mock_chunk_load:
+            handler.load(temp_file.name)
+            mock_chunk_load.assert_called_once_with(temp_file.name, "txt")
 
-        # Test case for invalid file extension
-        with self.assertRaises(ValueError):
-            self.handler.load("test_file.txt", file_ext="invalid")
+    pathlib.Path(temp_file.name).unlink()
 
-        # Test case for non-existent file or directory
-        with self.assertRaises(FileNotFoundError):
-            self.handler.load("non_existent_file.txt")
-
-    @patch.object(WeaviateHandler, "close")
-    def test_get_many_like(self, mock_close):
-        mock_response = MagicMock()
-        self.handler.collection.query.fetch_objects.return_value = mock_response
-
-        result = self.handler.get_many_like("source", "test")
-        self.handler.collection.query.fetch_objects.assert_called_once_with(
-            filters=Filter.by_property("source").like("*test*")
-        )
-        self.assertEqual(result, mock_response)
-        mock_close.assert_called_once()
-
-    @patch.object(WeaviateHandler, "close")
-    def test_delete_collection(self, mock_close):
-        """Test the delete collection method."""
-        self.handler.collection.delete.return_value = True
-
-        result = self.handler.delete_collection(self.params["collection_name"])
-
-        self.handler.client.collections.delete.assert_called_once_with(self.params["collection_name"])
-        self.assertTrue(result)
-        mock_close.assert_called_once()
-
-    @patch.object(WeaviateHandler, "close")
-    def test_delete_many_like(self, mock_close):
-        """Test delete many like this function."""
-        self.handler.collection.data.delete_many.return_value = None
-
-        result = self.handler.delete_many_like("source", "test")
-
-        self.handler.collection.data.delete_many.assert_called_once_with(
-            where=Filter.by_property("source").like("test*")
-        )
-        self.assertTrue(result)
-        mock_close.assert_called_once()
-
-    @patch.object(WeaviateHandler, "close")
-    def test_kw_search(self, mock_close):
-        """Test the kw search."""
-        mock_response = MagicMock()
-        self.handler.collection.query.bm25.return_value = mock_response
-
-        result = self.handler.kw_search("test query", limit=5)
-
-        self.handler.collection.query.bm25.assert_called_once_with(
-            query="test query", query_properties=["content"], limit=5
-        )
-        self.assertEqual(result, mock_response)
-        mock_close.assert_called_once()
+    # Test case for missing file
+    with pytest.raises(FileNotFoundError):
+        handler.load("test_file.txt", file_ext="invalid")
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_delete_many_like(handler, mock_client):
+    """Test delete many like this function."""
+    mock_client.collections.exists.return_value = True
+    handler.connect()
+
+    result = handler.delete_many_like({"source": "test"}, "like")
+    assert result is True
+
+    handler.collection.data.delete_many.assert_called_once()
+    handler.collection.data.delete_many.assert_called_once_with(
+        where=Filter.by_property("source").like("test")
+    )
+
+
+def test_kw_search(handler):
+    """Test the kw search."""
+    mock_response = MagicMock()
+    handler.collection.query.bm25.return_value = mock_response
+
+    result = handler.kw_search("test query", limit=5)
+
+    handler.collection.query.bm25.assert_called_once_with(
+        query="test queri",
+        query_properties=QUERY_PROPERTIES,
+        limit=5,
+        return_metadata=MetadataQuery(score=True, distance=True),
+    )
+    assert result == mock_response

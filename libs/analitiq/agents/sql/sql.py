@@ -28,7 +28,10 @@ class Sql:
     """
 
     def __init__(self, db: DatabaseWrapper, llm, vdb=None):
-        """Initializes the SQL Agent. SQL Agent writes SQL and executes the SQL against the database. After that SQL Agent returns the result.
+        """Initialize the SQL Agent.
+
+        SQL Agent writes SQL and executes the SQL against the database.
+        After that SQL Agent returns the result.
 
         Args:
         ----
@@ -47,7 +50,9 @@ class Sql:
 
     @staticmethod
     def _extract_table_name(input_string: str) -> str:
-        """Extracts 'table_name' from the given string by splitting the text by commas, taking the first occurrence, and then splitting by dots to take the second occurrence.
+        """Extract 'table_name' from the given string by splitting the text by commas.
+
+        taking the first occurrence, and then splitting by dots to take the second occurrence.
 
         Args:
         ----
@@ -67,11 +72,12 @@ class Sql:
         return schema_table
 
     def load_ddl_into_vdb(self) -> List[str]:
-        """Loads DDL (Data Definition Language) into the Vector Database (VDB).
+        """Load DDL (Data Definition Language) into the Vector Database (VDB).
 
         Notes
         -----
-            - SQLAlchemy returns DDL as a list of tables in schema [] with every object in list being comma separated list of columns.
+            - SQLAlchemy returns DDL as a list of tables in schema [] with every object in list being
+            comma separated list of columns.
             - Analitiq stores the DDL in vector DB using metadata to identify source of the data:
                 - content=DDL for 1 table,
                 - source='host/database',
@@ -94,7 +100,7 @@ class Sql:
             ddl = self.db.get_schemas_and_tables(schema_name)
             logger.info(f"Received DDL for {len(ddl)} tables in schema {schema_name}")
             # Do not log this unless you really need to. This could be huge
-            # logger.info(f"DDL for {schema_name}: {ddl}")
+            logger.debug(f"DDL for {schema_name}: {ddl}")
 
             # Check if DDL in VDB
             meta_parameters = [("document_name", schema_name), ("document_type", document_type)]
@@ -120,7 +126,7 @@ class Sql:
                 logger.info(f"Loaded {counter} chunks for schema {schema_name} into Vector Database.")
 
     def get_relevant_tables(self, ddl: str, docs: Optional[str] = None) -> List[Table]:
-        """Retrieves relevant tables based on the provided DDL and documentation.
+        """Retrieve relevant tables based on the provided DDL and documentation.
 
         Args:
         ----
@@ -161,7 +167,7 @@ class Sql:
 
     @staticmethod
     def _format_relevant_tables(schema_dict: dict) -> str:
-        """Formats the relevant tables into a readable string format.
+        """Format the relevant tables into a readable string format.
 
         Args:
         ----
@@ -184,7 +190,7 @@ class Sql:
         return "\n".join(output_lines)
 
     def check_relevant_table(self, schema_name: str, table_name: str) -> TableCheck:
-        """Checks if the specified table is relevant to the user's query.
+        """Check if the specified table is relevant to the user's query.
 
         Args:
         ----
@@ -215,7 +221,7 @@ class Sql:
         return response
 
     def get_db_docs_schema(self, query: str) -> Optional[str]:
-        """Retrieves the database schema documentation relevant to the given query.
+        """Retrieve the database schema documentation relevant to the given query.
 
         Args:
         ----
@@ -241,20 +247,10 @@ class Sql:
 
         logger.info(f"[VDB] Context Documents found: {len(response)}")
 
-        # response = self.llm.extract_info_from_db_docs(self.user_prompt, response)
-
-        # chat_logger.info(f"LLM: {response}")
-        # self.response.add_text_to_metadata(response)
-
-        # logger.info(f"LLM Info from Documents: {response}")
-
-        # if 'ANALITQ___NO_ANSWER' in response:
-        #    return None
-
         return response
 
     def execute_sql(self, sql: str) -> Tuple[bool, Optional[pd.DataFrame]]:
-        """Executes the given SQL query and returns the result as a DataFrame.
+        """Execute the given SQL query and returns the result as a DataFrame.
 
         Args:
         ----
@@ -262,7 +258,8 @@ class Sql:
 
         Returns:
         -------
-            Tuple[bool, Optional[pd.DataFrame]]: A tuple containing a boolean indicating success, and the result as a DataFrame or an error message.
+            Tuple[bool, Optional[pd.DataFrame]]: A tuple containing a boolean indicating success,
+              and the result as a DataFrame or an error message.
 
         """
         chat_logger.info(f"{sql}")
@@ -279,7 +276,7 @@ class Sql:
             return False, str(e)
 
     def get_sql_from_llm(self, docs_ddl: Optional[str] = None, docs_schema: Optional[str] = None) -> str:
-        """Generates SQL from the LLM (Language Model) based on provided DDL and schema documentation.
+        """Generate SQL from the LLM (Language Model) based on provided DDL and schema documentation.
 
         Args:
         ----
@@ -353,7 +350,7 @@ class Sql:
         return glued_documents
 
     def _set_result(self, result: pd.DataFrame, sql: Optional[str] = None, explanation: Optional[str] = None):
-        """Sets the result of the SQL execution into the response object.
+        """Set the result of the SQL execution into the response object.
 
         Args:
         ----
@@ -373,7 +370,7 @@ class Sql:
                 self.response.add_text_to_metadata(f"\n```\n{sql}\n```")
 
     def run(self, user_prompt: str) -> BaseResponse:
-        """Main method to run the SQL agent based on the user's prompt.
+        """Run the Main method to run the SQL agent based on the user's prompt.
 
         Args:
         ----
@@ -392,7 +389,6 @@ class Sql:
         docs_schema = self.get_db_docs_schema(user_prompt)
 
         if not docs_schema or docs_schema == "ANALYTQ___NO_ANSWER":
-            # logger.info("No relevant documents in VDB located.", docs)
             docs_schema = None
         if docs_schema:
             logger.info(f"Context Documents found: {len(docs_schema)}")
@@ -411,13 +407,6 @@ class Sql:
         self.load_ddl_into_vdb()
 
         docs_ddl = self.vdb.search_vdb_ddl(user_prompt, self.db.params["db_schemas"])
-
-        # self.relevant_tables = self.get_relevant_tables(ddl, docs_schema)
-        # chat_logger.info(f"Assistant: List of relevant tables and columns.\n{self.relevant_tables}")
-
-        # self.response.add_text_to_metadata(f"Relevant tables: {self.relevant_tables}")
-        # self.response.set_metadata({"relevant_tables": self.relevant_tables})
-
         # if we do not have ddl_docs docs_schema and context, there is little point trying to create SQL.
 
         if not docs_ddl and not docs_schema:
@@ -450,7 +439,7 @@ class Sql:
         return self.response
 
     async def arun(self, user_prompt: str) -> BaseResponse:
-        """Main method to run the SQL agent based on the user's prompt.
+        """Run Main method to run the SQL agent based on the user's prompt.
 
         Args:
         ----
@@ -469,7 +458,6 @@ class Sql:
         docs_schema = self.get_db_docs_schema(user_prompt)
 
         if not docs_schema or docs_schema == "ANALYTQ___NO_ANSWER":
-            # logger.info("No relevant documents in VDB located.", docs)
             docs_schema = None
         if docs_schema:
             msg = f"Context Documents found: {len(docs_schema)}"
@@ -490,12 +478,6 @@ class Sql:
         self.load_ddl_into_vdb()
 
         docs_ddl = self.vdb.search_vdb_ddl(user_prompt, self.db.params["db_schemas"])
-
-        # self.relevant_tables = self.get_relevant_tables(ddl, docs_schema)
-        # chat_logger.info(f"Assistant: List of relevant tables and columns.\n{self.relevant_tables}")
-
-        # self.response.add_text_to_metadata(f"Relevant tables: {self.relevant_tables}")
-        # self.response.set_metadata({"relevant_tables": self.relevant_tables})
 
         # if we do not have ddl_docs docs_schema and context, there is little point trying to create SQL.
 

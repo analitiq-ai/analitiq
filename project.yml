@@ -1,0 +1,41 @@
+name: 'analitiq'
+version: '0.1'
+profile: 'test'
+
+config:
+  general:
+    log_dir: "logs"                           # this is where we save our chat logs.
+    latest_run_filename: "latest_run.log"     # this is the log file for the latest run.
+    chat_log_dir: "chats"                     # this is where we save our chat logs.
+    services_dir: "custom_services"
+    session_uuid_file: 'session_uuid.txt'     # Where session identifier is being recorded. When session is reset.
+    message_lookback: 5                       # No. of messages to lookback in current session log by LLM.
+  vectordb:
+    doc_chunk_size: 2000
+    doc_chunk_overlap: 200
+
+# Bellow is the list of CORE services that come pre-built with Analitiq and are located in analitiq/services directory.
+services:
+- name: QueryDatabase
+  description: "Use this service to query data from the company database. |
+  Useful for straightforward query asking for a specific piece of data or information. |
+   It requests the current or recent numerical value. This service should be used to calculate KPIs, |
+   metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. |
+   Use when users asks questions that require analysis or tabular data. Example questions: |
+   who are our top customers? What was our revenue last year? Show me the trend of our sales."
+  path: "analitiq/services/sql/sql.py"
+  class: "Sql"
+  method: "run"
+  inputs:
+  outputs: "dataframe converted into json"
+
+- name: SearchDocs
+  description: "The service to search the documentation for information. |
+  Should be used for when user is asking for an explanation for a description |
+  of the methodology or process used to determine something. Example questions: |
+  How do we calculate profit? Show me code related to revenue? Where do we process transactions?"
+  path: "analitiq/services/search_vdb/search_vdb.py"
+  class: "SearchVdb"
+  method: "run"
+  inputs: "text"
+  outputs: "text"
