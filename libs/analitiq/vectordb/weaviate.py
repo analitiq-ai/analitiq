@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple, Dict, Any
+from typing import Optional, List, Tuple, Dict, Any, Literal
 import os
 import pathlib
 from functools import reduce
@@ -77,6 +77,7 @@ class Chunk(BaseModel):
     :param content_kw: the keywords for keyword search in the chunks
     :type content_kw: str
     """
+
 
     project_name: str
     document_name: str
@@ -271,10 +272,11 @@ class WeaviateHandler(BaseVDBHandler):
 
     @staticmethod
     def _group_results_by_properties(results: QueryReturn, group_by_properties: list) -> list:
-        """Groups a list of dictionaries (chunks of data) by given keys and return the grouped data as a list of dictionaries.
+        """Group a list of dictionaries (chunks of data) by given keys return grouped data as list of dicts.
 
-        Each dictionary in the returned list corresponds to a unique group as determined by `group_by_properties`. The keys of the
-        dictionaries are the group properties and a special key 'document_chunks' which stores the associated chunks of data.
+        Each dictionary in the returned list corresponds to a unique group as determined by `group_by_properties`.
+        The keys of thedictionaries are the group properties and a special key 'document_chunks'
+        which stores the associated chunks of data.
 
         Args:
         ----
@@ -313,7 +315,7 @@ class WeaviateHandler(BaseVDBHandler):
 
         """
         if not results.objects:
-            return None
+            return []
 
         allowed_keys = list(Chunk.__annotations__.keys())
 
@@ -321,7 +323,7 @@ class WeaviateHandler(BaseVDBHandler):
             msg = f"The provided keys for grouping are not allowed. Allowed keys are: {allowed_keys}"
             raise ValueError(msg)
 
-        grouped_data = {}
+        grouped_data: Dict[Any, Any] = {}
         # put all chunks into the same key.
         for item in results.objects:
             key = tuple(item.properties[k] for k in group_by_properties)
@@ -341,28 +343,45 @@ class WeaviateHandler(BaseVDBHandler):
         return reformatted_data
 
     @search_only
-    def kw_search(self, query: str, limit: int = 3) -> QueryReturn:
+    def kw_search(
+        self,
+        query: str,
+        limit: int = 3,
+        filter_properties: Optional[Dict[str, Any]] = None,
+        match_type: Literal["like", "equal"] = "like",
+    ) -> QueryReturn:
         """Perform a keyword search in the Weaviate database."""
         search_kw = keyword_extractions.extract_keywords(query)
         logger.info("Extracted keywords to search for: %s", search_kw)
         response = QueryReturn(objects=[])
         try:
-            response: QueryReturn = self.collection.query.bm25(
-                query=search_kw,
-                query_properties=QUERY_PROPERTIES,
-                return_metadata=MetadataQuery(score=True, distance=True),
-                limit=limit,
-            )
+            query_param = {
+                "query": search_kw,
+                "query_properties": QUERY_PROPERTIES,
+                "limit": limit,
+                "return_metadata": MetadataQuery(distance=True, score=True),
+            }
+            if filter_properties:
+                filters = self._create_filters(properties=filter_properties, match_type=match_type)
+                query_param["filters"] = (
+                    filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)
+                )
+            response = self.collection.query.bm25(**query_param)
 
         except Exception as e:
             logger.error(f"Weaviate error {e}")
         finally:
             self.close()
-        # logger.info(f"Weaviate Keyword search result: {response}")
         return response
 
     @search_only
-    def hybrid_search(self, query: str, limit: int = 3) -> QueryReturn:
+    def hybrid_search(
+        self,
+        query: str,
+        limit: int = 3,
+        filter_properties: Optional[Dict[str, Any]] = None,
+        match_type: Literal["like", "equal"] = "like",
+    ) -> QueryReturn:
         """Use Hybrid Search for document retrieval from Weaviate Database.
 
         Perform a hybrid search by combining keyword-based search and vector-based search.
@@ -377,9 +396,9 @@ class WeaviateHandler(BaseVDBHandler):
         response = QueryReturn(objects=[])
 
         try:
-            kw_results = self.kw_search(query, limit)
+            kw_results = self.kw_search(query, limit, filter_properties, match_type)
             self.client.connect()
-            vector_results = self.vector_search(query, limit)
+            vector_results = self.vector_search(query, limit, filter_properties, match_type)
 
             response = self.combine_and_rerank_results(kw_results, vector_results)
         except Exception as e:
@@ -388,15 +407,21 @@ class WeaviateHandler(BaseVDBHandler):
         finally:
             self.close()
 
-        # logger.info(f"Weaviate Hybrid search result: {response}")
         return response
 
-    def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
+    def vector_search(
+        self,
+        query: str,
+        limit: int = 3,
+        filter_properties: Optional[Dict[str, Any]] = None,
+        match_type: Literal["like", "equal"] = "like",
+    ) -> QueryReturn:
         """Use Vector Search for document retrieval from Weaviate Database.
 
         :param query: A string representing the query to be performed.
         :param limit: An optional integer representing the maximum number of results to return.
         Default value is 3.
+        :param filter_properties: OPtional Dictionary holding names and values of Properties to filter on
         :return: A QueryReturn object containing the search results.
 
         This method performs a vector search using the Weaviate API. It takes a query string and an optional limit parameter to specify the maximum number of results to return. The method returns
@@ -419,11 +444,18 @@ class WeaviateHandler(BaseVDBHandler):
 
         try:
             query_vector = self.vectorizer.vectorize(query)
-            response: QueryReturn = self.collection.query.near_vector(
-                near_vector=query_vector,
-                limit=limit,
-                return_metadata=MetadataQuery(distance=True, score=True),
-            )
+
+            query_param = {
+                "near_vector": query_vector,
+                "limit": limit,
+                "return_metadata": MetadataQuery(distance=True, score=True),
+            }
+            if filter_properties:
+                filters = self._create_filters(properties=filter_properties, match_type=match_type)
+                query_param["filters"] = (
+                    filters[0] if len(filters) == 1 else reduce(lambda a, b: a & b, filters)
+                )
+            response = self.collection.query.near_vector(**query_param)
         except Exception as e:
             logger.error(f"Weaviate error {e}")
         finally:
@@ -437,7 +469,7 @@ class WeaviateHandler(BaseVDBHandler):
         kw_results: QueryReturn,
         vector_results: QueryReturn,
         limit: int = 3,
-        kw_vector_weights: Tuple[float, float] = [0.3, 0.7],
+        kw_vector_weights: Tuple[float, float] = (0.3, 0.7),
     ) -> List[dict]:
         """Combine and rerank keyword search and vector search results.
 
@@ -453,7 +485,7 @@ class WeaviateHandler(BaseVDBHandler):
         :rtype: List[dict]
         """
         if not kw_results.objects:
-            return None
+            return [{}]
 
         combined = {}
 
@@ -664,7 +696,7 @@ class WeaviateHandler(BaseVDBHandler):
         if match_type == "like":
             filters = [Filter.by_property(name).like(value) for name, value in properties.items()]
         else:
-            filters = [Filter.by_property(name).equal(value) for name, value in properties]
+            filters = [Filter.by_property(name).equal(value) for name, value in properties.items()]
 
         return filters
 
@@ -678,7 +710,7 @@ class WeaviateHandler(BaseVDBHandler):
             self.client.connect()
         except Exception as e:
             logger.error(f"Error connecting to Weaviate: {e}")
-            return None
+            return {}
 
         docs = {}
 
@@ -701,7 +733,7 @@ class WeaviateHandler(BaseVDBHandler):
             self.client.connect()
         except Exception as e:
             logger.error(f"Error connecting to Weaviate: {e}")
-            return None
+            return [{}]
 
         try:
             response = self.collection.aggregate.over_all(

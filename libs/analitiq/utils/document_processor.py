@@ -76,7 +76,7 @@ class DocumentChunkLoader:
 
         """
         if os.path.isfile(path):
-            loader = TextLoader(path)
+            loader: TextLoader | DirectoryLoader = TextLoader(path)
         elif os.path.isdir(path):
             loader = DirectoryLoader(path, glob=f"**/*.{extension}", loader_cls=TextLoader)
         else:

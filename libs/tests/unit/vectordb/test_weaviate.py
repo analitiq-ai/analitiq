@@ -86,7 +86,6 @@ def test_delete_many_like(handler, mock_client):
         where=Filter.by_property("source").like("test")
     )
 
-
 def test_kw_search(handler):
     """Test the kw search."""
     mock_response = MagicMock()
@@ -99,5 +98,59 @@ def test_kw_search(handler):
         query_properties=QUERY_PROPERTIES,
         limit=5,
         return_metadata=MetadataQuery(score=True, distance=True),
+    )
+    assert result == mock_response
+
+
+def test_kw_search_with_filters(handler):
+    """Test the kw search."""
+    mock_response = MagicMock()
+    handler.collection.query.bm25.return_value = mock_response
+
+    result = handler.kw_search("test query", limit=5, filter_properties={"source": "test"})
+
+    handler.collection.query.bm25.assert_called_once_with(
+        query="test queri",
+        query_properties=QUERY_PROPERTIES,
+        limit=5,
+        return_metadata=MetadataQuery(score=True, distance=True),
+        filters=Filter.by_property("source").like("test"),
+    )
+    assert result == mock_response
+
+
+def test_vector_search(handler):
+    """Test the vector search."""
+    mock_response = MagicMock()
+    handler.collection.query.near_vector.return_value = mock_response
+
+    mock_vectorize = MagicMock(return_value=[[0, 0, 1]])
+    handler.vectorizer.vectorize = mock_vectorize
+
+    result = handler.vector_search("test query", limit=5)
+
+    handler.collection.query.near_vector.assert_called_once_with(
+        near_vector=[[0,0,1]],
+        limit=5,
+        return_metadata=MetadataQuery(score=True, distance=True),
+    )
+    assert result == mock_response
+
+
+def test_vector_search_with_filters(handler):
+    """Test the vector search."""
+    mock_response = MagicMock()
+    handler.collection.query.near_vector.return_value = mock_response
+
+    mock_vectorize = MagicMock(return_value=[[0, 0, 1]])
+    handler.vectorizer.vectorize = mock_vectorize
+
+    result = handler.vector_search("test query", limit=5, filter_properties={"source": "test"})
+
+    handler.collection.query.near_vector.assert_called_once_with(
+        near_vector=[[0,0,1]],
+        limit=5,
+        return_metadata=MetadataQuery(score=True, distance=True),
+        filters=Filter.by_property("source").like("test"),
     )
     assert result == mock_response
