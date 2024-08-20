@@ -97,7 +97,7 @@ class Database:
     :type engine: str
     """
 
-    def __init__(self, engine):
+    def __init__(self, engine: object):
         self.engine = engine
         self.db = SQLDatabase(self.engine)
 
@@ -163,7 +163,7 @@ class DatabaseWrapper:
         """
         inspector = inspect(self.engine)
         schemas = [schema for schema in inspector.get_schema_names() if schema in target_schema_list]
-        response = []
+        response: list = []
         for schema in schemas:
             tables = inspector.get_table_names(schema=schema)
             if len(tables) > 0:

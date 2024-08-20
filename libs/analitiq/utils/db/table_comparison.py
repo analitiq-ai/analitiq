@@ -25,6 +25,8 @@ def compare_columns_between_tables(table_data, detailed: bool = False):
 
     # Iterate over the provided database information
     for db_name, (db_wrapper, schema_name, table_name) in table_data.items():
+        column_data: dict = None
+
         try:
             # Fetch column data for the table
             column_data = db_wrapper.get_table_columns(table_name, schema_name)
