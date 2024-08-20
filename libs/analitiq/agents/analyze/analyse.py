@@ -58,7 +58,7 @@ class Analyze:
 
         # Package the result and metadata into a Response object
         self.response.set_content(
-            f"Summary: {llm_response.Summary}\nObservations: {llm_response.Observations}\nAnomalies: {llm_response.Anomalies}\n "
-        )
+            f"Summary: {llm_response.Summary}\nObservations: "
+            f"{llm_response.Observations}\nAnomalies: {llm_response.Anomalies}\n")
 
         return self.response
