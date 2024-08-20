@@ -52,7 +52,7 @@ class SearchVdb:
     ) -> None:
         self.llm = llm
         self.client = vdb
-        self.user_prompt: str = None
+        self.user_prompt: str
         self.response = BaseResponse(self.__class__.__name__)
         self.search_mode = search_mode
 

@@ -263,17 +263,14 @@ class Sql:
 
         """
         chat_logger.info(f"{sql}")
-        try:
-            result = pd.read_sql(sql, self.db.engine)
-            if result.empty:
-                chat_logger.info("SQL executed successfully, but result is empty.")
-            else:
-                chat_logger.info(f"SQL executed successfully. Converted to DataFrame. {result}")
 
+        status, result = self.db.execute_sql(sql)
+
+        if result.empty:
+            chat_logger.info("SQL executed successfully, but result is empty.")
             return True, result
-        except DatabaseError as e:
-            chat_logger.error(f"Error executing SQL. {e!s}")
-            return False, str(e)
+
+        return status, result
 
     def get_sql_from_llm(self, docs_ddl: Optional[str] = None, docs_schema: Optional[str] = None) -> str:
         """Generate SQL from the LLM (Language Model) based on provided DDL and schema documentation.

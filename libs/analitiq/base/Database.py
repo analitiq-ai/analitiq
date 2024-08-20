@@ -1,9 +1,11 @@
-from sqlalchemy import inspect, exc, create_engine
+from sqlalchemy import inspect, create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.engine.url import URL
+from sqlalchemy.exc import DatabaseError, SQLAlchemyError
 from functools import lru_cache
 from langchain_community.utilities import SQLDatabase
-from typing import List, Dict
+from typing import List, Dict, Tuple, Optional
+from pandas import read_sql, DataFrame
 
 CACHE_SIZE = 64
 
@@ -95,7 +97,7 @@ class Database:
     :type engine: str
     """
 
-    def __init__(self, engine):
+    def __init__(self, engine: object):
         self.engine = engine
         self.db = SQLDatabase(self.engine)
 
@@ -133,7 +135,7 @@ class DatabaseWrapper:
         try:
             inspector = inspect(self.engine)
             return inspector.get_schema_names()
-        except exc.SQLAlchemyError as e:
+        except SQLAlchemyError as e:
             raise e
         finally:
             self.engine.dispose()
@@ -161,12 +163,12 @@ class DatabaseWrapper:
         """
         inspector = inspect(self.engine)
         schemas = [schema for schema in inspector.get_schema_names() if schema in target_schema_list]
-        response = []
+        response: list = []
         for schema in schemas:
             tables = inspector.get_table_names(schema=schema)
             if len(tables) > 0:
                 for table in tables:
-                    columns = inspector.get_columns(table_name=table, schema=schema)
+                    columns = self.get_table_columns(table_name=table, schema=schema)
                     column_details = ", ".join(
                         f"{schema}.{table}.{column['name']} ({column['type']})" for column in columns
                     )
@@ -175,6 +177,72 @@ class DatabaseWrapper:
         self.engine.dispose()
 
         return response
+
+    def get_table_columns(self, table_name: str, schema: str) -> Dict:
+        inspector = inspect(self.engine)
+        columns = inspector.get_columns(table_name, schema=schema)
+
+        return columns
+
+    @staticmethod
+    def get_numeric_columns(columns) -> dict:
+        """
+        Given a dictionary of column metadata, return a dictionary of numeric columns
+        and their respective data types.
+
+        :param columns: A dictionary where keys are column names and values are SQLAlchemy types.
+        :return: A dictionary with only numeric columns.
+        """
+        numeric_types = ("INTEGER", "FLOAT", "NUMERIC", "DECIMAL", "REAL", "DOUBLE", "BIGINT", "SMALLINT")
+
+        numeric_columns = {
+            col["name"]: col["type"]
+            for col in columns
+            if any(str(col["type"]).upper().startswith(num_type) for num_type in numeric_types)
+        }
+
+        return numeric_columns
+
+    def get_row_count(self, schema_name, table_name) -> int:
+        sql = f"SELECT COUNT(*) FROM {schema_name}.{table_name}"
+
+        with self.engine.connect() as connection:
+            result = connection.execute(sql)
+        count = result.scalar()
+
+        return count
+
+    def get_summary_statistics(self, schema_name, table_name, column_name):
+        with self.engine.connect() as connection:
+            result = connection.execute(f"""
+            SELECT 
+                MIN({column_name}), 
+                MAX({column_name}), 
+                AVG({column_name})
+            FROM {schema_name}.{table_name}
+        """)
+            min_val, max_val, avg_val = result.fetchone()
+        return min_val, max_val, avg_val
+
+    def execute_sql(self, sql: str) -> Tuple[bool, Optional[DataFrame]]:
+        """Execute the given SQL query and returns the result as a DataFrame.
+        We may not always have a proper SQL to run, so we need to catch the error and move on.
+        Args:
+        ----
+            sql (str): The SQL query to be executed.
+
+        Returns:
+        -------
+            Tuple[bool, Optional[pd.DataFrame]]: A tuple containing a boolean indicating success,
+              and the result as a DataFrame or an error message.
+
+        """
+
+        try:
+            result = read_sql(sql, self.db.engine)
+            return True, result
+        except DatabaseError as e:
+            return False, result
 
     def run(self, sql, include_columns):
         return self.db.run(sql, include_columns)

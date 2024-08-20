@@ -78,15 +78,15 @@ class Chunk(BaseModel):
     :type content_kw: str
     """
 
-    project_name: str = None
-    document_name: str = None
+    project_name: str
+    document_name: str
     document_type: Optional[str] = None
-    content: str = None
+    content: str
     source: str
     date_loaded: Optional[datetime] = None
     document_num_char: int
     chunk_num_char: int
-    content_kw: str = None
+    content_kw: str
 
 
 class WeaviateHandler(BaseVDBHandler):
