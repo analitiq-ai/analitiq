@@ -8,7 +8,6 @@ from weaviate.classes.query import Filter, MetadataQuery
 from analitiq.vectordb.weaviate import WeaviateHandler, QUERY_PROPERTIES
 
 
-
 @pytest.fixture(name="mock_client", autouse=True)
 def mock_client_fixture():
     """Mock the client."""

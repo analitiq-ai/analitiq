@@ -193,12 +193,12 @@ class DatabaseWrapper:
         :param columns: A dictionary where keys are column names and values are SQLAlchemy types.
         :return: A dictionary with only numeric columns.
         """
-        numeric_types = ('INTEGER', 'FLOAT', 'NUMERIC', 'DECIMAL', 'REAL', 'DOUBLE', 'BIGINT', 'SMALLINT')
+        numeric_types = ("INTEGER", "FLOAT", "NUMERIC", "DECIMAL", "REAL", "DOUBLE", "BIGINT", "SMALLINT")
 
         numeric_columns = {
-            col['name']: col['type']
+            col["name"]: col["type"]
             for col in columns
-            if any(str(col['type']).upper().startswith(num_type) for num_type in numeric_types)
+            if any(str(col["type"]).upper().startswith(num_type) for num_type in numeric_types)
         }
 
         return numeric_columns
