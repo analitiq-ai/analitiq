@@ -11,6 +11,7 @@ nox.options.sessions = (
     "pylint",
     "mypy",
     "pytest",
+    "pytest_e2e",
     # "coverage",
 )
 locations = "libs/analitiq", "libs/tests", "noxfile.py"
@@ -106,6 +107,25 @@ def pytest_integration(session):
         "pytest",
         "--timeout=15",
         "--capture=sys",
-        "tests/integration/",
+        "libs/tests/integration/",
     )  # in order to see output to stdout set: --capture=tee-sys
 
+@nox.session(python=False)
+def pytest_e2e(session):
+    """Run pytest with e2e tests only."""
+    session.run(
+        "pytest",
+        "--timeout=15",
+        "--capture=sys",
+        "libs/tests/e2e/",
+    )  # in order to see output to stdout set: --capture=tee-sys
+
+@nox.session(python=False)
+def pytest_e2e(session):
+    """Run pytest with e2e tests only."""
+    session.run(
+        "pytest",
+        "--timeout=15",
+        "--capture=sys",
+        "libs/tests/e2e/",
+    )  # in order to see output to stdout set: --capture=tee-sys

@@ -40,7 +40,7 @@ jobs:
       run: poetry install --no-root
 
     - name: Run Nox
-      run: nox --sessions install ruff_format ruff_check pylint mypy pytest coverage
+      run: nox --sessions install ruff_format ruff_check pylint mypy pytest coverage pytest_e2e
 
   yaml_lint:
     runs-on: ubuntu-latest
