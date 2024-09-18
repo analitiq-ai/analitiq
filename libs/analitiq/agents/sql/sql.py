@@ -3,6 +3,7 @@ from typing import List, Tuple, Optional
 from analitiq.logger.logger import logger, chat_logger
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.code_extractor import CodeExtractor
+from analitiq.utils.db.generic_functions import extract_table_name_from_string
 from analitiq.base.Database import DatabaseWrapper
 from analitiq.agents.sql.schema import Table, Tables, SQL, TableCheck
 from langchain.prompts import PromptTemplate
@@ -48,28 +49,6 @@ class Sql:
         self.relevant_tables = ""
         self.response = BaseResponse(self.__class__.__name__)
 
-    @staticmethod
-    def _extract_table_name(input_string: str) -> str:
-        """Extract 'table_name' from the given string by splitting the text by commas.
-
-        taking the first occurrence, and then splitting by dots to take the second occurrence.
-
-        Args:
-        ----
-            input_string (str): The input string containing the table name information.
-
-        Returns:
-        -------
-            str: Extracted table name.
-
-        """
-        # Split the string by comma and take the first occurrence
-        first_part = input_string.split(",")[0]
-
-        # Split the first part by dot and take the second occurrence
-        schema_table = first_part.split(".")[0] + "." + first_part.split(".")[1]
-
-        return schema_table
 
     def load_ddl_into_vdb(self) -> List[str]:
         """Load DDL (Data Definition Language) into the Vector Database (VDB).
@@ -115,7 +94,7 @@ class Sql:
                 chunks = []
                 counter = 0
                 for table_ddl in ddl:
-                    metadata["document_name"] = self._extract_table_name(table_ddl)
+                    metadata["document_name"] = extract_table_name_from_string(table_ddl)
                     metadata["document_type"] = "ddl"
                     chunk = self.vdb.load_list_to_chunk(table_ddl, metadata)
                     chunks.append(chunk)

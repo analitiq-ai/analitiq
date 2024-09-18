@@ -86,6 +86,7 @@ def test_delete_many_like(handler, mock_client):
         where=Filter.by_property("source").like("test")
     )
 
+
 def test_kw_search(handler):
     """Test the kw search."""
     mock_response = MagicMock()
@@ -130,7 +131,7 @@ def test_vector_search(handler):
     result = handler.vector_search("test query", limit=5)
 
     handler.collection.query.near_vector.assert_called_once_with(
-        near_vector=[[0,0,1]],
+        near_vector=[[0, 0, 1]],
         limit=5,
         return_metadata=MetadataQuery(score=True, distance=True),
     )
@@ -148,7 +149,7 @@ def test_vector_search_with_filters(handler):
     result = handler.vector_search("test query", limit=5, filter_properties={"source": "test"})
 
     handler.collection.query.near_vector.assert_called_once_with(
-        near_vector=[[0,0,1]],
+        near_vector=[[0, 0, 1]],
         limit=5,
         return_metadata=MetadataQuery(score=True, distance=True),
         filters=Filter.by_property("source").like("test"),

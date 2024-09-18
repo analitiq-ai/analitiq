@@ -14,13 +14,7 @@ EXAMPLES = ROOT / "services/search_vdb/examples/example_test_files"
 
 
 class DocumentChunkLoader:
-    """Initializes a new instance of `DocumentChunkLoader`.
-
-    Parameters
-    ----------
-        project_name: The name of the project.
-
-    """
+    """Initialize the Document Chunkloader."""
 
     def __init__(self, project_name: str):
         """Initialize the Document Chunkloader."""

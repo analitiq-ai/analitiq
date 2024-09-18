@@ -12,19 +12,14 @@ The script demonstrates:
 
 This script is particularly useful for data analysts who need to ensure data consistency and integrity across different environments.
 """
-
-
 import os
 import sys
+from dotenv import load_dotenv
 from analitiq.utils.db.table_comparison import compare_columns_between_tables
 from analitiq.base.Database import DatabaseWrapper
-from dotenv import load_dotenv
 
-# List of environment variables required for database connections and configurations
-ENV_VARIABLES = ["WEAVIATE_COLLECTION", "WEAVIATE_URL", "WEAVIATE_CLIENT_SECRET", "LLM_MODEL_NAME",
-                 "CREDENTIALS_PROFILE_NAME", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "REGION_NAME",
-                 "DB_NAME", "DB_TYPE", "DB_HOST", "DB_USERNAME", "DB_PASSWORD", "DB_PORT", "DB_DB_NAME",
-                 "DB_SCHEMAS", "DB_THREADS", "DB_KEEPALIVES_IDLE", "DB_CONNECT_TIMEOUT"]
+# Define the environment
+env = 'dev'  # This could be determined in multiple ways, e.g., command-line arguments, another environment variable, etc.
 
 def add_to_sys_path():
     """
@@ -38,7 +33,7 @@ def add_to_sys_path():
     dynamic_path = f"{home_directory}/Documents/Projects/analitiq/libs/"
     sys.path.insert(0, dynamic_path)
 
-def load_env_variables():
+def load_env_variables(env: str = 'dev'):
     """
     Loads environment variables from a .env file using python-dotenv.
 
@@ -48,71 +43,42 @@ def load_env_variables():
     Returns:
         dict: A dictionary containing the values of the required environment variables.
     """
-    load_dotenv()
-    return {variable_name: os.getenv(variable_name) for variable_name in ENV_VARIABLES}
 
-def define_db_params(env_vars):
-    """
-    Defines and returns the database connection parameters for the production database.
+    # Load the appropriate .env file
+    try:
+        dotenv_path = f'/Users/kirillandriychuk/Documents/Projects/analitiq/.env.mb.{env}'
+    except Exception as e:
+        print(e)
 
-    Args:
-        env_vars (dict): Dictionary of environment variables.
+    load_dotenv(dotenv_path=dotenv_path)
 
-    Returns:
-        dict: A dictionary with all the necessary parameters for connecting to the production database.
-    """
     return {
-        "name": 'prod',
-        "type": 'postgres',
-        "host": 'mb-dwh.cycx0gj6menw.eu-west-1.rds.amazonaws.com',
-        "username": 'master',
-        "password": 'qs%W$I?}]Zo6J:aJ(|rQ)!o~YfrO',
-        "port": 5432,
-        "db_name": 'dwh',
-        "db_schemas": 'analytic_stage',
-        "threads": int(env_vars.get("DB_THREADS")),
-        "keepalives_idle": int(env_vars.get("DB_KEEPALIVES_IDLE")),
-        "connect_timeout": int(env_vars.get("DB_CONNECT_TIMEOUT"))
+        "name": os.getenv("DB_NAME"),
+        "type": os.getenv("DB_TYPE"),
+        "host": os.getenv("DB_HOST"),
+        "username": os.getenv("DB_USERNAME"),
+        "password": os.getenv("DB_PASSWORD"),
+        "port": os.getenv("DB_PORT"),
+        "db_name": os.getenv("DB_DB_NAME"),
+        "db_schemas": os.getenv("DB_SCHEMAS"),
+        "threads": int(os.getenv("DB_THREADS")),
+        "keepalives_idle": int(os.getenv("DB_KEEPALIVES_IDLE")),
+        "connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT"))
     }
 
-def define_db_params2(env_vars):
-    """
-    Defines and returns the database connection parameters for the development database.
 
-    Args:
-        env_vars (dict): Dictionary of environment variables.
-
-    Returns:
-        dict: A dictionary with all the necessary parameters for connecting to the development database.
-    """
-    return {
-        "name": 'dev',
-        "type": 'postgres',
-        "host": 'mb-dwh-dev.cycx0gj6menw.eu-west-1.rds.amazonaws.com',
-        "username": 'postgres',
-        "password": '{#!goQP6>9>.g-t{bZ$MPGh}dcF7',
-        "port": 5432,
-        "db_name": 'dwh',
-        "db_schemas": 'analytic_stage',
-        "threads": int(env_vars.get("DB_THREADS")),
-        "keepalives_idle": int(env_vars.get("DB_KEEPALIVES_IDLE")),
-        "connect_timeout": int(env_vars.get("DB_CONNECT_TIMEOUT"))
-    }
 
 if __name__ == "__main__":
     # Add the custom library path to the system path
     add_to_sys_path()
 
-    # Load environment variables necessary for the script
-    env_vars = load_env_variables()
-
     # Define database parameters for both production and development databases
-    db_params = define_db_params(env_vars)
-    db_params2 = define_db_params2(env_vars)
+    db_params_1 = load_env_variables('prod')
+    db_params_2 = load_env_variables('prod')
 
     # Instantiate DatabaseWrapper objects for both production and development databases
-    db = DatabaseWrapper(db_params)
-    db2 = DatabaseWrapper(db_params2)
+    db_1 = DatabaseWrapper(db_params_1)
+    db_2 = DatabaseWrapper(db_params_2)
 
     # Example usage:
     # Prepare the table data dictionary containing details of the tables to be compared
@@ -121,8 +87,8 @@ if __name__ == "__main__":
     # - The schema name
     # - The table name to compare
     table_data = {
-        "Prod DB": (DatabaseWrapper(db_params), db_params['db_schemas'], "journeys"),
-        "Dev DB": (DatabaseWrapper(db_params2), db_params2['db_schemas'], "journeys")
+        "DB1": (DatabaseWrapper(db_params_1), db_params_1['db_schemas'], "model_final_output"),
+        "DB2": (DatabaseWrapper(db_params_2), db_params_2['db_schemas'], "model_final_output_v2")
     }
 
     # Compare the columns between the production and development databases
