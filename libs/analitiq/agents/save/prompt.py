@@ -9,7 +9,8 @@ entity: who sent the message. It can be you (Analitiq) or the user (Human).
 content: the actual message that was sent
 metadata: the contextual information about the message.
 
-Looking at the chat history, use your best judgement to determine what chat message the user is referring to and provide it in your response.
+Looking at the chat history, use your best judgement to determine what chat message the user is referring to 
+and provide it in your response.
 
 response format instructions:
 {format_instructions}

@@ -141,10 +141,13 @@ class DatabaseWrapper:
             self.engine.dispose()
 
     def get_tables_in_schema(self, db_schema):
-        """Get the names of all tables in a given database schema.
+        """
+        Get the names of all tables in a specific database schema.
 
-        :param db_schema: The name of the database schema to retrieve table names from.
+        :param db_schema: The database schema to retrieve tables from.
+        :type db_schema: str
         :return: A list of table names in the specified database schema.
+        :rtype: list[str]
         """
         inspector = inspect(self.engine)
         table_names = inspector.get_table_names(schema=db_schema)

@@ -25,7 +25,9 @@ def retry(max_retries, wait_time):
                     return result
                 except Exception as e:
                     logger.error(f"Retry {retries + 1} for {func.__name__} failed due to {e}")
-                    feedback = f"\nCheck your output and make sure it conforms to instructions! Your previous response created an error:\n{e!s}"  # Update feedback with the latest exception
+                    # Update feedback with the latest exception
+                    feedback = (f"\nCheck your output and make sure it conforms to instructions! "
+                                f"Your previous response created an error:\n{e!s}")
                     retries += 1
                     time.sleep(wait_time)
             logger.info(f"Max retries of function {func} exceeded")
@@ -37,18 +39,8 @@ def retry(max_retries, wait_time):
     return decorator
 
 
-def is_response_clear(response, chat_hist_exists):
-    """Checks if the response is clear based on the provided response object and chat history existence.
-
-    :param response: An object representing the response.
-    :param chat_hist_exists: A boolean indicating if the chat history exists.
-    :return: True if the response is clear, False otherwise.
-    """
-    return bool(response.Clear or not response.Clear and not chat_hist_exists)
-
-
 def extract_hints(text):
-    """Extracts hints from the given text.
+    """Extract hints from the given text.
 
     :param text: The input text.
     :return: A tuple containing the cleaned prompt and the extracted hints.
@@ -67,16 +59,13 @@ def extract_hints(text):
 
 
 def load_yaml(file_path: str) -> Dict[str, Any]:
-    """Loads the configuration file.
+    """
+    Load a YAML file and return the parsed configurations.
 
-    Parameters
-    ----------
-    - config_path (str): The path to the configuration YAML file.
-
-    Returns
-    -------
-    - List[Type]: A list of instantiated service classes.
-
+    :param file_path: The path to the YAML file.
+    :return: A dictionary containing the loaded configurations.
+    :raises ValueError: If the file is empty.
+    :raises FileNotFoundError: If the file does not exist.
     """
     # Create a Path object for the file you want to check
 

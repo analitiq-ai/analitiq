@@ -20,9 +20,7 @@ from analitiq.logger.logger import logger
 from analitiq.vectordb import keyword_extractions
 from analitiq.vectordb.base_handler import BaseVDBHandler
 from analitiq.utils.document_processor import DocumentChunkLoader
-
-
-from analitiq.vectordb import vectorizer
+from analitiq.vectordb import analitiq_vectorizer
 
 ALLOWED_EXTENSIONS = ["py", "yaml", "yml", "sql", "txt", "md", "pdf"]
 LOAD_DOC_CHUNK_SIZE = 2000
@@ -77,7 +75,6 @@ class Chunk(BaseModel):
     :param content_kw: the keywords for keyword search in the chunks
     :type content_kw: str
     """
-
 
     project_name: str
     document_name: str
@@ -174,6 +171,7 @@ class WeaviateHandler(BaseVDBHandler):
 
         self.load_chunks_to_weaviate(chunks)
 
+    # TODO is this even being used anywhere at all?
     def _chunk_text(
         self,
         text,
@@ -194,7 +192,7 @@ class WeaviateHandler(BaseVDBHandler):
         chunks = [
             Chunk(
                 content=chunk,
-                source="loaded_text",
+                source="loaded_text", # TODO this should be moved to method parameters as sources may be passed from API
                 document_type=document_type,
                 document_name=document_name,
                 document_num_char=len(text),
