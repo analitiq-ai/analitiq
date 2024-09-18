@@ -29,7 +29,10 @@ class Sql:
     """
 
     def __init__(self, db: DatabaseWrapper, llm, vdb=None):
-        """Initializes the SQL Agent. SQL Agent writes SQL and executes the SQL against the database. After that SQL Agent returns the result.
+        """Initialize the SQL Agent.
+
+        SQL Agent writes SQL and executes the SQL against the database.
+        After that SQL Agent returns the result.
 
         Args:
         ----

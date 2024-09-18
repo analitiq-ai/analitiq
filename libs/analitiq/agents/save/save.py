@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from analitiq.base.GlobalConfig import GlobalConfig
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.base.BaseResponse import BaseResponse
@@ -34,12 +35,12 @@ class Save:
     """
 
     def __init__(self, output_directory: str = "./extracted"):
-        """Initializes the ChatHistoryProcessor with a session UUID and output directory.
+        """
+        __init__(output_directory: str = "./extracted")
 
-        Parameters
-        ----------
-            output_directory (str): Directory where extracted objects are saved.
+        Initializes an instance of the class.
 
+        :param output_directory: The directory path where the extracted files will be saved. Default is "./extracted".
         """
         self.db = GlobalConfig().get_database()
         self.llm = GlobalConfig().get_llm()
@@ -48,13 +49,15 @@ class Save:
         self.response = BaseResponse(self.__class__.__name__)
 
     def extract_chat_entity(self, user_prompt, num_messages: int = 5) -> None:
-        """Processes the user's prompt, retrieves recent chat messages, and extracts the requested information.
+        """
+        Extracts chat entity based on user prompt.
 
-        Parameters
-        ----------
-            user_prompt (str): The prompt provided by the user, indicating what information to extract.
-            num_messages (int): The number of recent messages to retrieve from chat history for analysis.
-
+        :param user_prompt: the user prompt for generating chat entity
+        :type user_prompt: str
+        :param num_messages: the number of recent messages to load from chat history, default is 5
+        :type num_messages: int
+        :return: the extracted chat entity
+        :rtype: None
         """
         # Load the recent messages from chat history
         chat_history = self.base_memory.get_last_messages(num_messages)
@@ -77,7 +80,7 @@ class Save:
 
         try:
             parsed_response = parser.parse(response.content)
-        except:
+        except Exception as e:
             new_parser = OutputFixingParser.from_llm(parser=parser, llm=self.llm)
             with contextlib.suppress(Exception):
                 parsed_response = new_parser.parse(response.content)
@@ -85,23 +88,22 @@ class Save:
         return parsed_response
 
     def save_object(self, filename: str, message: str) -> None:
-        """Extracts the requested object from the key message and saves it to a file.
+        """
+        Save the provided message to a file with the given filename.
 
-        Parameters
-        ----------
-            filename (str): The name of the file under which the information is saved.
-            message (str): The message identified by the LLM as containing the requested information.
-
+        :param filename: The desired filename for the saved object.
+        :param message: The message to be saved.
+        :return: None
         """
         # Get the session ID
         session = BaseSession()
 
         # Ensure output directory exists
-        if not os.path.exists(self.output_directory):
-            os.makedirs(self.output_directory)
+        if not Path.exists(self.output_directory):
+            Path.mkdir(self.output_directory)
 
         # Save the extracted object to a file
-        filename = os.path.join(self.output_directory, f"{filename}_{session.session_uuid}.txt")
+        filename = Path.join(self.output_directory, f"{filename}_{session.session_uuid}.txt")
         with open(filename, "w") as file:
             file.write(message)
 

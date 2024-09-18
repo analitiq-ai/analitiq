@@ -515,3 +515,6 @@ min-public-methods=1
 # "BaseException, Exception".
 overgeneral-exceptions=builtins.BaseException,
                        builtins.Exception
+
+[libs/tests/*]
+disable=W0212

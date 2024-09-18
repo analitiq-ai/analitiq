@@ -9,6 +9,7 @@ authors = ["Kirill Andriychuk <kirill@analitiq.ai>"]
 license = "MIT"
 keywords = ["analitiq", "llms", "data management", "nl2sql"]
 readme = "README.md"
+
 classifiers= [
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',
@@ -19,12 +20,17 @@ classifiers= [
 packages = [
         {include = "analitiq", from = "./libs" }
 ]
+[[tool.poetry.source]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+priority = "explicit"
+
 
 [tool.ruff]
 line-length = 110
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*.py" = [
+"libs/tests/**/*.py" = [
     # at least this three should be fine in tests:
     "S101", # asserts allowed in tests...
     "ARG", # Unused function args -> fixtures nevertheless are functionally relevant...
@@ -115,9 +121,9 @@ tabulate = "0.9.0"
 psycopg2-binary = "2.9.9"
 json-log-formatter = "^1.0"
 transformers = "^4.41.2"
-torch = "^2.3.1"
-nltk = "^3.8.1"
+nltk = ">=3.9"
 sqlparse = "^0.5.1"
+torch = {version = "^2.4.1+cpu", source = "pytorch-cpu"}
 
 [tool.poetry.group.dev.dependencies]
 pytest-mock = "^1.11"

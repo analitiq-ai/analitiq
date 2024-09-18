@@ -1,3 +1,4 @@
+import pathlib
 import sys
 from typing import Dict, Optional, Any
 
@@ -12,6 +13,9 @@ from analitiq.utils.general import extract_hints
 from analitiq.base.GlobalConfig import GlobalConfig
 from analitiq.base.Graph import Graph
 from analitiq.base.BaseSession import BaseSession
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+LOGPATH = ROOT / "logger"
 
 HELP_RESPONSE = """
 Analitiq [v{version}] is an AI assistant that can examine your SQL files and database structure and answer common questions about your data.

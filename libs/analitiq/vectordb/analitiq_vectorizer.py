@@ -2,7 +2,6 @@ from typing import List, Union
 from transformers import AutoTokenizer, AutoModel
 import numpy as np
 
-
 class AnalitiqVectorizer:
     """A class to handle vectorization of text using Hugging Face models.
 
@@ -64,6 +63,12 @@ class AnalitiqVectorizer:
             The vectors generated from the input text.
 
         """
+        if self.tokenizer is None:
+            errmsg = "ERROR: Tokenizer is not set."
+            raise TypeError(errmsg)
+        if self.model is None:
+            errmsg = "ERROR: No Model is set."
+            raise TypeError(errmsg)
         inputs = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True)
         outputs = self.model(**inputs)
         vectors = outputs.last_hidden_state.mean(dim=1)

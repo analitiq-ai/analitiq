@@ -4,7 +4,9 @@ from analitiq.base.Database import DatabaseWrapper
 
 
 class TestDatabaseWrapper(unittest.TestCase):
-    """:mod:`TestDatabaseWrapper` Module.
+    """Class of testing the database wrapper.
+
+    :mod:`TestDatabaseWrapper` Module.
     ==================================
 
     .. autoclass:: TestDatabaseWrapper(unittest.TestCase)
@@ -13,6 +15,7 @@ class TestDatabaseWrapper(unittest.TestCase):
     """
 
     def setUp(self):
+        """Set the test up."""
         # Mocking the parameters dictionary for the database connection
         self.params = {
             "type": "postgres",
@@ -31,6 +34,7 @@ class TestDatabaseWrapper(unittest.TestCase):
         pass
 
     def test_get_schema_names(self):
+        """Test the get Schema Names."""
         # Mocking the inspector and its method get_schema_names
         inspector_mock = MagicMock()
         inspector_mock.get_schema_names.return_value = ["information_schema", "public", "schema1", "schema2"]
@@ -45,6 +49,7 @@ class TestDatabaseWrapper(unittest.TestCase):
         self.assertEqual(schema_names, ["information_schema", "public", "schema1", "schema2"])
 
     def test_get_tables_in_schema(self):
+        """Test the get tables in schema."""
         # Mocking the inspector and its method get_table_names
         inspector_mock = MagicMock()
         inspector_mock.get_table_names.return_value = ["table1", "table2"]
@@ -59,6 +64,7 @@ class TestDatabaseWrapper(unittest.TestCase):
         self.assertEqual(table_names, ["table2", "table1"])
 
     def test_get_schemas_and_tables(self):
+        """Test the get schemas and tables function."""
         # Mocking the inspector and its methods get_schema_names and get_table_names
         inspector_mock = MagicMock()
         inspector_mock.get_schema_names.return_value = ["information_schema", "schema1", "schema2"]
