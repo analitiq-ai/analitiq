@@ -16,9 +16,9 @@ def is_resource_downloaded(resource):
         return False
 
 
-punkt_downloaded = is_resource_downloaded("tokenizers/punkt")
-punkt_tab_downloaded = is_resource_downloaded("tokenizers/punkt_tab")
-stopwords_downloaded = is_resource_downloaded("corpora/stopwords")
+#punkt_downloaded = is_resource_downloaded("tokenizers/punkt")
+#punkt_tab_downloaded = is_resource_downloaded("tokenizers/punkt_tab")
+#stopwords_downloaded = is_resource_downloaded("corpora/stopwords")
 
 if not punkt_downloaded:
     nltk.download("punkt")
