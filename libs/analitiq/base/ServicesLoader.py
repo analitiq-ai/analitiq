@@ -110,7 +110,7 @@ class ServicesLoader:
                 'ChartService': {
                     'name': 'ChartService',
                     'description': 'Class that represents a service to generate JavaScript charts based on user input and data.',
-                    'path': 'analitiq/services/chart/chart.py',
+                    'path': 'analitiq/agents/chart/chart.py',
                     'class': 'Chart',
                     'method': 'run',
                     'class_docstring_description': 'Class that represents a service to generate JavaScript charts based on user input and data.\n\nThis class determines the appropriate chart type for given data, and generates\nthe corresponding JavaScript chart code.',

@@ -14,7 +14,7 @@ config:
     doc_chunk_size: 2000
     doc_chunk_overlap: 200
 
-# Bellow is the list of CORE services that come pre-built with Analitiq and are located in analitiq/services directory.
+# Bellow is the list of CORE services that come pre-built with Analitiq and are located in analitiq/agents directory.
 services:
 - name: QueryDatabase
   description: "Use this service to query data from the company database. |
@@ -23,7 +23,7 @@ services:
    metrics, trends. Use for questions that typically expect an answer that provides a figure or amount. |
    Use when users asks questions that require analysis or tabular data. Example questions: |
    who are our top customers? What was our revenue last year? Show me the trend of our sales."
-  path: "analitiq/services/sql/sql.py"
+  path: "analitiq/agents/sql/sql.py"
   class: "Sql"
   method: "run"
   inputs:
@@ -34,7 +34,7 @@ services:
   Should be used for when user is asking for an explanation for a description |
   of the methodology or process used to determine something. Example questions: |
   How do we calculate profit? Show me code related to revenue? Where do we process transactions?"
-  path: "analitiq/services/search_vdb/search_vdb.py"
+  path: "analitiq/agents/search_vdb/search_vdb.py"
   class: "SearchVdb"
   method: "run"
   inputs: "text"
