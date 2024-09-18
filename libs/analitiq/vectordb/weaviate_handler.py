@@ -16,7 +16,7 @@ from analitiq.vectordb.base_handler import BaseVDBHandler
 from analitiq.utils.document_processor import DocumentProcessor, group_results_by_properties
 from analitiq.vectordb.schema import Chunk
 
-from analitiq.vectordb import vectorizer
+from analitiq.vectordb import analitiq_vectorizer
 
 VECTOR_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 QUERY_PROPERTIES = ["content"]  # OR content_kw
@@ -144,7 +144,7 @@ class WeaviateHandler(BaseVDBHandler):
             # Get collection specific to the required tenant
             self.collection = multi_collection.with_tenant(self.collection_name)
 
-        self.vectorizer = vectorizer.AnalitiqVectorizer(VECTOR_MODEL_NAME)
+        self.vectorizer = analitiq_vectorizer.AnalitiqVectorizer(VECTOR_MODEL_NAME)
 
     def connect(self):
         """Connect to the Weaviate database."""

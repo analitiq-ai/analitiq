@@ -120,7 +120,7 @@ class ServicesLoader:
                 'MyCustomService': {
                     'name': 'MyCustomService',
                     'description': '',
-                    'path': 'custom_services/my_service.py',
+                    'path': 'custom_agents/my_service.py',
                     'class': 'MyService',
                     'method': 'run',
                     'class_docstring_description': None,

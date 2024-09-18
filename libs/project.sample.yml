@@ -7,7 +7,7 @@ config:
     log_dir: "logs"                           # this is where we save our chat logs.
     latest_run_filename: "latest_run.log"     # this is the log file for the latest run.
     chat_log_dir: "chats"                     # this is where we save our chat logs.
-    services_dir: "custom_services"
+    services_dir: "custom_agents"
     session_uuid_file: 'session_uuid.txt'     # Where session identifier is being recorded. When session is reset.
     message_lookback: 5                       # No. of messages to lookback in current session log by LLM.
   vectordb:
