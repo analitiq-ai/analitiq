@@ -107,6 +107,7 @@ def pytest_integration(session):
         "libs/tests/integration/",
     )  # in order to see output to stdout set: --capture=tee-sys
 
+
 @nox.session(python=False)
 def pytest_e2e(session):
     """Run pytest with e2e tests only."""
