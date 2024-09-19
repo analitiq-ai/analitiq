@@ -4,9 +4,8 @@ from analitiq.agents.sql.sql import Sql
 
 
 class TestSqlMethods(unittest.TestCase):
-    """
+    """ """
 
-    """
     def setUp(self):
         # Patch the dependencies
         self.patcher_db = patch("analitiq.base.GlobalConfig.get_database")

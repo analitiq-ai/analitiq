@@ -1,6 +1,7 @@
 from weaviate.classes.query import Filter
 from typing import Any, Dict, List, Union
 
+
 class PropertyFilter:
     """
     The PropertyFilter class represents a filter on a specific property name.
@@ -8,6 +9,7 @@ class PropertyFilter:
 
     :param name: The name of the property to filter on.
     """
+
     def __init__(self, name: str):
         self.name = name
 
@@ -38,12 +40,9 @@ class QueryBuilder:
         ValueError: Raised when an unsupported logical operator is encountered.
 
     """
+
     def __init__(self):
-        self.operators = {
-            "=": "equal",
-            "!=": "notequal",
-            "like": "like"
-        }
+        self.operators = {"=": "equal", "!=": "notequal", "like": "like"}
 
     def construct_query(self, expression: Dict[str, Any]) -> Filter:
         return self.build_filters(expression)

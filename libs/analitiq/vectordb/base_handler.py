@@ -52,4 +52,3 @@ class BaseVDBHandler(ABC):
     @abstractmethod
     def hybrid_search(self, collection_name: str):
         pass
-

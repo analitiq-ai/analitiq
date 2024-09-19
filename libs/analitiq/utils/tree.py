@@ -35,7 +35,7 @@ def tree(dir_path: Path, prefix: str = ""):
     ```python
     from pathlib import Path
 
-    dir_path = Path('/path/to/directory')
+    dir_path = Path("/path/to/directory")
     tree_generator = tree(dir_path)
 
     for line in tree_generator:

@@ -2,6 +2,7 @@ from typing import List, Union
 from transformers import AutoTokenizer, AutoModel
 import numpy as np
 
+
 class AnalitiqVectorizer:
     """A class to handle vectorization of text using Hugging Face models.
 

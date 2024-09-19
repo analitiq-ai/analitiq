@@ -105,7 +105,7 @@ class Sql:
             filter_expression = {
                 "and": [
                     {"property": "document_name", "operator": "like", "value": schema_name},
-                    {"property": "document_type", "operator": "=", "value": document_type}
+                    {"property": "document_type", "operator": "=", "value": document_type},
                 ]
             }
             response = self.vdb.count_with_filter(filter_expression)
@@ -123,7 +123,7 @@ class Sql:
                     metadata["document_type"] = "ddl"
                     chunk = string_to_chunk(table_ddl, metadata)
                     chunks.append(chunk)
-                    loaded_chunk_counter += + 1
+                    loaded_chunk_counter += +1
 
                 chunks_loaded = self.vdb.load_chunks(chunks)
 
@@ -243,13 +243,15 @@ class Sql:
 
         filter_expression = {
             "and": [
-                {"property": DB_DESCRIPTION_METADATA_PARAM, "operator": "=", "value": DB_DESCRIPTION_METADATA_VALUE}
+                {
+                    "property": DB_DESCRIPTION_METADATA_PARAM,
+                    "operator": "=",
+                    "value": DB_DESCRIPTION_METADATA_VALUE,
+                }
             ]
         }
 
-        response = self.vdb.search_with_filter(
-            query, filter_expression, ["document_name", "document_type"]
-        )
+        response = self.vdb.search_with_filter(query, filter_expression, ["document_name", "document_type"])
 
         if not response:
             logger.info(
@@ -397,12 +399,7 @@ class Sql:
             schema_filters.append({"property": "document_name", "operator": "like", "value": schema})
 
         filter_expression = {
-            "and": [
-                {"property": "document_type", "operator": "=", "value": "ddl"},
-                {
-                    "or": schema_filters
-                }
-            ]
+            "and": [{"property": "document_type", "operator": "=", "value": "ddl"}, {"or": schema_filters}]
         }
 
         return self.vdb.search_with_filter(user_prompt, filter_expression, ["document_name"])

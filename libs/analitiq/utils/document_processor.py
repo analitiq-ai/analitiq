@@ -20,42 +20,42 @@ LOAD_DOC_CHUNK_OVERLAP = 200
 
 def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
     """
-        Converts a given chunk of text into a Chunk object using the provided metadata.
+    Converts a given chunk of text into a Chunk object using the provided metadata.
 
-        This function takes in a chunk string and a metadata dictionary as parameters and creates an instance of the Chunk class using the provided data and additional generated attributes.
+    This function takes in a chunk string and a metadata dictionary as parameters and creates an instance of the Chunk class using the provided data and additional generated attributes.
 
-        Parameters:
-        ----------
-        chunk : str
-            The chunk of text to be converted into a Chunk object.
+    Parameters:
+    ----------
+    chunk : str
+        The chunk of text to be converted into a Chunk object.
 
-        metadata : dict
-            A dictionary containing the required attributes needed to create a Chunk object. The following keys are expected in the dictionary:
+    metadata : dict
+        A dictionary containing the required attributes needed to create a Chunk object. The following keys are expected in the dictionary:
 
-            - "source": The source of the chunk text. (Eg. 'host/database')
-            - "document_type": The type of the document that the text chunk is part of. (Eg. 'ddl')
-            - "document_name": The name of the document that the text chunk is part of. (Eg. 'schema.table')
+        - "source": The source of the chunk text. (Eg. 'host/database')
+        - "document_type": The type of the document that the text chunk is part of. (Eg. 'ddl')
+        - "document_name": The name of the document that the text chunk is part of. (Eg. 'schema.table')
 
-        Returns:
-        -------
-        Chunk
-            A Chunk object representing the provided text chunk. The Chunk object includes the original text chunk, the source, the document type, the document name, the number of characters in the chunk, the date it was loaded, and the extracted keywords from the chunk content.
+    Returns:
+    -------
+    Chunk
+        A Chunk object representing the provided text chunk. The Chunk object includes the original text chunk, the source, the document type, the document name, the number of characters in the chunk, the date it was loaded, and the extracted keywords from the chunk content.
 
-        Example Usage:
-        ------------
-        >>> metadata = {"source": 'host/database', "document_type": 'ddl', "document_name": 'schema.table'}
-        >>> chunk = "CREATE TABLE public.users ( id integer NOT NULL, name text NOT NULL);"
-        >>> result = string_to_chunk(chunk, metadata)
-        >>> print(type(result))
-        <class 'Chunk'>
-        >>> print(result.content)
-        "CREATE TABLE public.users ( id integer NOT NULL, name text NOT NULL);"
-        >>> print(result.source)
-        'host/database'
-        >>> print(result.document_type)
-        'ddl'
-        >>> print(result.document_name)
-        'schema.table'
+    Example Usage:
+    ------------
+    >>> metadata = {"source": "host/database", "document_type": "ddl", "document_name": "schema.table"}
+    >>> chunk = "CREATE TABLE public.users ( id integer NOT NULL, name text NOT NULL);"
+    >>> result = string_to_chunk(chunk, metadata)
+    >>> print(type(result))
+    <class 'Chunk'>
+    >>> print(result.content)
+    "CREATE TABLE public.users ( id integer NOT NULL, name text NOT NULL);"
+    >>> print(result.source)
+    'host/database'
+    >>> print(result.document_type)
+    'ddl'
+    >>> print(result.document_name)
+    'schema.table'
     """
 
     return Chunk(
@@ -117,9 +117,7 @@ def group_results_by_properties(results: object, group_by_properties: List[str])
 
     if not set(group_by_properties).issubset(set(allowed_keys)):
         msg = f"The provided keys for grouping are not allowed. Allowed keys are: {allowed_keys}"
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     grouped_data = {}
     # put all chunks into the same key.
@@ -142,7 +140,10 @@ def group_results_by_properties(results: object, group_by_properties: List[str])
 
 
 def chunk_text(
-        self, text: str, chunk_size: int = LOAD_DOC_CHUNK_SIZE, chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP, token: str = ","
+    text: str,
+    chunk_size: int = LOAD_DOC_CHUNK_SIZE,
+    chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP,
+    token: str = ",",
 ) -> List[str]:
     """
     Split the provided text into chunks based on a token.
@@ -295,7 +296,11 @@ class DocumentProcessor:
         return any(re.search(pattern, text) for pattern in sql_patterns)
 
     def chunk_documents(
-        self, path: str, extension: Optional[str] = None, chunk_size: int = LOAD_DOC_CHUNK_SIZE, chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP
+        self,
+        path: str,
+        extension: Optional[str] = None,
+        chunk_size: int = LOAD_DOC_CHUNK_SIZE,
+        chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP,
     ):
         """
         Loads documents from a given path and chunks them according to the specified parameters.
@@ -357,12 +362,12 @@ class DocumentProcessor:
 
         else:
             msg = f"{path} does not exist or is a special file (e.g., socket, device file, etc.)."
-            raise FileNotFoundError(
-                msg
-            )
+            raise FileNotFoundError(msg)
 
         if extension not in ALLOWED_EXTENSIONS:
-            error_msg = f"The file extension .{extension} is not allowed. Allowed extensions: {ALLOWED_EXTENSIONS}"
+            error_msg = (
+                f"The file extension .{extension} is not allowed. Allowed extensions: {ALLOWED_EXTENSIONS}"
+            )
             raise ValueError(error_msg)
 
         documents = loader.load()

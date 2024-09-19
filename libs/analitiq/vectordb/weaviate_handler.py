@@ -1,5 +1,4 @@
-from typing import List, Tuple, Dict
-from functools import reduce
+from typing import List, Tuple
 import weaviate
 import weaviate.util
 from weaviate.util import generate_uuid5
@@ -413,7 +412,7 @@ class WeaviateHandler(BaseVDBHandler):
                 query=search_kw,
                 query_properties=QUERY_PROPERTIES,
                 return_metadata=MetadataQuery(score=True, distance=True),
-                limit=limit
+                limit=limit,
             )
         except Exception as e:
             logger.error(f"Weaviate error {e}")
@@ -611,63 +610,63 @@ class WeaviateHandler(BaseVDBHandler):
 
     def count_with_filter(self, filter_expression: dict):
         """
-            Count the number of objects in a Weaviate collection by applying filters based on the given filter expression.
+        Count the number of objects in a Weaviate collection by applying filters based on the given filter expression.
 
-            Opens a connection to the Weaviate client and count the objects using passed properties as filters.
-            The filters are created by invoking the _create_filters() method (static method).
+        Opens a connection to the Weaviate client and count the objects using passed properties as filters.
+        The filters are created by invoking the _create_filters() method (static method).
 
-            Parameters:
-            ----------
-            properties : Iterable (list, tuple, etc.)
-                The list of tuples where each tuple consists of a string key representing property
-                and the corresponding value to filter the Weaviate collection objects.
-                e.g. [("document_type", "test_type"), ("source", "host/database")]
+        Parameters:
+        ----------
+        properties : Iterable (list, tuple, etc.)
+            The list of tuples where each tuple consists of a string key representing property
+            and the corresponding value to filter the Weaviate collection objects.
+            e.g. [("document_type", "test_type"), ("source", "host/database")]
 
-            match_type : str, optional (default = "like")
-                The matching type to be used with the properties for filtering.
-                It can hold following values:
-                - "like": Provides a case-insensitive partial match for string throughout the filtered objects.
+        match_type : str, optional (default = "like")
+            The matching type to be used with the properties for filtering.
+            It can hold following values:
+            - "like": Provides a case-insensitive partial match for string throughout the filtered objects.
 
-            Returns:
-            -------
-            WeaviateObjectsHandler
-                The result object that contains an aggregated count over all objects in
-                the collection that match the applied filter.
+        Returns:
+        -------
+        WeaviateObjectsHandler
+            The result object that contains an aggregated count over all objects in
+            the collection that match the applied filter.
 
-            Raises:
-            ------
-            ConnectionError
-                If there is an error in connecting to Weaviate.
+        Raises:
+        ------
+        ConnectionError
+            If there is an error in connecting to Weaviate.
 
-            Notes:
-            -----
-            - Filters are created in the form suitable for the Weaviate client SDK.
-            - If there are multiple filters, they are combined using logical "AND".
+        Notes:
+        -----
+        - Filters are created in the form suitable for the Weaviate client SDK.
+        - If there are multiple filters, they are combined using logical "AND".
 
-            Examples:
-            --------
-            >>> handler = WeaviateHandler(params)
-            >>> filter_expression = filter_expression = {
-                    "or": [
-                        {
-                            "and": [
-                                {"property": "param1", "operator": "like", "value": "hello"},
-                                {"property": "param4", "operator": "not like", "value": "Good Day"}
-                            ]
-                        },
-                        {
-                            "and": [
-                                {"property": "param2", "operator": "=", "value": "ola"},
-                                {"property": "param3", "operator": "=", "value": 1}
-                            ]
-                        }
-                    ]
-                }
-            >>> handler.count_objects_by_properties(properties, "like")
-                WeaviateObjectsBatchGetResponse({"totalCount": 100})
+        Examples:
+        --------
+        >>> handler = WeaviateHandler(params)
+        >>> filter_expression = filter_expression = {
+                "or": [
+                    {
+                        "and": [
+                            {"property": "param1", "operator": "like", "value": "hello"},
+                            {"property": "param4", "operator": "not like", "value": "Good Day"}
+                        ]
+                    },
+                    {
+                        "and": [
+                            {"property": "param2", "operator": "=", "value": "ola"},
+                            {"property": "param3", "operator": "=", "value": 1}
+                        ]
+                    }
+                ]
+            }
+        >>> handler.count_objects_by_properties(properties, "like")
+            WeaviateObjectsBatchGetResponse({"totalCount": 100})
 
-            >>> handler.count_objects_by_properties([], "like")
-                WeaviateObjectsBatchGetResponse({"totalCount": 0})
+        >>> handler.count_objects_by_properties([], "like")
+            WeaviateObjectsBatchGetResponse({"totalCount": 0})
 
         """
         query_builder = QueryBuilder()
@@ -680,11 +679,11 @@ class WeaviateHandler(BaseVDBHandler):
             logger.error(f"Error connecting to Weaviate: {e}")
             return None
 
-        #filters = self._create_filters(properties, match_type)
+        # filters = self._create_filters(properties, match_type)
 
         response = collection.aggregate.over_all(
             total_count=True,
-            filters=filters  # Pass the generated filters directly here
+            filters=filters,  # Pass the generated filters directly here
         )
 
         self.close()
@@ -693,39 +692,39 @@ class WeaviateHandler(BaseVDBHandler):
 
     def delete_collection(self, collection_name: str):
         """
-    Deletes a collection from the Weaviate Vector Database.
+        Deletes a collection from the Weaviate Vector Database.
 
-    This method attempts to delete a collection and all its data from the Weaviate Vector Database. It
-    makes a call to the delete method of the Weaviate client collections object with the provided
-    collection name as the argument. If the operation is successful, it returns True. If an exception occurs
-    during the execution of the operation, it returns False.
+        This method attempts to delete a collection and all its data from the Weaviate Vector Database. It
+        makes a call to the delete method of the Weaviate client collections object with the provided
+        collection name as the argument. If the operation is successful, it returns True. If an exception occurs
+        during the execution of the operation, it returns False.
 
-    Parameters:
-    ----------
-    collection_name : str
-        The name of the collection to be deleted. It is expected to be a string representing a valid
-        collection name.
+        Parameters:
+        ----------
+        collection_name : str
+            The name of the collection to be deleted. It is expected to be a string representing a valid
+            collection name.
 
-    Returns:
-    -------
-    bool
-        A boolean indicating the success of the operation. It returns True if the collection was
-        successfully deleted and False otherwise.
+        Returns:
+        -------
+        bool
+            A boolean indicating the success of the operation. It returns True if the collection was
+            successfully deleted and False otherwise.
 
-    Notes:
-    -----
-    The operation of deleting a collection is destructive and cannot be undone. It will delete the
-    collection and all its data permanently.
+        Notes:
+        -----
+        The operation of deleting a collection is destructive and cannot be undone. It will delete the
+        collection and all its data permanently.
 
-    Using this method will close the connection to the Weaviate client after the operation. This is done
-    in a finally block to ensure the connection is closed even if an exception occurs.
+        Using this method will close the connection to the Weaviate client after the operation. This is done
+        in a finally block to ensure the connection is closed even if an exception occurs.
 
-    Example:
-    --------
-    >>> handler = WeaviateHandler()
-    >>> handler.delete_collection("collection_name")
-    True
-    """
+        Example:
+        --------
+        >>> handler = WeaviateHandler()
+        >>> handler.delete_collection("collection_name")
+        True
+        """
 
         try:
             self.client.collections.delete(collection_name)
@@ -743,5 +742,3 @@ class WeaviateHandler(BaseVDBHandler):
             filters = [Filter.by_property(name).equal(value) for name, value in properties]
 
         return filters
-
-

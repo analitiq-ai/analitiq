@@ -1,7 +1,6 @@
 import pytest
 from langchain_community.docstore.document import Document
-
-from analitiq.utils import sql_recursive_text_splitter
+from libs.analitiq.utils import sql_recursive_text_splitter
 
 
 def test_from_language():

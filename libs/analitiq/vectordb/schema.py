@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
+
 class Chunk(BaseModel):
     """Represents a chunk of text in a document.
 
