@@ -192,15 +192,22 @@ def chunk_text(
     chunks = []
 
     start = 0
+    previous_end = 0
     while start < text_length:
-        # Find the next token after the chunk size
         end = start + chunk_size
         if end < text_length:
             end = text.rfind(token, start, end)
+            if previous_end == end:
+                end = text.rfind(token, end + 1, start + chunk_size)
             if end == -1:
                 end = min(start + chunk_size, text_length)
+        if end > text_length:
+            end = text_length
         chunks.append(text[start:end])
         start = end + 1 - chunk_overlap
+        if end >= text_length:
+            break
+        previous_end = end
 
     return chunks
 
