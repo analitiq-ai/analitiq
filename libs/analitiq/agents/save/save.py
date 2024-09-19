@@ -20,8 +20,12 @@ class ElementToSave(BaseModel):
         description="Timestamp of the element that best matches what the user wants to save"
     )
     content: str = Field(description="The content that the user would like to save")
-    descr: str = Field(description="Short description of the content that you will be saving for the user")
-    filename: str = Field(description="Filename that you think would suit best to the content")
+    descr: str = Field(
+        description="Short description of the content that you will be saving for the user"
+    )
+    filename: str = Field(
+        description="Filename that you think would suit best to the content"
+    )
 
 
 class Save:
@@ -103,7 +107,9 @@ class Save:
             Path.mkdir(self.output_directory)
 
         # Save the extracted object to a file
-        filename = Path.join(self.output_directory, f"{filename}_{session.session_uuid}.txt")
+        filename = Path.join(
+            self.output_directory, f"{filename}_{session.session_uuid}.txt"
+        )
         with open(filename, "w") as file:
             file.write(message)
 

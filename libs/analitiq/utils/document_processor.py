@@ -70,7 +70,9 @@ def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
     )
 
 
-def group_results_by_properties(results: object, group_by_properties: List[str]) -> List:
+def group_results_by_properties(
+    results: object, group_by_properties: List[str]
+) -> List:
     """Groups a list of dictionaries (chunks of data) by given keys and return the grouped data as a list of dictionaries.
 
     Each dictionary in the returned list corresponds to a unique group as determined by `group_by_properties`. The keys of the
@@ -356,46 +358,59 @@ class DocumentProcessor:
 
         if os.path.isfile(path):
             loader = TextLoader(path)
-            extension = os.path.splitext(path)[1][1:]  # Extract the file extension without the dot
+            extension = os.path.splitext(path)[1][
+                1:
+            ]  # Extract the file extension without the dot
         elif os.path.isdir(path):
-            loader = DirectoryLoader(path, glob=f"**/*.{extension}", loader_cls=TextLoader)
+            loader = DirectoryLoader(
+                path, glob=f"**/*.{extension}", loader_cls=TextLoader
+            )
 
         else:
             msg = f"{path} does not exist or is a special file (e.g., socket, device file, etc.)."
             raise FileNotFoundError(msg)
 
         if extension not in ALLOWED_EXTENSIONS:
-            error_msg = (
-                f"The file extension .{extension} is not allowed. Allowed extensions: {ALLOWED_EXTENSIONS}"
-            )
+            error_msg = f"The file extension .{extension} is not allowed. Allowed extensions: {ALLOWED_EXTENSIONS}"
             raise ValueError(error_msg)
 
         documents = loader.load()
-        doc_lengths = {doc.metadata["source"]: len(doc.page_content) for doc in documents}
+        doc_lengths = {
+            doc.metadata["source"]: len(doc.page_content) for doc in documents
+        }
 
         python_documents = [
             doc
             for doc in documents
-            if self.is_python_code(doc.page_content) and not self.is_sql_statements(doc.page_content)
+            if self.is_python_code(doc.page_content)
+            and not self.is_sql_statements(doc.page_content)
         ]
         sql_documents = [
             doc
             for doc in documents
-            if not self.is_python_code(doc.page_content) and self.is_sql_statements(doc.page_content)
+            if not self.is_python_code(doc.page_content)
+            and self.is_sql_statements(doc.page_content)
         ]
         text_documents = [
             doc
             for doc in documents
-            if not self.is_python_code(doc.page_content) and not self.is_sql_statements(doc.page_content)
+            if not self.is_python_code(doc.page_content)
+            and not self.is_sql_statements(doc.page_content)
         ]
 
         python_splitter = RecursiveCharacterTextSplitter.from_language(
-            language=Language.PYTHON, chunk_size=int(chunk_size), chunk_overlap=int(chunk_overlap)
+            language=Language.PYTHON,
+            chunk_size=int(chunk_size),
+            chunk_overlap=int(chunk_overlap),
         )
         python_chunks = python_splitter.split_documents(python_documents)
 
-        sql_splitter = sql_recursive_text_splitter.SQLRecursiveCharacterTextSplitter.from_language(
-            language="SQL", chunk_size=int(chunk_size), chunk_overlap=int(chunk_overlap)
+        sql_splitter = (
+            sql_recursive_text_splitter.SQLRecursiveCharacterTextSplitter.from_language(
+                language="SQL",
+                chunk_size=int(chunk_size),
+                chunk_overlap=int(chunk_overlap),
+            )
         )
         sql_chunks = sql_splitter.split_documents(sql_documents)
 

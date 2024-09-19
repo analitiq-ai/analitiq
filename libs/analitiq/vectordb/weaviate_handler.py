@@ -12,7 +12,10 @@ from weaviate.collections.classes.internal import QueryReturn
 from analitiq.logger.logger import logger
 from analitiq.utils import keyword_extractions
 from analitiq.vectordb.base_handler import BaseVDBHandler
-from analitiq.utils.document_processor import DocumentProcessor, group_results_by_properties
+from analitiq.utils.document_processor import (
+    DocumentProcessor,
+    group_results_by_properties,
+)
 from analitiq.vectordb.schema import Chunk
 
 from analitiq.vectordb import analitiq_vectorizer
@@ -148,7 +151,8 @@ class WeaviateHandler(BaseVDBHandler):
     def connect(self):
         """Connect to the Weaviate database."""
         self.client: weaviate.WeaviateClient = weaviate.connect_to_wcs(
-            cluster_url=self.params["host"], auth_credentials=AuthApiKey(self.params["api_key"])
+            cluster_url=self.params["host"],
+            auth_credentials=AuthApiKey(self.params["api_key"]),
         )
 
         if not self.client.collections.exists(self.collection_name):
@@ -157,7 +161,9 @@ class WeaviateHandler(BaseVDBHandler):
         else:
             logger.info(f"Existing VDB Collection name: {self.collection_name}")
 
-    def __get_tenant_collection_object(self, collection_name: str, tenant_name: str) -> object:
+    def __get_tenant_collection_object(
+        self, collection_name: str, tenant_name: str
+    ) -> object:
         """
         Returns the collection object for multi tenancy collection
 
@@ -279,14 +285,18 @@ class WeaviateHandler(BaseVDBHandler):
         except Exception as e:
             logger.error(e)
 
-        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
+        collection = self.__get_tenant_collection_object(
+            self.collection_name, self.collection_name
+        )
 
         with collection.batch.dynamic() as batch:
             for chunk in chunks:
                 uuid = generate_uuid5(chunk.model_dump())
                 hf_vector = self.vectorizer.vectorize(chunk.content)
                 try:
-                    response = batch.add_object(properties=chunk.model_dump(), uuid=uuid, vector=hf_vector)
+                    response = batch.add_object(
+                        properties=chunk.model_dump(), uuid=uuid, vector=hf_vector
+                    )
                     logger.info(response)
                     chunks_loaded += 1
                 except Exception as e:
@@ -407,7 +417,9 @@ class WeaviateHandler(BaseVDBHandler):
 
         try:
             self.client.connect()
-            collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
+            collection = self.__get_tenant_collection_object(
+                self.collection_name, self.collection_name
+            )
             response: QueryReturn = collection.query.bm25(
                 query=search_kw,
                 query_properties=QUERY_PROPERTIES,
@@ -480,7 +492,9 @@ class WeaviateHandler(BaseVDBHandler):
         try:
             query_vector = self.vectorizer.vectorize(query)
             self.client.connect()
-            collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
+            collection = self.__get_tenant_collection_object(
+                self.collection_name, self.collection_name
+            )
             response: QueryReturn = collection.query.near_vector(
                 near_vector=query_vector,
                 limit=limit,
@@ -536,14 +550,18 @@ class WeaviateHandler(BaseVDBHandler):
             combined[uuid]["score"] += vector_weight * (1 / (60 + rank))
 
         # Convert the combined dictionary to a list and sort by score
-        combined_list = sorted(combined.values(), key=lambda x: x["score"], reverse=True)
+        combined_list = sorted(
+            combined.values(), key=lambda x: x["score"], reverse=True
+        )
 
         # Extract only the results (up to the specified limit)
         reranked_results = [item["result"] for item in combined_list[:limit]]
 
         return QueryReturn(objects=reranked_results)
 
-    def search_with_filter(self, query: str, filter_expression: dict = None, group_properties: list = None):
+    def search_with_filter(
+        self, query: str, filter_expression: dict = None, group_properties: list = None
+    ):
         """Retrieve objects from the collection that have a property whose value matches the given pattern.
 
         Example:
@@ -583,7 +601,9 @@ class WeaviateHandler(BaseVDBHandler):
 
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
-        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
+        collection = self.__get_tenant_collection_object(
+            self.collection_name, self.collection_name
+        )
         try:
             query_vector = self.vectorizer.vectorize(query)
 
@@ -672,7 +692,9 @@ class WeaviateHandler(BaseVDBHandler):
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
 
-        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
+        collection = self.__get_tenant_collection_object(
+            self.collection_name, self.collection_name
+        )
         try:
             self.client.connect()
         except Exception as e:
@@ -737,8 +759,12 @@ class WeaviateHandler(BaseVDBHandler):
     @staticmethod
     def _create_filters(properties: list, match_type: str):
         if match_type == "like":
-            filters = [Filter.by_property(name).like(value) for name, value in properties]
+            filters = [
+                Filter.by_property(name).like(value) for name, value in properties
+            ]
         else:
-            filters = [Filter.by_property(name).equal(value) for name, value in properties]
+            filters = [
+                Filter.by_property(name).equal(value) for name, value in properties
+            ]
 
         return filters

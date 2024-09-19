@@ -10,7 +10,9 @@ class Column(BaseModel):
 class Table(BaseModel):
     SchemaName: str = Field(description="The schema where this table resides.")
     TableName: str = Field(description="The name of the table.")
-    Columns: List[Column] = Field(description="A list of relevant columns in the table.")
+    Columns: List[Column] = Field(
+        description="A list of relevant columns in the table."
+    )
 
     def to_json(self):
         # Convert model to JSON string

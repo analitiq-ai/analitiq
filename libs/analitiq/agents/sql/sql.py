@@ -101,18 +101,31 @@ class Sql:
             # logger.info(f"DDL for {schema_name}: {ddl}")
 
             # Check if DDL in VDB
-            meta_parameters = [("document_name", schema_name), ("document_type", document_type)]
+            meta_parameters = [
+                ("document_name", schema_name),
+                ("document_type", document_type),
+            ]
             filter_expression = {
                 "and": [
-                    {"property": "document_name", "operator": "like", "value": schema_name},
-                    {"property": "document_type", "operator": "=", "value": document_type},
+                    {
+                        "property": "document_name",
+                        "operator": "like",
+                        "value": schema_name,
+                    },
+                    {
+                        "property": "document_type",
+                        "operator": "=",
+                        "value": document_type,
+                    },
                 ]
             }
             response = self.vdb.count_with_filter(filter_expression)
 
             loaded_chunk_counter = 0
             if response.total_count and response.total_count > 0:
-                logger.info(f"[VDB] Found {response.total_count} ddl documents for schema {schema_name}.")
+                logger.info(
+                    f"[VDB] Found {response.total_count} ddl documents for schema {schema_name}."
+                )
                 # TODO add checking here for when it was last loaded
 
             else:  # if the DDL does not exist in VDB, we load it
@@ -127,7 +140,9 @@ class Sql:
 
                 chunks_loaded = self.vdb.load_chunks(chunks)
 
-                logger.info(f"Loaded {counter} chunks for schema {schema_name} into Vector Database.")
+                logger.info(
+                    f"Loaded {counter} chunks for schema {schema_name} into Vector Database."
+                )
 
         return loaded_chunk_counter
 
@@ -158,7 +173,9 @@ class Sql:
         )
         response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
         logger.info(f"Relevant Tables: {response.to_json()}")
-        chat_logger.info(f"Assistant: List of tables believed to be relevant - {response.to_json()}")
+        chat_logger.info(
+            f"Assistant: List of tables believed to be relevant - {response.to_json()}"
+        )
 
         schema_dict = {}
 
@@ -190,7 +207,8 @@ class Sql:
             for table in tables:
                 output_lines.append(f"  - Table: {schema}.{table.TableName}")
                 column_details = ", ".join(
-                    f"{column.ColumnName} ({column.DataType})" for column in table.Columns
+                    f"{column.ColumnName} ({column.DataType})"
+                    for column in table.Columns
                 )
                 output_lines.append(f"    - Columns: {column_details}")
         return "\n".join(output_lines)
@@ -251,7 +269,9 @@ class Sql:
             ]
         }
 
-        response = self.vdb.search_with_filter(query, filter_expression, ["document_name", "document_type"])
+        response = self.vdb.search_with_filter(
+            query, filter_expression, ["document_name", "document_type"]
+        )
 
         if not response:
             logger.info(
@@ -291,14 +311,18 @@ class Sql:
             if result.empty:
                 chat_logger.info("SQL executed successfully, but result is empty.")
             else:
-                chat_logger.info(f"SQL executed successfully. Converted to DataFrame. {result}")
+                chat_logger.info(
+                    f"SQL executed successfully. Converted to DataFrame. {result}"
+                )
 
             return True, result
         except DatabaseError as e:
             chat_logger.error(f"Error executing SQL. {e!s}")
             return False, str(e)
 
-    def get_sql_from_llm(self, docs_ddl: Optional[str] = None, docs_schema: Optional[str] = None) -> str:
+    def get_sql_from_llm(
+        self, docs_ddl: Optional[str] = None, docs_schema: Optional[str] = None
+    ) -> str:
         """Generates SQL from the LLM (Language Model) based on provided DDL and schema documentation.
 
         Args:
@@ -320,11 +344,15 @@ class Sql:
             Make sure you use only the available database tables and columns.
             Each table is prepended with a schema name like this schema_name.table.name
             {docs_ddl_placeholder}
-            """.format(docs_ddl_placeholder="\n".join(docs_ddl))
+            """.format(
+                docs_ddl_placeholder="\n".join(docs_ddl)
+            )
         if docs_schema:
             docs_schema = """Here is some additional documentation that you may find useful to make your SQL more accurate:
             {docs_schema_placeholder}
-            """.format(docs_schema_placeholder="\n".join(docs_schema))
+            """.format(
+                docs_schema_placeholder="\n".join(docs_schema)
+            )
 
         parser = JsonOutputParser(pydantic_object=SQL)
 
@@ -372,7 +400,12 @@ class Sql:
             glued_documents.append(glued_text)
         return glued_documents
 
-    def _set_result(self, result: pd.DataFrame, sql: Optional[str] = None, explanation: Optional[str] = None):
+    def _set_result(
+        self,
+        result: pd.DataFrame,
+        sql: Optional[str] = None,
+        explanation: Optional[str] = None,
+    ):
         """Sets the result of the SQL execution into the response object.
 
         Args:
@@ -396,13 +429,20 @@ class Sql:
         # Build filters for Weaviate DB to use to find DB Schemas
         schema_filters = []
         for schema in self.db.params["db_schemas"]:
-            schema_filters.append({"property": "document_name", "operator": "like", "value": schema})
+            schema_filters.append(
+                {"property": "document_name", "operator": "like", "value": schema}
+            )
 
         filter_expression = {
-            "and": [{"property": "document_type", "operator": "=", "value": "ddl"}, {"or": schema_filters}]
+            "and": [
+                {"property": "document_type", "operator": "=", "value": "ddl"},
+                {"or": schema_filters},
+            ]
         }
 
-        return self.vdb.search_with_filter(user_prompt, filter_expression, ["document_name"])
+        return self.vdb.search_with_filter(
+            user_prompt, filter_expression, ["document_name"]
+        )
 
     def run(self, user_prompt: str) -> BaseResponse:
         """Main method to run the SQL agent based on the user's prompt.
@@ -456,7 +496,9 @@ class Sql:
         docs_ddl_formatted: str = None
 
         if not docs_ddl and not docs_schema:
-            self.response.add_text_to_metadata("No supporting documents found in Vector DB to query data.")
+            self.response.add_text_to_metadata(
+                "No supporting documents found in Vector DB to query data."
+            )
             return self.response
 
         if docs_ddl:
@@ -535,7 +577,9 @@ class Sql:
         # if we do not have ddl_docs docs_schema and context, there is little point trying to create SQL.
 
         if not docs_ddl and not docs_schema:
-            self.response.add_text_to_metadata("No supporting documents found in Vector DB to query data.")
+            self.response.add_text_to_metadata(
+                "No supporting documents found in Vector DB to query data."
+            )
             yield self.response.to_json()
 
             return

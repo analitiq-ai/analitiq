@@ -22,7 +22,9 @@ class BaseResponse:
 
     def __str__(self):
         content_str = str(self.content)
-        metadata_str = ", ".join(f"{key}: {value}" for key, value in self.metadata.items())
+        metadata_str = ", ".join(
+            f"{key}: {value}" for key, value in self.metadata.items()
+        )
         return f"Content: {content_str}\nMetadata: {metadata_str}"
 
     def to_json_str(self):
@@ -31,7 +33,9 @@ class BaseResponse:
         :return: A JSON string representation of the object.
         :rtype: str
         """
-        return json.dumps({"content": self.get_content_str(), "metadata": self.metadata})
+        return json.dumps(
+            {"content": self.get_content_str(), "metadata": self.metadata}
+        )
 
     def to_json(self):
         """Returns a JSON string representation of the object.

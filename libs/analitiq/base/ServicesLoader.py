@@ -142,7 +142,12 @@ class ServicesLoader:
 
                 try:
                     service_class = self.load_service_class(service)
-                except (FileNotFoundError, ValueError, AttributeError, ImportError) as e:
+                except (
+                    FileNotFoundError,
+                    ValueError,
+                    AttributeError,
+                    ImportError,
+                ) as e:
                     # Log and display the error without breaking the execution
                     logger.error(e)
                 else:

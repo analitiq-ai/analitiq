@@ -23,7 +23,9 @@ class SQLRecursiveCharacterTextSplitter(RecursiveCharacterTextSplitter):
         )
 
     @classmethod
-    def from_language(cls, language: str = "SQL", **kwargs: Any) -> "SQLRecursiveCharacterTextSplitter":
+    def from_language(
+        cls, language: str = "SQL", **kwargs: Any
+    ) -> "SQLRecursiveCharacterTextSplitter":
         """Get data from Language."""
         if language.upper() != "SQL":
             errmsg = "This splitter only supports SQL language."

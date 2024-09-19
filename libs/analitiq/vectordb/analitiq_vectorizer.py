@@ -48,7 +48,9 @@ class AnalitiqVectorizer:
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
         self.model = AutoModel.from_pretrained(self.model_name_or_path)
 
-    def vectorize(self, text: Union[str, List[str]], flatten: bool = True) -> np.ndarray:
+    def vectorize(
+        self, text: Union[str, List[str]], flatten: bool = True
+    ) -> np.ndarray:
         """Generate vectors for the given input text.
 
         Parameters
@@ -70,7 +72,9 @@ class AnalitiqVectorizer:
         if self.model is None:
             errmsg = "ERROR: No Model is set."
             raise TypeError(errmsg)
-        inputs = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True)
+        inputs = self.tokenizer(
+            text, return_tensors="pt", padding=True, truncation=True
+        )
         outputs = self.model(**inputs)
         vectors = outputs.last_hidden_state.mean(dim=1)
 

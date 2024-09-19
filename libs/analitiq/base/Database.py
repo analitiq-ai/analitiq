@@ -77,7 +77,9 @@ class DatabaseSession:
     """
 
     def __init__(self, engine):
-        self.session_factory = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+        self.session_factory = sessionmaker(
+            autocommit=False, autoflush=False, bind=engine
+        )
         self.Session = scoped_session(self.session_factory)
 
     def __enter__(self):
@@ -165,7 +167,11 @@ class DatabaseWrapper:
         :rtype: Dict
         """
         inspector = inspect(self.engine)
-        schemas = [schema for schema in inspector.get_schema_names() if schema in target_schema_list]
+        schemas = [
+            schema
+            for schema in inspector.get_schema_names()
+            if schema in target_schema_list
+        ]
         response: list = []
         for schema in schemas:
             tables = inspector.get_table_names(schema=schema)
@@ -173,7 +179,8 @@ class DatabaseWrapper:
                 for table in tables:
                     columns = self.get_table_columns(table_name=table, schema=schema)
                     column_details = ", ".join(
-                        f"{schema}.{table}.{column['name']} ({column['type']})" for column in columns
+                        f"{schema}.{table}.{column['name']} ({column['type']})"
+                        for column in columns
                     )
                     response.append(column_details)
 
@@ -196,12 +203,24 @@ class DatabaseWrapper:
         :param columns: A dictionary where keys are column names and values are SQLAlchemy types.
         :return: A dictionary with only numeric columns.
         """
-        numeric_types = ("INTEGER", "FLOAT", "NUMERIC", "DECIMAL", "REAL", "DOUBLE", "BIGINT", "SMALLINT")
+        numeric_types = (
+            "INTEGER",
+            "FLOAT",
+            "NUMERIC",
+            "DECIMAL",
+            "REAL",
+            "DOUBLE",
+            "BIGINT",
+            "SMALLINT",
+        )
 
         numeric_columns = {
             col["name"]: col["type"]
             for col in columns
-            if any(str(col["type"]).upper().startswith(num_type) for num_type in numeric_types)
+            if any(
+                str(col["type"]).upper().startswith(num_type)
+                for num_type in numeric_types
+            )
         }
 
         return numeric_columns
@@ -217,13 +236,15 @@ class DatabaseWrapper:
 
     def get_summary_statistics(self, schema_name, table_name, column_name):
         with self.engine.connect() as connection:
-            result = connection.execute(f"""
+            result = connection.execute(
+                f"""
             SELECT 
                 MIN({column_name}), 
                 MAX({column_name}), 
                 AVG({column_name})
             FROM {schema_name}.{table_name}
-        """)
+        """
+            )
             min_val, max_val, avg_val = result.fetchone()
         return min_val, max_val, avg_val
 
