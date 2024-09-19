@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from analitiq.logger.logger import logger
 
 
-class BaseVDBHandler(ABC):
+class BaseVectorDatabase(ABC):
     """A base class for database handlers to manage common functionalities."""
 
     def __init__(self, params):

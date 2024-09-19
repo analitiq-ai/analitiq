@@ -1,7 +1,7 @@
 from typing import Literal, AsyncGenerator, Union
 from analitiq.logger.logger import logger as alogger
 from analitiq.base.BaseResponse import BaseResponse
-from analitiq.vectordb.weaviate_handler import WeaviateHandler
+from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
 
 DEFAULT_SEARCH_MODE = "hybrid"
 

@@ -19,14 +19,15 @@ sys.path.insert(0, dynamic_path)
 Loading all SQL files from a directory into your Weaviate vectore store and indexing them for search
 
 ```python
-from analitiq.vectordb.weaviate_handler import WeaviateHandler
+from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
+
 params = {
     "project_name": "my_project",
     "host": "https://XXXXXXX.weaviate.network",
     "api_key": "XXXXXX"
 }
 
-vdb=WeaviateHandler(params)
+vdb = WeaviateHandler(params)
 FILE_PATH = './project/My_Project/sql'
 
 vdb.load(FILE_PATH, 'sql')
@@ -35,14 +36,15 @@ vdb.load(FILE_PATH, 'sql')
 Loading one file into your Weaviate vectore store and indexing it for search
 
 ```python
-from analitiq.vectordb.weaviate_handler import WeaviateHandler
+from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
+
 params = {
     "project_name": "my_project",
     "host": "https://XXXXXXX.weaviate.network",
     "api_key": "XXXXXX"
 }
 
-vdb=WeaviateHandler(params)
+vdb = WeaviateHandler(params)
 FILE_PATH = './project/My_Project/my_file.sql'
 vdb.load_file(FILE_PATH)
 ```
@@ -54,15 +56,17 @@ Our search service offers two primary functionalities: performing keyword search
 The `kw_search` method performs a keyword search in the database and returns a list of documents matching the search query.
 
 Usage Example:
+
 ```python
-from analitiq.vectordb.weaviate_handler import WeaviateHandler
+from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
+
 params = {
     "project_name": "my_project",
     "host": "https://XXXXXXX.weaviate.network",
     "api_key": "XXXXXX"
 }
 
-weaviate_handler=WeaviateHandler(params)
+weaviate_handler = WeaviateHandler(params)
 FILE_PATH = './project/My_Project/my_file.sql'
 weaviate_handler.load_file(FILE_PATH)
 search_results = weaviate_handler.kw_search("climate change", limit=5)
@@ -88,15 +92,17 @@ The method returns a dictionary containing the search results. Each item in the 
 The `kw_search_grouped` method extends the keyword search functionality by grouping the search results based on their document_name and source. This method is useful for analyzing the distribution of documents across different sources or document types.
 
 Usage Example:
+
 ```python
-from analitiq.vectordb.weaviate_handler import WeaviateHandler
+from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
+
 params = {
     "project_name": "my_project",
     "host": "https://XXXXXXX.weaviate.network",
     "api_key": "XXXXXX"
 }
 
-weaviate_handler=WeaviateHandler(params)
+weaviate_handler = WeaviateHandler(params)
 FILE_PATH = './project/My_Project/my_file.sql'
 weaviate_handler.load_file(FILE_PATH)
 grouped_results = weaviate_handler.kw_search_grouped("sustainable energy", limit=5)
