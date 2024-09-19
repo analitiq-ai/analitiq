@@ -42,6 +42,8 @@ jobs:
     - name: Run Nox
       env:
         WEAVIATE_COLLECTION: ${{ secrets.WEAVIATE_COLLECTION }}
+        WEAVIATE_URL: ${{ secrets.WEAVIATE_URL }}
+        WEAVIATE_CLIENT_SECRET: ${{secrets.WEAVIATE_CLIENT_SECRET}}
         LLM_MODEL_NAME: ${{ secrets.LLM_MODEL_NAME }}
         CREDENTIALS_PROFILE_NAME: ${{ secrets.CREDENTIALS_PROFILE_NAME }}
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
