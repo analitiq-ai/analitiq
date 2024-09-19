@@ -40,7 +40,27 @@ jobs:
       run: poetry install --no-root
 
     - name: Run Nox
-      run: nox --sessions install ruff_format ruff_check pylint mypy pytest coverage
+      env:
+        WEAVIATE_COLLECTION: ${{ secrets.WEAVIATE_COLLECTION }}
+        WEAVIATE_URL: ${{ secrets.WEAVIATE_URL }}
+        WEAVIATE_CLIENT_SECRET: ${{secrets.WEAVIATE_CLIENT_SECRET}}
+        LLM_MODEL_NAME: ${{ secrets.LLM_MODEL_NAME }}
+        CREDENTIALS_PROFILE_NAME: ${{ secrets.CREDENTIALS_PROFILE_NAME }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        REGION_NAME: ${{ secrets.REGION_NAME }}
+        DB_NAME: ${{ secrets.DB_NAME }}
+        DB_TYPE: ${{ secrets.DB_TYPE }}
+        DB_HOST: ${{ secrets.DB_HOST }}
+        DB_USERNAME: ${{ secrets.DB_USERNAME }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        DB_PORT: ${{ secrets.DB_PORT }}
+        DB_DB_NAME: ${{ secrets.DB_DB_NAME }}
+        DB_SCHEMAS: ${{ secrets.DB_SCHEMAS }}
+        DB_THREADS: ${{ secrets.DB_THREADS }}
+        DB_KEEPALIVES_IDLE: ${{ secrets.DB_KEEPALIVES_IDLE }}
+        DB_CONNECT_TIMEOUT: ${{ secrets.DB_CONNECT_TIMEOUT }}
+      run: nox --sessions install ruff_format ruff_check pylint mypy pytest coverage pytest_e2e
 
   yaml_lint:
     runs-on: ubuntu-latest
