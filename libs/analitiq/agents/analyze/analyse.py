@@ -61,7 +61,9 @@ class Analyze:
         # we combine the responses from all higher level nodes
         combined_responses = ""
         for item in service_input:
-            combined_responses = combined_responses + f"{item.content_format}:\n{item.content}"
+            combined_responses = (
+                combined_responses + f"{item.content_format}:\n{item.content}"
+            )
 
         parser = PydanticOutputParser(pydantic_object=AnalysisResponse)
 

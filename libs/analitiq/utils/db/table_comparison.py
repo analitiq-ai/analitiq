@@ -89,7 +89,10 @@ def compare_columns_between_tables(table_data, detailed: bool = False):
     num_col_discrepancies = []
 
     for column in common_columns:
-        if column in metadata[db1]["num_col_stats"] and column in metadata[db2]["num_col_stats"]:
+        if (
+            column in metadata[db1]["num_col_stats"]
+            and column in metadata[db2]["num_col_stats"]
+        ):
             # Extract min, max, avg statistics for the common column from both databases
             min_1, max_1, avg_1 = metadata[db1]["num_col_stats"][column]
             min_2, max_2, avg_2 = metadata[db2]["num_col_stats"][column]
@@ -112,7 +115,9 @@ def compare_columns_between_tables(table_data, detailed: bool = False):
             db1_stats = discrepancy[f"{db1}_stats"]
             db2_stats = discrepancy[f"{db2}_stats"]
             print(f"Column: '{column}'")
-            print(f"  {db1} - Min: {db1_stats[0]:,.2f}, Max: {db1_stats[1]:,.2f}, Avg: {db1_stats[2]:,.10f}")
+            print(
+                f"  {db1} - Min: {db1_stats[0]:,.2f}, Max: {db1_stats[1]:,.2f}, Avg: {db1_stats[2]:,.10f}"
+            )
             print(
                 f"  {db2} - Min: {db2_stats[0]:,.2f}, Max: {db2_stats[1]:,.2f}, Avg: {db2_stats[2]:,.10f}\n"
             )

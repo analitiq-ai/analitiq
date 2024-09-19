@@ -1,5 +1,3 @@
-
-
 def extract_table_name_from_string(input_string: str) -> str:
     """Extract 'table_name' from the given string by splitting the text by commas,
     taking the first occurrence, and then splitting by dots to take the second occurrence.

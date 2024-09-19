@@ -59,7 +59,9 @@ proj_config = check_env_vars(proj_config)
 
 
 log_file_path = _log_dir / log_config.get("handlers").get("file").get("filename")
-chat_log_file_path = os.path.join(_log_dir, log_config["handlers"]["chat_file"]["filename"])
+chat_log_file_path = os.path.join(
+    _log_dir, log_config["handlers"]["chat_file"]["filename"]
+)
 
 
 log_config["handlers"]["file"]["filename"] = log_file_path

@@ -1,7 +1,6 @@
 """This is an example of how to load documents into VectorDB before allowing analitiq access them."""
-
 import os
-from libs.analitiq.vectordb.weaviate import WeaviateHandler
+from libs.analitiq.vectordb.weaviate_handler import WeaviateHandler
 from dotenv import load_dotenv
 import sys
 
@@ -26,19 +25,40 @@ env_vars = load_env_variables()
 
 def define_vdb_params(env_vars):
     return {
-        "collection_name": "test",
-        "host": env_vars.get("WEAVIATE_URL"),
-        "api_key": env_vars.get("WEAVIATE_CLIENT_SECRET")
+        "collection_name": 'test_collection',
+        "host": "xxxx",
+        "api_key": "xxxxx",
     }
 
 
 vdb_params = define_vdb_params(env_vars)
-vdb = WeaviateHandler(vdb_params)
+weaviate_handler = WeaviateHandler(vdb_params)
 
+weaviate_handler.client.connect()
+#response = weaviate_handler.delete_collection("test_collection")
+#weaviate_handler.client.connect()
+#response = weaviate_handler.create_collection("test_collection")
+#response = weaviate_handler.load_dir('/Users/kirillandriychuk/Documents/Projects/analitiq/libs/tests/vectordb/test_dir', 'txt')
 
-response = vdb.get_all_objects()
-for _item in response:
-    pass
+filter_expression = {
+    "and": [
+        {
+            "or": [
+                {"property": "document_name", "operator": "like", "value": "test"},
+                {"property": "content", "operator": "!=", "value": "This is the first test document."}
+            ]
+        },
+        {
+            "or": [
+                {"property": "document_name", "operator": "=", "value": "project_plan.txt"},
+                {"property": "content", "operator": "like", "value": 'project'}
+            ]
+        }
+    ]
+}
+response = weaviate_handler.count_with_filter(filter_expression)
+print(response)
+
 #for g in response.groups:
 #    print(g.total_count)
     #print(g.properties)

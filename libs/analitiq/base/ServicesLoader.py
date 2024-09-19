@@ -110,7 +110,7 @@ class ServicesLoader:
                 'ChartService': {
                     'name': 'ChartService',
                     'description': 'Class that represents a service to generate JavaScript charts based on user input and data.',
-                    'path': 'analitiq/services/chart/chart.py',
+                    'path': 'analitiq/agents/chart/chart.py',
                     'class': 'Chart',
                     'method': 'run',
                     'class_docstring_description': 'Class that represents a service to generate JavaScript charts based on user input and data.\n\nThis class determines the appropriate chart type for given data, and generates\nthe corresponding JavaScript chart code.',
@@ -120,7 +120,7 @@ class ServicesLoader:
                 'MyCustomService': {
                     'name': 'MyCustomService',
                     'description': '',
-                    'path': 'custom_services/my_service.py',
+                    'path': 'custom_agents/my_service.py',
                     'class': 'MyService',
                     'method': 'run',
                     'class_docstring_description': None,
@@ -142,7 +142,12 @@ class ServicesLoader:
 
                 try:
                     service_class = self.load_service_class(service)
-                except (FileNotFoundError, ValueError, AttributeError, ImportError) as e:
+                except (
+                    FileNotFoundError,
+                    ValueError,
+                    AttributeError,
+                    ImportError,
+                ) as e:
                     # Log and display the error without breaking the execution
                     logger.error(e)
                 else:

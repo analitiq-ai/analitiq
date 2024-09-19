@@ -2,6 +2,7 @@ from typing import List, Union
 from transformers import AutoTokenizer, AutoModel
 import numpy as np
 
+
 class AnalitiqVectorizer:
     """A class to handle vectorization of text using Hugging Face models.
 
@@ -47,7 +48,9 @@ class AnalitiqVectorizer:
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
         self.model = AutoModel.from_pretrained(self.model_name_or_path)
 
-    def vectorize(self, text: Union[str, List[str]], flatten: bool = True) -> np.ndarray:
+    def vectorize(
+        self, text: Union[str, List[str]], flatten: bool = True
+    ) -> np.ndarray:
         """Generate vectors for the given input text.
 
         Parameters
@@ -69,7 +72,9 @@ class AnalitiqVectorizer:
         if self.model is None:
             errmsg = "ERROR: No Model is set."
             raise TypeError(errmsg)
-        inputs = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True)
+        inputs = self.tokenizer(
+            text, return_tensors="pt", padding=True, truncation=True
+        )
         outputs = self.model(**inputs)
         vectors = outputs.last_hidden_state.mean(dim=1)
 
@@ -79,18 +84,36 @@ class AnalitiqVectorizer:
             return vectors.detach().cpu().numpy()
 
     def normalize(self, vectors: np.ndarray) -> np.ndarray:
-        """Normalize some vectors."""
+        """
+        Normalizes the input vectors.
+
+        :param vectors: A numpy array of vectors to be normalized.
+        :return: A numpy array of normalized vectors.
+        """
         norms = np.linalg.norm(vectors, axis=1, keepdims=True)
         return vectors / norms
 
     def create_embeddings(self, texts: List[str]):
-        """Create Embeddings after normalization."""
+        """
+        Create embeddings for the given texts.
+
+        :param texts: A list of strings representing the texts to create embeddings for.
+        :type texts: list[str]
+        :return: None
+        :rtype: None
+        """
         self.texts = texts
         embeddings = self.vectorize(texts, False)
         self.embeddings = self.normalize(embeddings)
 
     def search(self, query: str, k: int = 3):
-        """Search for embeddings."""
+        """
+        Search for similar texts based on the given query.
+
+        :param query: The text to search for similarities.
+        :param k: The number of most similar texts to return. Default is 3.
+        :return: A list of tuples containing the most similar texts and their similarity scores.
+        """
         if self.embeddings is None or self.texts is None:
             errmsg = "Embeddings have not been created. Call create_embeddings() first."
             raise ValueError(errmsg)

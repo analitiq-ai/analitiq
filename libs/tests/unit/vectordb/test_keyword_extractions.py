@@ -1,4 +1,4 @@
-from analitiq.vectordb.keyword_extractions import extract_keywords
+from analitiq.utils.keyword_extractions import extract_keywords
 
 
 def test_extract_keywords():

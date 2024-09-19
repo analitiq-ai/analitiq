@@ -1,7 +1,8 @@
+from abc import ABC, abstractmethod
 from analitiq.logger.logger import logger
 
 
-class BaseVDBHandler:
+class BaseVDBHandler(ABC):
     """A base class for database handlers to manage common functionalities."""
 
     def __init__(self, params):
@@ -33,7 +34,21 @@ class BaseVDBHandler:
             return None
         return self
 
-    def delete_collection(self):
+    @abstractmethod
+    def create_collection(self, collection_name: str) -> str:
+        """Create a collection."""
+        pass
+
+    @abstractmethod
+    def delete_collection(self, collection_name: str):
         """Delete the entire collection."""
-        errmsg = "Delete collection method not implemented."
+        pass
+
+    def update_collection(self):
+        """Delete the entire collection."""
+        errmsg = "Update collection method not implemented."
         raise NotImplementedError(errmsg)
+
+    @abstractmethod
+    def hybrid_search(self, collection_name: str):
+        pass

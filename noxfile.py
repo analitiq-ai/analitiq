@@ -2,6 +2,7 @@
 
 # pylint: disable=line-too-long
 import nox
+import sys
 
 nox.options.sessions = (
     "install",  # this is mandatory to ensure, that all needed modules are installed by poetry first
@@ -64,9 +65,10 @@ def mypy(session):
     session.run("mypy", "--namespace-packages", *args)
 
 
-@nox.session(python=False)
+@nox.session(venv_backend="none")  # Prevent Nox from creating its own virtual environment
 def pytest(session):
     """Run pytest."""
+    session.log(f"Using Python interpreter: {sys.executable}")
     session.run(
         "pytest",
         "--timeout=60",
@@ -77,6 +79,7 @@ def pytest(session):
         # "--cov-omit=src/demo/*",
         "libs/tests/unit/",
         # "--ignore=tests/unit/demo",
+        external=True
     )  # in order to see output to stdout set: --capture=tee-sys
 
 
@@ -105,3 +108,4 @@ def pytest_integration(session):
         "--capture=sys",
         "tests/integration/",
     )  # in order to see output to stdout set: --capture=tee-sys
+

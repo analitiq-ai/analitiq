@@ -65,9 +65,15 @@ class Tasks(BaseModel):
 
 class SelectedService(BaseModel):
     Action: str = Field(description="Name of a service.")
-    ActionInput: str = Field(description="Action input require for successful completion of this action.")
-    Instructions: str = Field(description="Instructions of what needs to be done by this action.")
-    DependsOn: List[str] = Field(description="List of names of actions this action depends on.")
+    ActionInput: str = Field(
+        description="Action input require for successful completion of this action."
+    )
+    Instructions: str = Field(
+        description="Instructions of what needs to be done by this action."
+    )
+    DependsOn: List[str] = Field(
+        description="List of names of actions this action depends on."
+    )
 
 
 class SelectedServices(BaseModel):
@@ -78,11 +84,15 @@ class SelectedServices(BaseModel):
 
 class ServiceDependencies(BaseModel):
     Name: str = Field(description="Name of the service")
-    Dependencies: list[str] = Field("List of tasks that this service depends on for completion ")
+    Dependencies: list[str] = Field(
+        "List of tasks that this service depends on for completion "
+    )
 
 
 class Service(BaseModel):
-    ServicesList: List[ServiceDependencies] = Field(description="A list of selected services")
+    ServicesList: List[ServiceDependencies] = Field(
+        description="A list of selected services"
+    )
 
 
 def get_prompt_extra_info(prompts):
@@ -94,10 +104,16 @@ def get_prompt_extra_info(prompts):
         user_prompt = prompts["original"]
 
     if len(prompts["feedback"]) > 10:
-        extra_info = extra_info + f"Your previous thoughts about this query were '{prompts['feedback']}'.\n"
+        extra_info = (
+            extra_info
+            + f"Your previous thoughts about this query were '{prompts['feedback']}'.\n"
+        )
 
     if len(prompts["hints"]) > 10:
-        extra_info = extra_info + f"Your previous thoughts about this query were '{prompts['hints']}'.\n"
+        extra_info = (
+            extra_info
+            + f"Your previous thoughts about this query were '{prompts['hints']}'.\n"
+        )
 
     return user_prompt, extra_info
 
@@ -140,7 +156,10 @@ class BaseLlm:
                 region_name=params["region_name"],
                 provider=params["provider"],
                 model_id=params["llm_model_name"],
-                model_kwargs={"temperature": params["temperature"], "max_tokens_to_sample": 10000},
+                model_kwargs={
+                    "temperature": params["temperature"],
+                    "max_tokens_to_sample": 10000,
+                },
                 streaming=False,
             )
 
@@ -160,7 +179,9 @@ class BaseLlm:
 
         return response
 
-    def extract_info_from_db_docs(self, user_query, schemas_list, docs: Optional[str] = None):
+    def extract_info_from_db_docs(
+        self, user_query, schemas_list, docs: Optional[str] = None
+    ):
         if docs is None:
             docs = ""
 
@@ -174,7 +195,9 @@ class BaseLlm:
 
         return response
 
-    def extract_info_from_db_ddl(self, user_query: str, ddl: str, docs: Optional[str] = None):
+    def extract_info_from_db_ddl(
+        self, user_query: str, ddl: str, docs: Optional[str] = None
+    ):
         if docs is not None:
             docs = f"\nHere is some documentation about tables that you might find useful:\n{docs}"
 
@@ -190,7 +213,9 @@ class BaseLlm:
 
     def summ_info_from_db_ddl(self, user_query: str, responses: str):
         prompt = PromptTemplate(
-            template=SUMMARISE_DDL, input_variables=["user_query"], partial_variables={"responses": responses}
+            template=SUMMARISE_DDL,
+            input_variables=["user_query"],
+            partial_variables={"responses": responses},
         )
         table_chain = prompt | self.llm
         response = table_chain.invoke({"user_query": user_query})
@@ -206,9 +231,13 @@ class BaseLlm:
         :param user_prompt_hist: History of user prompts, including current prompt
         :return: str
         """
-        prompt = PromptTemplate(template=SUMMARISE_REQUEST, input_variables=["user_prompt_hist"])
+        prompt = PromptTemplate(
+            template=SUMMARISE_REQUEST, input_variables=["user_prompt_hist"]
+        )
         table_chain = prompt | self.llm
-        response = table_chain.invoke({"user_prompt_hist": user_prompt_hist + "\n" + user_prompt})
+        response = table_chain.invoke(
+            {"user_prompt_hist": user_prompt_hist + "\n" + user_prompt}
+        )
 
         return response
 
@@ -220,7 +249,9 @@ class BaseLlm:
         :return: str
         """
         parser = PydanticOutputParser(pydantic_object=PromptClarification)
-        prompt = PromptTemplate(template=PROMPT_CLARIFICATION, input_variables=["user_prompt"])
+        prompt = PromptTemplate(
+            template=PROMPT_CLARIFICATION, input_variables=["user_prompt"]
+        )
         table_chain = prompt | self.llm | parser
         response = table_chain.invoke(
             {
@@ -329,7 +360,10 @@ class BaseLlm:
         prompt = PromptTemplate(
             template=REFINE_TASK_LIST,
             input_variables=["user_prompt"],
-            partial_variables={"format_instructions": parser.get_format_instructions(), "tasks": tasks_list},
+            partial_variables={
+                "format_instructions": parser.get_format_instructions(),
+                "tasks": tasks_list,
+            },
         )
 
         table_chain = prompt | self.llm | parser
@@ -339,7 +373,9 @@ class BaseLlm:
 
     def llm_fix_json(self, text, error):
         prompt = PromptTemplate(
-            template=FIX_JSON, input_variables=["string"], partial_variables={"error": error}
+            template=FIX_JSON,
+            input_variables=["string"],
+            partial_variables={"error": error},
         )
         table_chain = prompt | self.llm
         response = table_chain.invoke({"string": text})

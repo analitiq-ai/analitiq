@@ -1,6 +1,6 @@
 import numpy as np
 
-from analitiq.vectordb import vectorizer
+from analitiq.vectordb import analitiq_vectorizer as vectorizer
 
 
 def test_init_and_load_model():

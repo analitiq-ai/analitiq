@@ -2,7 +2,7 @@ import pathlib
 import sys
 from typing import Dict, Optional, Any
 
-from analitiq.vectordb.weaviate import WeaviateHandler
+from analitiq.vectordb.weaviate_handler import WeaviateHandler
 
 from analitiq.logger.logger import logger
 from analitiq.base.BaseMemory import BaseMemory
@@ -76,9 +76,19 @@ class Analitiq:
         """Load the connection."""
         failures = 0
         tasks = [
-            ("db", DatabaseWrapper, self.db_params, "Unable to connect to the Database"),
+            (
+                "db",
+                DatabaseWrapper,
+                self.db_params,
+                "Unable to connect to the Database",
+            ),
             ("llm", BaseLlm, self.llm_params, "Unable to set LLM"),
-            ("vdb", self._get_vdb_handler, self.vdb_params, "Unable to connect to the Vector Database"),
+            (
+                "vdb",
+                self._get_vdb_handler,
+                self.vdb_params,
+                "Unable to connect to the Vector Database",
+            ),
         ]
         for attr, task, params, error_msg in tasks:
             try:
@@ -131,7 +141,9 @@ class Analitiq:
             description = details["description"]
             # Format and add the string to the list
             service_msg = f"{name}: {description}. The input for this tools is {details['inputs']}."
-            service_msg = service_msg + f"The output of this tools is {details['outputs']}."
+            service_msg = (
+                service_msg + f"The output of this tools is {details['outputs']}."
+            )
             available_services_list.append(service_msg)
             # Join the list into a single string variable, separated by new lines
         available_services_str = "\n".join(available_services_list)
@@ -149,16 +161,22 @@ class Analitiq:
         """
         response = None
         try:
-            response = self.llm.llm_is_prompt_clear(user_prompt, self.avail_services_str)
+            response = self.llm.llm_is_prompt_clear(
+                user_prompt, self.avail_services_str
+            )
         except Exception as e:
-            logger.error(f"[Analitiq] Exception: '{e}'. Needs explanation:\n{response!s}")
+            logger.error(
+                f"[Analitiq] Exception: '{e}'. Needs explanation:\n{response!s}"
+            )
 
         # is LLM is clear with prompt, we return results
         if response.Clear:
             return response
 
         # Log that the model needs clarification
-        logger.info(f"[Analitiq] Prompt not clear: '{user_prompt}'. Needs explanation:\n{response!s}")
+        logger.info(
+            f"[Analitiq] Prompt not clear: '{user_prompt}'. Needs explanation:\n{response!s}"
+        )
 
         # we try to get Chat history for more context to the LLM
         try:
@@ -206,7 +224,9 @@ class Analitiq:
         :return: The response generated based on the chat history, or None if there is no chat history.
 
         """
-        user_prompt_hist = self.memory.get_last_messages_within_minutes(msg_lookback, 5, 1, "Human")
+        user_prompt_hist = self.memory.get_last_messages_within_minutes(
+            msg_lookback, 5, 1, "Human"
+        )
 
         response = None
 
@@ -220,7 +240,9 @@ class Analitiq:
 
             response = self.llm.llm_summ_user_prompts(user_prompt, user_prompt_w_hist)
 
-            logger.info(f"[Prompt][Change From]: {user_prompt_w_hist}\n[Prompt][Change To]: {response}")
+            logger.info(
+                f"[Prompt][Change From]: {user_prompt_w_hist}\n[Prompt][Change To]: {response}"
+            )
 
         return response
 
@@ -251,7 +273,10 @@ class Analitiq:
                 db=f"{self.db_params['host']}/{self.db_params['db_name']}",
                 vdb_collection_name=self.vdb_params["collection_name"],
             ) + "\n\n".join(
-                [f"{details['name']}: {details['description']}" for details in self.services.values()]
+                [
+                    f"{details['name']}: {details['description']}"
+                    for details in self.services.values()
+                ]
             )
             self.response.set_content(text)
 

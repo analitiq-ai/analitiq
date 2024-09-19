@@ -11,7 +11,7 @@ sys.path.insert(0, dynamic_path)
 
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.base.llm.BaseLlm import BaseLlm
-# we assume that this custom service is located in directory /custom_services/chart/chart.py
+# we assume that this custom service is located in directory /custom_agents/chart/chart.py
 from custom_agents.chart.chart import Chart
 import pandas as pd
 

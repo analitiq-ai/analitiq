@@ -21,13 +21,19 @@ def retry(max_retries, wait_time):
 
             while retries < max_retries:
                 try:
-                    result = func(*args, **kwargs, feedback=feedback)  # Pass feedback to the function
+                    result = func(
+                        *args, **kwargs, feedback=feedback
+                    )  # Pass feedback to the function
                     return result
                 except Exception as e:
-                    logger.error(f"Retry {retries + 1} for {func.__name__} failed due to {e}")
+                    logger.error(
+                        f"Retry {retries + 1} for {func.__name__} failed due to {e}"
+                    )
                     # Update feedback with the latest exception
-                    feedback = (f"\nCheck your output and make sure it conforms to instructions! "
-                                f"Your previous response created an error:\n{e!s}")
+                    feedback = (
+                        f"\nCheck your output and make sure it conforms to instructions! "
+                        f"Your previous response created an error:\n{e!s}"
+                    )
                     retries += 1
                     time.sleep(wait_time)
             logger.info(f"Max retries of function {func} exceeded")

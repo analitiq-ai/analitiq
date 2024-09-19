@@ -75,7 +75,9 @@ class BaseMemory:
         file_path = os.path.join(self.log_directory, self.filename)
 
         if not os.path.exists(file_path):
-            logger.info(f"No chat history file found for session UUID {self.session_uuid}.")
+            logger.info(
+                f"No chat history file found for session UUID {self.session_uuid}."
+            )
             return
 
         with open(file_path, "r") as file:
@@ -85,7 +87,11 @@ class BaseMemory:
         return all_messages[-num_messages:]
 
     def get_last_messages_within_minutes(
-        self, num_messages: int, minutes: int, offset: int = 1, entity: Optional[str] = None
+        self,
+        num_messages: int,
+        minutes: int,
+        offset: int = 1,
+        entity: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """A function to retrieve the last `num_messages` from Chat history within `minutes` minutes from now,
         optionally filtering by an entity type if specified.
@@ -103,7 +109,9 @@ class BaseMemory:
         file_path = os.path.join(self.log_directory, self.filename)
 
         if not os.path.exists(file_path):
-            logger.info(f"No chat history file found for session UUID {self.session_uuid}.")
+            logger.info(
+                f"No chat history file found for session UUID {self.session_uuid}."
+            )
             return
 
         now = datetime.now()
