@@ -11,7 +11,7 @@ from weaviate.collections.classes.internal import QueryReturn
 
 from analitiq.logger.logger import logger
 from analitiq.utils import keyword_extractions
-from analitiq.vectordb.base_handler import BaseVDBHandler
+from analitiq.base.base_vector_database import BaseVectorDatabase
 from analitiq.utils.document_processor import (
     DocumentProcessor,
     group_results_by_properties,
@@ -128,7 +128,7 @@ def search_grouped(func):
     return wrapper
 
 
-class WeaviateHandler(BaseVDBHandler):
+class WeaviateHandler(BaseVectorDatabase):
     """The WeaviateHandler Class manages interactions with a Weaviate Vector Database.
 
     This class provides methods to connect to a Weaviate cluster, manage collections,

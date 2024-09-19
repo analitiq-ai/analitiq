@@ -2,11 +2,11 @@ import pathlib
 import sys
 from typing import Dict, Optional, Any
 
-from analitiq.vectordb.weaviate_handler import WeaviateHandler
+from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
 
 from analitiq.logger.logger import logger
 from analitiq.base.BaseMemory import BaseMemory
-from analitiq.base.Database import DatabaseWrapper
+from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
 from analitiq.base.llm.BaseLlm import BaseLlm
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.general import extract_hints
@@ -44,7 +44,7 @@ class Analitiq:
         """Initialize the Analitiq module."""
         self.response = BaseResponse(self.__class__.__name__)
 
-        self.db: DatabaseWrapper() = None
+        self.db: RelationalDatabaseFactory() = None
         self.llm: BaseLlm() = None
         self.vdb = None
 
@@ -78,7 +78,7 @@ class Analitiq:
         tasks = [
             (
                 "db",
-                DatabaseWrapper,
+                RelationalDatabaseFactory,
                 self.db_params,
                 "Unable to connect to the Database",
             ),

@@ -1,9 +1,9 @@
 import os
 import sys
 from analitiq.agents.sql.sql import Sql
-from analitiq.base.Database import DatabaseWrapper
+from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
 from analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.vectordb.weaviate_handler import WeaviateHandler
+from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
 from dotenv import load_dotenv
 
 ENV_VARIABLES = ["WEAVIATE_COLLECTION", "WEAVIATE_URL", "WEAVIATE_CLIENT_SECRET", "LLM_MODEL_NAME",
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     llm_params = define_llm_params(env_vars)
     vdb_params = define_vdb_params(env_vars)
 
-    db = DatabaseWrapper(db_params)
+    db = RelationalDatabaseFactory.create_database(db_type="postgres", params=db_params)
     llm = BaseLlm(llm_params)
     vdb = WeaviateHandler(vdb_params)
 

@@ -1,6 +1,6 @@
 """This is an example of how to load documents into VectorDB before allowing analitiq access them."""
 import os
-from libs.analitiq.vectordb.weaviate_handler import WeaviateHandler
+from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
 from dotenv import load_dotenv
 import sys
 

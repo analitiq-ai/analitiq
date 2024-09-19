@@ -1,7 +1,7 @@
 import pytest
 import os
 from dotenv import load_dotenv
-from analitiq.vectordb.weaviate_handler import WeaviateHandler
+from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
 from weaviate.collections.classes.internal import QueryReturn
 
 COLLECTION_NAME = "test_collection"

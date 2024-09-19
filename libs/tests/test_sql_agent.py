@@ -1,11 +1,9 @@
-import pytest
 import os
-
 import sys
 from libs.analitiq.agents.sql.sql import Sql
 from libs.analitiq.base.Database import DatabaseWrapper
 from libs.analitiq.base.llm.BaseLlm import BaseLlm
-from libs.analitiq.vectordb.weaviate_handler import WeaviateHandler
+from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
 from dotenv import load_dotenv
 
 

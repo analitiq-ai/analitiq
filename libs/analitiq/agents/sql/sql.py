@@ -4,6 +4,7 @@ from analitiq.logger.logger import logger, chat_logger
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.code_extractor import CodeExtractor
 from analitiq.base.Database import DatabaseWrapper
+from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
 from analitiq.agents.sql.schema import Table, Tables, SQL, TableCheck
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
@@ -28,7 +29,7 @@ class Sql:
     get SQL from LLM, glue document chunks, and run the SQL agent.
     """
 
-    def __init__(self, db: DatabaseWrapper, llm, vdb=None):
+    def __init__(self, db: RelationalDatabaseFactory, llm, vdb=None):
         """Initialize the SQL Agent.
 
         SQL Agent writes SQL and executes the SQL against the database.
@@ -36,7 +37,7 @@ class Sql:
 
         Args:
         ----
-            db (DatabaseWrapper): An instance of DatabaseWrapper class representing the database connection.
+            db (RelationalDatabaseFactory): An instance of RelationalDatabaseFactory class representing the database connection.
             llm: A parameter representing llm (unknown data type).
             vdb (optional): An optional parameter representing vdb (unknown data type).
 
