@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import patch, MagicMock
-from analitiq.relational_databases.postgres.postgres_rdb import PostgresDatabaseWrapper
+from analitiq.relational_databases.postgres.postgres_connector import PostgresConnector
 from sqlalchemy.exc import DatabaseError
 
 
@@ -17,8 +17,8 @@ def db_params():
 
 @pytest.fixture
 def db_instance(db_params):
-    with patch('analitiq.relational_databases.postgres.postgres_rdb.create_engine'):
-        db = PostgresDatabaseWrapper(db_params)
+    with patch('analitiq.relational_databases.postgres.postgres_connector.create_engine'):
+        db = PostgresConnector(db_params)
     return db
 
 
@@ -80,7 +80,7 @@ def test_get_numeric_columns():
         {'name': 'name', 'type': 'VARCHAR'},
         {'name': 'value', 'type': 'DECIMAL'},
     ]
-    numeric_columns = PostgresDatabaseWrapper.get_numeric_columns(columns)
+    numeric_columns = PostgresConnector.get_numeric_columns(columns)
     assert numeric_columns == {'id': 'INTEGER', 'value': 'DECIMAL'}
 
 
@@ -148,17 +148,17 @@ def test_run_error(db_instance):
 
 
 def test_create_session(db_params):
-    with patch('analitiq.relational_databases.postgres.postgres_rdb.create_engine'):
-        db = PostgresDatabaseWrapper(db_params)
+    with patch('analitiq.relational_databases.postgres.postgres_connector.create_engine'):
+        db = PostgresConnector(db_params)
         session = db.create_session()
         assert session is not None
 
 
 def test_create_db(db_params):
-    with patch('analitiq.relational_databases.postgres.postgres_rdb.create_engine'):
+    with patch('analitiq.relational_databases.postgres.postgres_connector.create_engine'):
         # Patch 'create_db' during initialization to prevent the first call to SQLDatabase
-        with patch.object(PostgresDatabaseWrapper, 'create_db') as mock_create_db_init:
-            db = PostgresDatabaseWrapper(db_params)
+        with patch.object(PostgresConnector, 'create_db') as mock_create_db_init:
+            db = PostgresConnector(db_params)
             # Ensure the initialization doesn't call SQLDatabase
             mock_create_db_init.assert_called_once()
 

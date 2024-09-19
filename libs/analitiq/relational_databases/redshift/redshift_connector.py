@@ -3,7 +3,7 @@ from sqlalchemy.engine.url import URL
 from analitiq.base.base_relational_database import BaseRelationalDatabase
 
 
-class RedshiftDatabaseWrapper(BaseRelationalDatabase):
+class RedshiftConnector(BaseRelationalDatabase):
     """Database wrapper for Amazon Redshift databases."""
 
     def create_engine(self):

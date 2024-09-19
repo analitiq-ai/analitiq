@@ -2,7 +2,7 @@ import pytest
 import os
 from dotenv import load_dotenv
 from unittest.mock import patch, MagicMock
-from analitiq.relational_databases.postgres.postgres_rdb import PostgresDatabaseWrapper
+from analitiq.relational_databases.postgres.postgres_connector import PostgresConnector
 
 
 @pytest.fixture(autouse=True, scope='module')
@@ -32,8 +32,8 @@ def test_create_engine_without_schemas():
         'port': '5432',
         'db_name': 'test_db',
     }
-    with patch('analitiq.relational_databases.postgres.postgres_rdb.create_engine') as mock_create_engine:
-        db = PostgresDatabaseWrapper(params)
+    with patch('analitiq.relational_databases.postgres.postgres_connector.create_engine') as mock_create_engine:
+        db = PostgresConnector(params)
         expected_connection_string = 'postgresql+psycopg2://user:pass@localhost:5432/test_db'
         mock_create_engine.assert_called_once_with(expected_connection_string, **{})
 
@@ -47,8 +47,8 @@ def test_create_engine_with_schemas():
         'db_name': 'test_db',
         'db_schemas': ['public', 'schema1'],
     }
-    with patch('analitiq.relational_databases.postgres.postgres_rdb.create_engine') as mock_create_engine:
-        db = PostgresDatabaseWrapper(params)
+    with patch('analitiq.relational_databases.postgres.postgres_connector.create_engine') as mock_create_engine:
+        db = PostgresConnector(params)
         expected_connection_string = 'postgresql+psycopg2://user:pass@localhost:5432/test_db'
         engine_options = {'connect_args': {'options': '-csearch_path=public,schema1'}}
         mock_create_engine.assert_called_once_with(expected_connection_string, **engine_options)

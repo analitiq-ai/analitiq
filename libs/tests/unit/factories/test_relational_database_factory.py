@@ -2,7 +2,7 @@ import pytest
 import os
 from dotenv import load_dotenv
 from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
-from analitiq.relational_databases.postgres.postgres_rdb import PostgresDatabaseWrapper
+from analitiq.relational_databases.postgres.postgres_connector import PostgresConnector
 
 
 @pytest.fixture(autouse=True, scope='module')
@@ -26,7 +26,7 @@ def params():
 def test_create_postgres_database(params):
 
     db = RelationalDatabaseFactory.create_database('postgres', params)
-    assert isinstance(db, PostgresDatabaseWrapper)
+    assert isinstance(db, PostgresConnector)
 
 
 def test_create_unknown_database():

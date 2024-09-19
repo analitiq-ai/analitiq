@@ -24,7 +24,7 @@ class RelationalDatabaseFactory:
     @staticmethod
     def create_database(db_type: str, params: dict):
         """Factory function to create a database wrapper instance based on db_type."""
-        module_path = f"analitiq.relational_databases.{db_type}.{db_type}_rdb"
+        module_path = f"analitiq.relational_databases.{db_type}.{db_type}_connector"
         class_name = f"{db_type.capitalize()}DatabaseWrapper"
 
         try:

@@ -55,7 +55,7 @@ Alternatively, you can instantiate the database wrapper classes directly without
 
 Example: PostgreSQL
 ```
-from relational_databases.postgres.postgres_rdb import PostgresDatabaseWrapper
+from relational_databases.postgres.postgres_connector import PostgresConnector
 
 # Parameters for PostgreSQL
 postgres_params = {
@@ -68,7 +68,7 @@ postgres_params = {
 }
 
 # Create a PostgreSQL database instance directly
-postgres_db = PostgresDatabaseWrapper(params=postgres_params)
+postgres_db = PostgresConnector(params=postgres_params)
 
 # Use the database instance
 schemas = postgres_db.get_schema_names()
