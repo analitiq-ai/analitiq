@@ -119,13 +119,3 @@ def pytest_e2e(session):
         "--capture=sys",
         "libs/tests/e2e/",
     )  # in order to see output to stdout set: --capture=tee-sys
-
-@nox.session(python=False)
-def pytest_e2e(session):
-    """Run pytest with e2e tests only."""
-    session.run(
-        "pytest",
-        "--timeout=15",
-        "--capture=sys",
-        "libs/tests/e2e/",
-    )  # in order to see output to stdout set: --capture=tee-sys
