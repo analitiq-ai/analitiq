@@ -2,7 +2,7 @@ import os
 import sys
 from analitiq.agents.sql.sql import Sql
 from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
-from analitiq.base.llm.BaseLlm import BaseLlm
+from analitiq.factories.llm_factory import LlmFactory
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 from dotenv import load_dotenv
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     db = RelationalDatabaseFactory.create_database(db_params)
     vdb = VectorDatabaseFactory.create_database(vdb_params)
-    llm = BaseLlm(llm_params)
+    llm = LlmFactory.create_llm(llm_params)
 
     agent = Sql(db, llm, vdb=vdb)
     result_generator = agent.run("show me sales by venue.")

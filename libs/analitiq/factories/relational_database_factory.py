@@ -6,8 +6,7 @@ class RelationalDatabaseFactory:
     """
     Factory class for creating instances of different relational database types.
 
-    :param db_type: str, the type of the database to create (e.g., "mysql", "postgres").
-    :param kwargs: additional keyword arguments to pass to the database class constructor.
+    :param params: additional keyword arguments to pass to the database class constructor.
 
     :return: Instance of the specified database class.
 

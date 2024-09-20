@@ -5,7 +5,7 @@ from analitiq.logger.logger import logger
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
-from analitiq.base.llm.BaseLlm import BaseLlm
+from analitiq.factories.llm_factory import LlmFactory
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.general import extract_hints
 from analitiq.base.GlobalConfig import GlobalConfig
@@ -43,8 +43,8 @@ class Analitiq:
         self.response = BaseResponse(self.__class__.__name__)
 
         self.db: RelationalDatabaseFactory() = None
-        self.llm: BaseLlm() = None
-        self.vdb = None
+        self.llm: LlmFactory() = None
+        self.vdb: VectorDatabaseFactory() = None
 
         if not params or not params.get("db_params"):
             GlobalConfig().load_profiles()
@@ -238,6 +238,7 @@ class Analitiq:
         # Load vector and relational db
         try:
             self.vdb = VectorDatabaseFactory.create_database(self.vdb_params)
+            self.llm = LlmFactory(self.llm_params)
             self.db = RelationalDatabaseFactory.create_database(self.db_params)
         except Exception as e:
             raise Exception(str(e)) from e

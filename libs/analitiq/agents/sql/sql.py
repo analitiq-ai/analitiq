@@ -141,7 +141,7 @@ class Sql:
                 chunks_loaded = self.vdb.load_chunks(chunks)
 
                 logger.info(
-                    f"Loaded {counter} chunks for schema {schema_name} into Vector Database."
+                    f"Loaded {loaded_chunk_counter} chunks for schema {schema_name} into Vector Database."
                 )
 
         return loaded_chunk_counter

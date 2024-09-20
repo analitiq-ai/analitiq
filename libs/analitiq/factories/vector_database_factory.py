@@ -6,8 +6,7 @@ class VectorDatabaseFactory:
     """
     Factory class for creating instances of different vector database types.
 
-    :param db_type: str, the type of the database to create (e.g., "weaviate", "chromadb").
-    :param kwargs: additional keyword arguments to pass to the database class constructor.
+    :param params: additional keyword arguments to pass to the database class constructor.
 
     :return: Instance of the specified database class.
 
