@@ -5,7 +5,7 @@ import chromadb
 from chromadb.api import ClientAPI
 
 from analitiq.logger.logger import logger
-from schemas.vector_store import VectoreStoreCollection
+from analitiq.databases.vector.chromadb.schema import VectorStoreCollection
 
 
 def get_vector_store():
@@ -80,7 +80,7 @@ class ChromaHandler:
 
     def get_document_by_metadata(
         client: ClientAPI, collection_name: str, metadata: object
-    ) -> Optional[list[VectoreStoreCollection]]:
+    ) -> Optional[list[VectorStoreCollection]]:
         """Retrieve documents from a specified collection based on metadata.
 
         Args:
@@ -91,7 +91,7 @@ class ChromaHandler:
 
         Returns:
         -------
-        - Optional[List[VectoreStoreCollection]]: A list of documents matching the metadata, or None if an error occurs.
+        - Optional[List[VectorStoreCollection]]: A list of documents matching the metadata, or None if an error occurs.
 
         """
         try:
@@ -103,7 +103,7 @@ class ChromaHandler:
 
     def get_document_by_id(
         client: ClientAPI, collection_name: str, document_uuid: str
-    ) -> Optional[VectoreStoreCollection]:
+    ) -> Optional[VectorStoreCollection]:
         """Retrieve a document from a specified collection based on its ID.
 
         Args:
@@ -114,7 +114,7 @@ class ChromaHandler:
 
         Returns:
         -------
-        - Optional[VectoreStoreCollection]: The document with the specified ID, or None if an error occurs.
+        - Optional[VectorStoreCollection]: The document with the specified ID, or None if an error occurs.
 
         """
         try:
@@ -126,7 +126,7 @@ class ChromaHandler:
 
     def get_all_documents(
         client: ClientAPI, collection_name: str
-    ) -> list[VectoreStoreCollection]:
+    ) -> list[VectorStoreCollection]:
         """Retrieve all documents from a specified collection.
 
         Args:
@@ -136,7 +136,7 @@ class ChromaHandler:
 
         Returns:
         -------
-        - List[VectoreStoreCollection]: A list of all documents in the collection.
+        - List[VectorStoreCollection]: A list of all documents in the collection.
 
         """
         collection = client.get_or_create_collection(collection_name)

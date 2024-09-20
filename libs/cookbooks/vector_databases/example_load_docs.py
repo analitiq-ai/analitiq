@@ -1,6 +1,6 @@
 """This is an example of how to load documents into VectorDB before allowing analitiq access them."""
 import os
-from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
+from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 from dotenv import load_dotenv
 import sys
 
@@ -32,7 +32,7 @@ def define_vdb_params(env_vars):
 
 
 vdb_params = define_vdb_params(env_vars)
-weaviate_handler = WeaviateHandler(vdb_params)
+weaviate_handler = VectorDatabaseFactory.create_database('weaviate', **vdb_params)
 
 weaviate_handler.client.connect()
 #response = weaviate_handler.delete_collection("test_collection")

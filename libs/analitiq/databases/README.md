@@ -5,7 +5,7 @@ You can use the create_database function from relational_database_factory.py to 
 Example: PostgreSQL
 
 ```
-from relational_databases.relational_database_factory import create_database
+from analitiq.factories.relational_database_factory import create_database
 
 # Parameters for PostgreSQL
 postgres_params = {
@@ -28,7 +28,7 @@ print("PostgreSQL Schemas:", schemas)
 ```
 Example: Amazon Redshift
 ```
-from relational_databases.relational_database_factory import create_database
+from analitiq.factories.relational_database_factory import create_database
 
 # Parameters for Redshift
 redshift_params = {
@@ -55,7 +55,7 @@ Alternatively, you can instantiate the database wrapper classes directly without
 
 Example: PostgreSQL
 ```
-from relational_databases.postgres.postgres_connector import PostgresConnector
+from analitiq.factories.postgres.postgres_connector import PostgresConnector
 
 # Parameters for PostgreSQL
 postgres_params = {
@@ -77,7 +77,7 @@ print("PostgreSQL Schemas:", schemas)
 
 Example: Amazon Redshift
 ```
-from relational_databases.redshift.redshift_rdb import RedshiftDatabaseWrapper
+from analitiq.factories.redshift.redshift_rdb import RedshiftDatabaseWrapper
 
 # Parameters for Redshift
 redshift_params = {
@@ -101,7 +101,7 @@ To add support for another database (e.g., MySQL), follow these steps:
 Create a New Directory
 
 ```
-relational_databases/
+analitiq/factories/
 └── mysql/
 ├── __init__.py
 └── mysql_rdb.py
@@ -109,7 +109,7 @@ relational_databases/
 Implement the Wrapper Class
 
 ```
-# relational_databases/mysql/mysql_rdb.py
+# analitiq/factories/mysql/mysql_rdb.py
 
 from typing import Dict
 from sqlalchemy import create_engine

@@ -2,7 +2,7 @@ import pytest
 import os
 from dotenv import load_dotenv
 from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
-from analitiq.relational_databases.postgres.postgres_connector import PostgresConnector
+from analitiq.databases.relational.postgres.postgres_connector import PostgresConnector
 
 
 @pytest.fixture(autouse=True, scope='module')
@@ -19,18 +19,25 @@ def params():
         'host': os.getenv('DB_HOST'),
         'port': os.getenv('DB_PORT'),
         'db_name': os.getenv('DB_NAME'),
-        'db_schemas': [os.getenv('DB_SCHEMAS')]
+        'db_schemas': [os.getenv('DB_SCHEMAS')],
     }
 
 
 def test_create_postgres_database(params):
-
-    db = RelationalDatabaseFactory.create_database('postgres', params)
+    params['type'] = 'postgres'
+    db = RelationalDatabaseFactory.create_database(params)
     assert isinstance(db, PostgresConnector)
 
 
-def test_create_unknown_database():
+def submit_empty_params():
     params = {}
     with pytest.raises(ValueError) as excinfo:
-        RelationalDatabaseFactory.create_database('unknown_db', params)
+        RelationalDatabaseFactory.create_database(params)
+    assert 'Unknown relational database type: unknown_db' in str(excinfo.value)
+
+
+def test_create_unknown_database(params):
+    params['type'] = 'oracle'
+    with pytest.raises(ValueError) as excinfo:
+        RelationalDatabaseFactory.create_database(params)
     assert 'Unknown relational database type: unknown_db' in str(excinfo.value)

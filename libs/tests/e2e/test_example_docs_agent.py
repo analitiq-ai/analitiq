@@ -4,13 +4,14 @@ import pytest
 import asyncio
 from libs.analitiq.base.llm.BaseLlm import BaseLlm
 from libs.analitiq.agents.search_vdb.search_vdb import SearchVdb
-from libs.analitiq.vectordb.weaviate import WeaviateHandler
+from analitiq.factories.vector_database_factory import VectorDatabaseFactory
+
 
 @pytest.fixture(name="search")
 def search(llm_params, vdb_params):
     """Fixture for setting up the SearchVdB."""
     llm = BaseLlm(llm_params)
-    vdb = WeaviateHandler(vdb_params)
+    vdb = VectorDatabaseFactory(vdb_params)
     return SearchVdb(llm, vdb=vdb, search_mode="hybrid")
 
 

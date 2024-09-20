@@ -1,9 +1,14 @@
+# File: base/base_vector_database.py
+
 from abc import ABC, abstractmethod
-from analitiq.logger.logger import logger
+from typing import List, Dict, Any
 
 
 class BaseVectorDatabase(ABC):
-    """A base class for database handlers to manage common functionalities."""
+    """
+    Abstract base class for vector database connectors.
+    Defines the interface that all vector database connectors should implement.
+    """
 
     def __init__(self, params):
         """Initialize the Base Class."""

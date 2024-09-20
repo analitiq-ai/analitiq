@@ -2,7 +2,7 @@ from typing import Union, List, Dict, Any, Optional
 from pydantic import BaseModel
 
 
-class VectoreStoreCollection(BaseModel):
+class VectorStoreCollection(BaseModel):
     name: str
     metadata: Union[Dict[str, Any], None] = None
 

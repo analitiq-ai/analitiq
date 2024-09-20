@@ -1,12 +1,10 @@
 import pathlib
 import sys
 from typing import Dict, Optional, Any
-
-from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
-
 from analitiq.logger.logger import logger
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
+from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 from analitiq.base.llm.BaseLlm import BaseLlm
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.general import extract_hints
@@ -71,58 +69,6 @@ class Analitiq:
         self.avail_services_str = self.get_available_services_str(self.services)
 
         self.prompts = {"original": "", "refined": "", "feedback": ""}
-
-    def load_connections(self):
-        """Load the connection."""
-        failures = 0
-        tasks = [
-            (
-                "db",
-                RelationalDatabaseFactory,
-                self.db_params,
-                "Unable to connect to the Database",
-            ),
-            ("llm", BaseLlm, self.llm_params, "Unable to set LLM"),
-            (
-                "vdb",
-                self._get_vdb_handler,
-                self.vdb_params,
-                "Unable to connect to the Vector Database",
-            ),
-        ]
-        for attr, task, params, error_msg in tasks:
-            try:
-                setattr(self, attr, task(params))
-            except Exception as e:
-                self.response.set_content("Error...")
-                self.response.add_text_to_metadata(f"{error_msg}: {e}")
-                failures += 1
-        return failures
-
-    @staticmethod
-    def _get_vdb_handler(vdb_params):
-        db_type = vdb_params["type"]
-
-        if db_type == "weaviate":
-            try:
-                handler = WeaviateHandler(vdb_params)
-            except Exception as e:
-                msg = f"Failed to connect to the vector database: {e}{handler}"
-                raise Exception(msg)
-        elif db_type == "chromadb":
-            from .vectordb.chromadb import ChromaHandler
-
-            handler = ChromaHandler(vdb_params)
-        else:
-            msg = f"Unsupported database type: {db_type}"
-            raise ValueError(msg)
-
-        if handler.connected:
-            return handler
-        else:
-            errmsg = "Failed to establish a connection to the vector database."
-            logger.error("%s", errmsg)
-            raise Exception(errmsg)
 
     def get_available_services_str(self, avail_services):
         """Get available Services.
@@ -289,10 +235,12 @@ class Analitiq:
 
         logger.info(f"[Main] User query: {user_prompt}")
 
-        # Here we load DB, LLM amd VDB. If there are errors, we exit.
-        load_errors = self.load_connections()
-        if load_errors > 0:
-            return self.return_response()
+        # Load vector and relational db
+        try:
+            self.vdb = VectorDatabaseFactory.create_database(self.vdb_params)
+            self.db = RelationalDatabaseFactory.create_database(self.db_params)
+        except Exception as e:
+            raise Exception(str(e)) from e
 
         # check if there are user hints in the prompt
         self.prompts["original"], self.prompts["hints"] = extract_hints(user_prompt)

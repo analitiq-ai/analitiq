@@ -22,10 +22,14 @@ class RelationalDatabaseFactory:
 
     """
     @staticmethod
-    def create_database(db_type: str, params: dict):
+    def create_database(params: dict):
+        if 'type' not in params:
+            raise KeyError("'type' not found in params. Please specify database type")
+
+        db_type = params['type']
         """Factory function to create a database wrapper instance based on db_type."""
-        module_path = f"analitiq.relational_databases.{db_type}.{db_type}_connector"
-        class_name = f"{db_type.capitalize()}DatabaseWrapper"
+        module_path = f"analitiq.databases.relational.{db_type}.{db_type}_connector"
+        class_name = f"{db_type.capitalize()}Connector"
 
         try:
             module = importlib.import_module(module_path)

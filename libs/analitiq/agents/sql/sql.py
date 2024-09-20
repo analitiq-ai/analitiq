@@ -3,7 +3,6 @@ from typing import List, Tuple, Optional
 from analitiq.logger.logger import logger, chat_logger
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.code_extractor import CodeExtractor
-from analitiq.base.Database import DatabaseWrapper
 from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
 from analitiq.agents.sql.schema import Table, Tables, SQL, TableCheck
 from langchain.prompts import PromptTemplate

@@ -6,7 +6,7 @@ class VectorDatabaseFactory:
     """
     Factory class for creating instances of different vector database types.
 
-    :param db_type: str, the type of the database to create (e.g., "mysql", "postgres").
+    :param db_type: str, the type of the database to create (e.g., "weaviate", "chromadb").
     :param kwargs: additional keyword arguments to pass to the database class constructor.
 
     :return: Instance of the specified database class.
@@ -22,12 +22,18 @@ class VectorDatabaseFactory:
 
     """
     @staticmethod
-    def create_database(db_type: str, **kwargs):
-        module_path = f"vector_databases.{db_type}.{db_type}_vdb"
-        class_name = f"{db_type.capitalize()}Database"
+    def create_database(params: dict):
+        if 'type' not in params:
+            raise KeyError("'type' not found in params. Please specify database type")
+
+        db_type = params['type']
+
+        module_path = f"analitiq.databases.vector.{db_type}.{db_type}_connector"
+        class_name = f"{db_type.capitalize()}Connector"
+
         try:
             module = importlib.import_module(module_path)
             database_class = getattr(module, class_name)
-            return database_class(**kwargs)
+            return database_class(params)
         except (ImportError, AttributeError) as e:
-            raise ValueError(f"Unknown relational database type: {db_type}") from e
+            raise ValueError(f"Unknown vector database type: {db_type}") from e

@@ -43,8 +43,9 @@ metadata={
 
 ## Example direct usage.
 We do not recommend using this module outside of the Analitiq framework. However, if you would like to load it directly, here is how you can do it.
+
 ```python
-from analitiq.vectordb.weaviate import WeaviateHandler
+from analitiq.vector_databases.weaviate import WeaviateHandler
 
 params = {
     "project_name": "my_project",

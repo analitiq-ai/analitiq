@@ -5,14 +5,14 @@ import os
 
 from analitiq.base.llm.BaseLlm import BaseLlm
 from analitiq.agents.search_vdb.search_vdb import SearchVdb
-from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
+from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 import asyncio
 from dotenv import load_dotenv
 
 load_dotenv()
 
-WV_URL = os.getenv("WEAVIATE_URL")
-WV_CLIENT_SECRET = os.getenv("WEAVIATE_CLIENT_SECRET")
+WEAVIATE_URL = os.getenv("WEAVIATE_URL")
+WEAVIATE_CLIENT_SECRET = os.getenv("WEAVIATE_CLIENT_SECRET")
 
 LLM_MODEL_NAME=os.getenv("LLM_MODEL_NAME")
 CREDENTIALS_PROFILE_NAME=os.getenv("CREDENTIALS_PROFILE_NAME")
@@ -20,7 +20,7 @@ AWS_ACCESS_KEY_ID=os.getenv("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY=os.getenv("AWS_SECRET_ACCESS_KEY")
 REGION_NAME=os.getenv("REGION_NAME")
 
-if not WV_URL or not WV_CLIENT_SECRET:
+if not WEAVIATE_URL or not WEAVIATE_CLIENT_SECRET:
     msg = "Environment Variables not set. Please set variables!"
     raise KeyError(msg)
 
@@ -40,16 +40,18 @@ llm_params = {"type": "bedrock"
 llm = BaseLlm(llm_params)
 
 vdb_params = {
-    "collection_name": "bikmo",
-    "host": WV_URL,
-    "api_key": WV_CLIENT_SECRET,
+    "type": "weaviate",
+    "collection_name": "test",
+    "host": WEAVIATE_URL,
+    "api_key": WEAVIATE_CLIENT_SECRET,
 }
 
-vdb = WeaviateHandler(vdb_params)
+vdb = VectorDatabaseFactory.create_database(vdb_params)
 
 # Example of using the SQLGenerator class
 agent = SearchVdb(llm, vdb=vdb, search_mode="hybrid")
 result_generator = agent.arun("Bikes")
+
 
 async def process_results():
     async for result in result_generator:

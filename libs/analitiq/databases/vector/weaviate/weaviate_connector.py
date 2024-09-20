@@ -1,27 +1,25 @@
-from typing import List, Tuple
+# File: databases/vector/weaviate/weaviate_connector.py
+
+import logging
+from typing import List, Dict, Any, Optional, Tuple
+
 import weaviate
-import weaviate.util
-from weaviate.util import generate_uuid5
 from weaviate.auth import AuthApiKey
-from weaviate.classes.query import Filter, MetadataQuery
+from weaviate.util import generate_uuid5
+from weaviate.collections.classes.tenants import Tenant
 from weaviate.classes.config import Configure
-from weaviate.classes.tenants import Tenant
-from analitiq.vectordb.weaviate.query_builder import QueryBuilder
+from weaviate.classes.query import Filter, MetadataQuery
+from analitiq.base.base_vector_database import BaseVectorDatabase
+from analitiq.databases.vector.weaviate.query_builder import QueryBuilder
+from analitiq.utils.document_processor import DocumentProcessor, group_results_by_properties
+from analitiq.utils.keyword_extractions import extract_keywords
+from analitiq.databases.vector.utils.analitiq_vectorizer import AnalitiqVectorizer
 from weaviate.collections.classes.internal import QueryReturn
 
-from analitiq.logger.logger import logger
-from analitiq.utils import keyword_extractions
-from analitiq.base.base_vector_database import BaseVectorDatabase
-from analitiq.utils.document_processor import (
-    DocumentProcessor,
-    group_results_by_properties,
-)
-from analitiq.vectordb.schema import Chunk
-
-from analitiq.vectordb import analitiq_vectorizer
+logger = logging.getLogger(__name__)
 
 VECTOR_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
-QUERY_PROPERTIES = ["content"]  # OR content_kw
+QUERY_PROPERTIES = ["content"]  # Adjust as needed
 
 
 def search_only(func):
@@ -40,7 +38,7 @@ def search_only(func):
     func : callable
         The function to be wrapped. This is typically a database search function.
 
-    Returns
+    Returns:
     -------
     callable
         A new function that wraps the original one. This new function takes the same
@@ -128,41 +126,68 @@ def search_grouped(func):
     return wrapper
 
 
-class WeaviateHandler(BaseVectorDatabase):
-    """The WeaviateHandler Class manages interactions with a Weaviate Vector Database.
+class WeaviateConnector(BaseVectorDatabase):
+    """The WeaviateConnector Class manages interactions with a Weaviate Vector Database.
 
     This class provides methods to connect to a Weaviate cluster, manage collections,
-    load and chunk documents, and perform various types of searches and data manipulations.
+    load and chunk documents, and perform various types of searches and data manipulations,
+    including multi-tenancy support.
     """
 
     def __init__(self, params):
-        """Initialize a new instance of class."""
-        super().__init__(params)
-        if not self.try_connect():
-            self.connected = False
-            self.collection = None
-        else:
-            multi_collection = self.client.collections.get(self.collection_name)
-            # Get collection specific to the required tenant
-            self.collection = multi_collection.with_tenant(self.collection_name)
+        """
+        Initialize a new instance of WeaviateConnector.
 
-        self.vectorizer = analitiq_vectorizer.AnalitiqVectorizer(VECTOR_MODEL_NAME)
+        Parameters:
+        ----------
+        **kwargs : dict
+            Dictionary of parameters including 'host', 'api_key', 'collection_name', and 'tenant_name'.
+        """
+        super().__init__(params)
+        self.params = params
+        self.host = self.params.get('host')
+        self.api_key = self.params.get('api_key')
+        self.collection_name = self.params.get('collection_name', 'default_collection')
+        self.tenant_name = self.params.get('tenant_name', self.collection_name)
+        self.connected = False
+        self.client = None
+        self.vectorizer = AnalitiqVectorizer(VECTOR_MODEL_NAME)
+        self.connect()
 
     def connect(self):
-        """Connect to the Weaviate database."""
-        self.client: weaviate.WeaviateClient = weaviate.connect_to_wcs(
-            cluster_url=self.params["host"],
-            auth_credentials=AuthApiKey(self.params["api_key"]),
-        )
+        """
+        Connect to the Weaviate database.
 
-        if not self.client.collections.exists(self.collection_name):
-            self.create_collection(self.collection_name)
-            logger.info(f"Collection created {self.collection_name}")
-        else:
-            logger.info(f"Existing VDB Collection name: {self.collection_name}")
+        Establishes a connection to the Weaviate client using the provided host and API key.
+        If the specified collection does not exist, it creates one with multi-tenancy enabled.
+        It also ensures that the specified tenant exists within the collection.
+
+        Raises:
+        ------
+        Exception
+            If connection to Weaviate fails.
+        """
+        try:
+            self.client = weaviate.connect_to_wcs(
+                cluster_url=self.params["host"],
+                auth_credentials=AuthApiKey(self.params["api_key"]),
+            )
+            self.connected = True
+
+            # Check if the collection exists in the schema
+            if not self.client.collections.exists(self.collection_name):
+                self.create_collection(self.collection_name)
+                logger.info(f"Collection created {self.collection_name}")
+            else:
+                logger.info(f"Existing VDB Collection name: {self.collection_name}")
+
+        except Exception as e:
+            logger.error(f"Failed to connect to Weaviate: {e}")
+            self.connected = False
+            raise
 
     def __get_tenant_collection_object(
-        self, collection_name: str, tenant_name: str
+            self, collection_name: str, tenant_name: str
     ) -> object:
         """
         Returns the collection object for multi tenancy collection
@@ -204,7 +229,7 @@ class WeaviateHandler(BaseVectorDatabase):
         Examples:
         --------
         >>> params = {...}
-        >>> weaviate_handler = WeaviateHandler(params)
+        >>> weaviate_handler = WeaviateConnector(params)
         >>> weaviate_handler.create_collection("MyCollection")
         "MyCollection"
         """
@@ -220,70 +245,52 @@ class WeaviateHandler(BaseVectorDatabase):
             multi_tenancy_config=Configure.multi_tenancy(enabled=True),
         )
 
-        self.collection = self.client.collections.get(collection_name)
+        tenants = [Tenant(name=collection_name)]
+
+        collection = self.client.collections.get(collection_name)
 
         # Add a tenant to the collection. Right now the tenant is the same as the collection.
         # In the future, this could be users
-        self.collection.tenants.create(tenants=[Tenant(name=collection_name)])
+        collection.tenants.create(tenants=tenants)
 
         return collection_name
 
     def close(self):
         """
-        Closes the client connection.
+        Close the connection to the Weaviate database.
 
-        :return: None
+        Sets the client to None and updates the connection status.
         """
         self.client.close()
+        self.connected = False
+        logger.info("Closed connection to Weaviate")
 
-    def load_chunks(self, chunks: List[Chunk]) -> int:
+    def load_chunks(self, chunks: List[Dict[str, Any]]) -> int:
         """
         Load chunks into Weaviate.
 
-        This method aims to load a list of chunks into the Weaviate Vector Database. The chunks are represented
-        as dictionaries. An UUID is generated for each chunk using the chunk's `model_dump` method. This UUID is used
-        while loading each chunk into Weaviate. The resulting UUIDs are in UUID5 format. Additionally, the content of each chunk
-        is vectorized using `vectorize` method of the vectorizer. This vector represents the document in the vector space and
-        is stored alongside the document in Weaviate. Once a chunk is loaded successfully, the counter for loaded chunks is
-        incremented. After all the chunks have been loaded, the Weaviate client connection is closed and the number of loaded chunks is logged.
+        This method loads a list of chunks into the Weaviate Vector Database. Each chunk is expected
+        to be a dictionary containing at least a 'content' key. A UUID is generated for each chunk,
+        and the content is vectorized using the vectorizer.
 
         Parameters:
-        -----------
-        chunks : List[Chunk]
-            A list of Chunk instances representing chunks of text extracted from the document(s). Each chunk is one
-            unit of text that will be fed into Weaviate as a separate document entry. The Chunk class represents a unit
-            of text from a larger document and includes metadata like the project_name, document_name, source, content,
-            and other properties.
+        ----------
+        chunks : List[Dict[str, Any]]
+            A list of chunks to load into the database.
 
         Returns:
-        --------
+        -------
         int
+            The number of chunks successfully loaded.
 
         Raises:
-        -------
-        Any exception raised by the underlying Weaviate client during the loading process will get logged as an error
-        using the logger but it will not stop the function from trying to load the remaining chunks. The exact type of
-        the exception and its cause will depend on the nature of the error in the loading process.
-
-        Examples:
-        ---------
-        Assuming `weaviate_handler` is an instance of `WeaviateHandler`,
-        and `chunks` is a list of `Chunk` instances:
-
-        ```python
-        weaviate_handler.load_chunks(chunks)
-        ```
-
-        This will attempt to load all chunks into Weaviate and log any errors encountered during the process. The
-        method will also log the total number of chunks that were successfully loaded.
-
+        ------
+        Exception
+            If there is an error during the loading process.
         """
         chunks_loaded = 0
-
-        try:
-            self.client.connect()
-        except Exception as e:
-            logger.error(e)
+        if not self.connected:
+            self.connect()
 
         collection = self.__get_tenant_collection_object(
             self.collection_name, self.collection_name
@@ -309,64 +316,52 @@ class WeaviateHandler(BaseVectorDatabase):
 
     def load_file(self, path: str) -> int:
         """
-        Load a file into the Weaviate Vector Database.
+        Load a file into Weaviate.
 
-        This method reads and processes file from the specified path. The method applies the
-        `chunk_documents` method from the `chunk_processor` attribute of the WeaviateHandler instance
-        to partition documents present at the specified path. The result, a sequence of chunks,
-        are then loaded into the Weaviate database through the `load_chunks` method.
+        Reads the file at the given path, processes it into chunks, and loads the chunks into Weaviate.
 
-        Parameters
+        Parameters:
         ----------
         path : str
-            The path of the file to be processed and loaded.
+            The file path to load.
 
-        Raises
+        Returns:
+        -------
+        int
+            The number of chunks loaded.
+
+        Raises:
         ------
-        FileNotFoundError
-            If the specified file does not exist.
-
-        ValueError
-            If the file extension specified is not allowed. The allowed extensions
-            are determined by the configuration of the `chunk_processor`.
-
+        Exception
+            If there is an error during file processing or loading.
         """
         chunk_processor = DocumentProcessor(self.collection_name)
         chunks = chunk_processor.chunk_documents(path)
 
         return self.load_chunks(chunks)
 
-    def load_dir(self, path: str, extension: str):
+    def load_dir(self, path: str, extension: str) -> int:
         """
-        Load files in a directory into the Weaviate Vector Database.
+        Load files from a directory into Weaviate.
 
-        This method reads and processes files from the specified path with the desired extension.
-        The method applies the `chunk_documents` method from the `chunk_processor` attribute of the
-        WeaviateHandler instance to partition documents present at the specified path.
-        The result, a sequence of chunks, are then loaded into the Weaviate database through the
-        `load_chunks` method.
+        Processes all files with the given extension in the directory and loads them into Weaviate.
 
-        Parameters
+        Parameters:
         ----------
         path : str
-            The path of the file or directory to be processed and loaded. The path
-            must contain either a file or a directory.
-
+            The directory path containing files to load.
         extension : str
-            The extension of the files to be loaded. only files
-            with matching extension in the directory will be loaded. The file_ext
-            should not contain a leading period (For example, use 'txt' instead of '.txt').
+            The file extension to filter by (e.g., 'txt').
 
-        Raises
+        Returns:
+        -------
+        int
+            The number of chunks loaded.
+
+        Raises:
         ------
-        FileNotFoundError
-            If the specified path does not exist or does not contain any files
-            with the specified extension.
-
-        ValueError
-            If the file extension specified is not allowed. The allowed extensions
-            are determined by the configuration of the `chunk_processor`.
-
+        Exception
+            If there is an error during directory processing or loading.
         """
         chunk_processor = DocumentProcessor(self.collection_name)
         chunks = chunk_processor.chunk_documents(path, extension)
@@ -403,7 +398,7 @@ class WeaviateHandler(BaseVectorDatabase):
 
         Note:
         ----
-        The method and its inner workings can be better understood from the perspective of the WeaviateHandler class,
+        The method and its inner workings can be better understood from the perspective of the WeaviateConnector class,
         which manages interactions with a Weaviate Vector database. This method belongs to said class providing ways
         to connect to a Weaviate cluster, manage collections, load and chunk documents, and perform various types of
         searches and data manipulations. Furthermore, the use of the decorator @search_only, whose specifics are not
@@ -411,7 +406,7 @@ class WeaviateHandler(BaseVectorDatabase):
         in this function as well in order to control the operations allowed by this method.
         """
 
-        search_kw = keyword_extractions.extract_keywords(query)
+        search_kw = extract_keywords(query)
         logger.info("Extracted keywords to search for: %s", search_kw)
         response = QueryReturn(objects=[])
 
@@ -435,34 +430,6 @@ class WeaviateHandler(BaseVectorDatabase):
         return response
 
     @search_only
-    def hybrid_search(self, query: str, limit: int = 3) -> QueryReturn:
-        """Use Hybrid Search for document retrieval from Weaviate Database.
-
-        Perform a hybrid search by combining keyword-based search and vector-based search.
-
-        :param query: The query string used for searching.
-        :param limit: The maximum number of results to return. Default is 3.
-        :return: A QueryReturn object containing the search results.
-
-        :raises Exception: If there is an error during the search.
-
-        """
-        response = QueryReturn(objects=[])
-
-        try:
-            kw_results = self.kw_search(query, limit)
-            vector_results = self.vector_search(query, limit)
-
-            response = self.__combine_and_rerank_results(kw_results, vector_results)
-        except Exception as e:
-            logger.error(f"Weaviate error {e}")
-            raise e
-        finally:
-            self.close()
-
-        # logger.info(f"Weaviate Hybrid search result: {response}")
-        return response
-
     def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
         """Use Vector Search for document retrieval from Weaviate Database.
 
@@ -508,12 +475,43 @@ class WeaviateHandler(BaseVectorDatabase):
         # logger.info(f"Weaviate vector search result: {response}")
         return response
 
+    @search_only
+    def hybrid_search(self, query: str, limit: int = 3) -> QueryReturn:
+        """
+        Use Hybrid Search for document retrieval from Weaviate Database.
+
+        Perform a hybrid search by combining keyword-based search and vector-based search.
+
+        :param query: The query string used for searching.
+        :param limit: The maximum number of results to return. Default is 3.
+        :return: A QueryReturn object containing the search results.
+
+        :raises Exception: If there is an error during the search.
+
+        """
+        response = QueryReturn(objects=[])
+        if not self.connected:
+            self.connect()
+        try:
+            kw_results = self.kw_search(query, limit)
+            vector_results = self.vector_search(query, limit)
+
+            response = self.__combine_and_rerank_results(kw_results, vector_results)
+        except Exception as e:
+            logger.error(f"Weaviate error {e}")
+            raise e
+        finally:
+            self.close()
+
+        # logger.info(f"Weaviate Hybrid search result: {response}")
+        return response
+
     @staticmethod
     def __combine_and_rerank_results(
-        kw_results: QueryReturn,
-        vector_results: QueryReturn,
-        limit: int = 3,
-        kw_vector_weights: Tuple[float, float] = [0.3, 0.7],
+            kw_results: QueryReturn,
+            vector_results: QueryReturn,
+            limit: int = 3,
+            kw_vector_weights: Tuple[float, float] = [0.3, 0.7],
     ) -> List[dict]:
         """Combine and rerank keyword search and vector search results.
 
@@ -560,7 +558,7 @@ class WeaviateHandler(BaseVectorDatabase):
         return QueryReturn(objects=reranked_results)
 
     def search_with_filter(
-        self, query: str, filter_expression: dict = None, group_properties: list = None
+            self, query: str, filter_expression: dict = None, group_properties: list = None
     ):
         """Retrieve objects from the collection that have a property whose value matches the given pattern.
 
@@ -576,7 +574,7 @@ class WeaviateHandler(BaseVectorDatabase):
         :rtype: list or None
         Examples:
             --------
-            >>> handler = WeaviateHandler(params)
+            >>> handler = WeaviateConnector(params)
             >>> filter_expression = {
                     "or": [
                         {
@@ -601,6 +599,7 @@ class WeaviateHandler(BaseVectorDatabase):
 
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
+
         collection = self.__get_tenant_collection_object(
             self.collection_name, self.collection_name
         )
@@ -633,7 +632,6 @@ class WeaviateHandler(BaseVectorDatabase):
         Count the number of objects in a Weaviate collection by applying filters based on the given filter expression.
 
         Opens a connection to the Weaviate client and count the objects using passed properties as filters.
-        The filters are created by invoking the _create_filters() method (static method).
 
         Parameters:
         ----------
@@ -665,7 +663,7 @@ class WeaviateHandler(BaseVectorDatabase):
 
         Examples:
         --------
-        >>> handler = WeaviateHandler(params)
+        >>> handler = WeaviateConnector(params)
         >>> filter_expression = filter_expression = {
                 "or": [
                     {
@@ -700,8 +698,6 @@ class WeaviateHandler(BaseVectorDatabase):
         except Exception as e:
             logger.error(f"Error connecting to Weaviate: {e}")
             return None
-
-        # filters = self._create_filters(properties, match_type)
 
         response = collection.aggregate.over_all(
             total_count=True,
@@ -743,28 +739,41 @@ class WeaviateHandler(BaseVectorDatabase):
 
         Example:
         --------
-        >>> handler = WeaviateHandler()
+        >>> handler = WeaviateConnector()
         >>> handler.delete_collection("collection_name")
         True
         """
 
         try:
             self.client.collections.delete(collection_name)
+            logger.info(f"Deleted collection '{collection_name}'")
             return True
         except Exception:
+            logger.error(f"Error deleting collection: {e}")
             return False
         finally:
             self.close()
 
-    @staticmethod
-    def _create_filters(properties: list, match_type: str):
-        if match_type == "like":
-            filters = [
-                Filter.by_property(name).like(value) for name, value in properties
-            ]
-        else:
-            filters = [
-                Filter.by_property(name).equal(value) for name, value in properties
-            ]
+    # Helper methods
 
-        return filters
+    def _construct_weaviate_filter(self, filter_expression: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Construct Weaviate filter from filter expression.
+
+        Parameters:
+        ----------
+        filter_expression : Dict[str, Any]
+            The filter expression in a generic format.
+
+        Returns:
+        -------
+        Dict[str, Any]
+            The filter expression formatted for Weaviate.
+        """
+        # Convert your generic filter_expression to Weaviate's filter format
+        query_builder = QueryBuilder()
+        weaviate_filter = query_builder.construct_query(filter_expression)
+        return weaviate_filter
+
+    # Add any other Weaviate-specific methods as needed
+

@@ -1,7 +1,7 @@
 import pytest
 import os
 from dotenv import load_dotenv
-from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
+from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 from weaviate.collections.classes.internal import QueryReturn
 
 COLLECTION_NAME = "test_collection"
@@ -11,6 +11,8 @@ COLLECTION_NAME = "test_collection"
 def params():
     return {
         "collection_name": COLLECTION_NAME,
+        "tenant_name": COLLECTION_NAME,
+        "type": 'weaviate',
         "host": os.getenv('WEAVIATE_URL'),
         "api_key": os.getenv('WEAVIATE_CLIENT_SECRET'),
     }
@@ -24,7 +26,7 @@ def load_environment():
 @pytest.fixture(scope="module")
 def weaviate_handler(params):
 
-    handler = WeaviateHandler(params)
+    handler = VectorDatabaseFactory.create_database(params)
     handler.connect()
     yield handler
     handler.close()
