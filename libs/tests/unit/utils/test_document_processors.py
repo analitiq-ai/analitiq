@@ -23,10 +23,10 @@ def test_chunk_text():
     """TEst the chunk function."""
     text = "This is a test text, it should be split into chunks. please chunk it in a better way."
     expected = [
-        "This is a test text, it should",
-        ",hould be split into chunks. pl",
-        ",s. please chunk it in a better",
-        ",etter way.",
+        "This is a test text",
+        "text, it should be split into ",
+        "nto chunks. please chunk it in",
+        "t in a better way.",
     ]
 
     result = document_processor.chunk_text(text, chunk_size=30, chunk_overlap=5, token=",")
