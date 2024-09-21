@@ -71,6 +71,12 @@ def extract_keywords(text: str) -> str:
 
     # Stemming
     stemmer = PorterStemmer()
-    tokens = [stemmer.stem(word) for word in tokens]
+    seen = set()
+    result = []
+    for word in tokens:
+        stemmed_word = stemmer.stem(word)
+        if stemmed_word not in seen:
+            seen.add(stemmed_word)
+            result.append(stemmed_word)
 
-    return " ".join(set(tokens))
+    return " ".join(result)
