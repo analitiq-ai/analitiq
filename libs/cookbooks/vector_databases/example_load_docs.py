@@ -16,12 +16,12 @@ vdb_params = {
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
-vdb.client.connect()
-response = vdb.delete_collection("test")
-vdb.client.connect()
-response = vdb.create_collection("test")
-response = vdb.load_dir('/Users/kirillandriychuk/Documents/Projects/analitiq-ai/libs/tests/unit/databases/vector/', 'txt')
-response = vdb.hybrid_search("bikes")
+filter_expression = {"property": "document_name", "operator": "equal", "value": "test"}
+#response = vdb.delete_collection("test")
+#response = vdb.create_collection("test")
+#response = vdb.load_dir('/Users/kirillandriychuk/Documents/Projects/analitiq-ai/libs/tests/unit/databases/vector/', 'txt')
+#response = vdb.hybrid_search("bikes")
+response = vdb.count_with_filter(filter_expression,"date_loaded")
 print(response)
 sys.exit()
 #for g in response.groups:

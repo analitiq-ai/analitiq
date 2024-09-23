@@ -15,6 +15,14 @@ class BaseVectorDatabase(ABC):
         pass
 
     @abstractmethod
+    def __enter__(self):
+        pass
+
+    @abstractmethod
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
+
+    @abstractmethod
     def connect(self):
         """Connect to the vector database."""
         pass
@@ -65,7 +73,7 @@ class BaseVectorDatabase(ABC):
         pass
 
     @abstractmethod
-    def count_with_filter(self, filter_expression: Dict) -> Any:
+    def count_with_filter(self, filter_expression: Dict, group_by_prop: str = None) -> Any:
         """Count items with a filter."""
         pass
 

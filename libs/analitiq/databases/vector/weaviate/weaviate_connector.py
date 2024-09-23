@@ -9,6 +9,7 @@ from weaviate.util import generate_uuid5
 from weaviate.collections.classes.tenants import Tenant
 from weaviate.classes.config import Configure
 from weaviate.classes.query import Filter, MetadataQuery
+from weaviate.classes.aggregate import GroupByAggregate
 from analitiq.base.base_vector_database import BaseVectorDatabase
 from analitiq.databases.vector.weaviate.query_builder import QueryBuilder
 from analitiq.utils.document_processor import DocumentProcessor, group_results_by_properties
@@ -154,6 +155,20 @@ class WeaviateConnector(BaseVectorDatabase):
         self.vectorizer = AnalitiqVectorizer(VECTOR_MODEL_NAME)
         self.connect()
 
+    def __enter__(self):
+        """
+        Context manager entry: establish connection to Weaviate.
+        """
+        if not self.connected:
+            self.connect()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Context manager exit: ensure the connection is closed.
+        """
+        self.close()
+
     def connect(self):
         """
         Connect to the Weaviate database.
@@ -168,7 +183,7 @@ class WeaviateConnector(BaseVectorDatabase):
             If connection to Weaviate fails.
         """
         try:
-            self.client = weaviate.connect_to_wcs(
+            self.client = weaviate.connect_to_weaviate_cloud(
                 cluster_url=self.params["host"],
                 auth_credentials=AuthApiKey(self.params["api_key"]),
             )
@@ -185,6 +200,17 @@ class WeaviateConnector(BaseVectorDatabase):
             logger.error(f"Failed to connect to Weaviate: {e}")
             self.connected = False
             raise
+
+    def close(self):
+        """
+        Close the connection to the Weaviate database.
+
+        Sets the client to None and updates the connection status.
+        """
+        if self.connected and self.client:
+            self.client.close()
+            self.connected = False
+            logger.info("Closed connection to Weaviate")
 
     def __get_tenant_collection_object(
             self, collection_name: str, tenant_name: str
@@ -289,28 +315,30 @@ class WeaviateConnector(BaseVectorDatabase):
             If there is an error during the loading process.
         """
         chunks_loaded = 0
-        if not self.connected:
-            self.connect()
+        try:
+            with self:  # Ensure connection is properly handled
 
-        collection = self.__get_tenant_collection_object(
-            self.collection_name, self.collection_name
-        )
+                collection = self.__get_tenant_collection_object(
+                    self.collection_name, self.collection_name
+                )
 
-        with collection.batch.dynamic() as batch:
-            for chunk in chunks:
-                uuid = generate_uuid5(chunk.model_dump())
-                hf_vector = self.vectorizer.vectorize(chunk.content)
-                try:
-                    response = batch.add_object(
-                        properties=chunk.model_dump(), uuid=uuid, vector=hf_vector
-                    )
-                    logger.info(response)
-                    chunks_loaded += 1
-                except Exception as e:
-                    raise e
+                with collection.batch.dynamic() as batch:
+                    for chunk in chunks:
+                        uuid = generate_uuid5(chunk.model_dump())
+                        hf_vector = self.vectorizer.vectorize(chunk.content)
+                        try:
+                            response = batch.add_object(
+                                properties=chunk.model_dump(), uuid=uuid, vector=hf_vector
+                            )
+                            logger.info(response)
+                            chunks_loaded += 1
+                        except Exception as e:
+                            raise e
 
-        self.close()
-        logger.info("Loaded chunks: %s", chunks_loaded)
+            logger.info("Loaded chunks: %s", chunks_loaded)
+
+        except Exception as e:
+            logger.error(f"Error loading chunks into Weaviate: {e}")
 
         return chunks_loaded
 
@@ -411,7 +439,6 @@ class WeaviateConnector(BaseVectorDatabase):
         response = QueryReturn(objects=[])
 
         try:
-            self.client.connect()
             collection = self.__get_tenant_collection_object(
                 self.collection_name, self.collection_name
             )
@@ -423,8 +450,6 @@ class WeaviateConnector(BaseVectorDatabase):
             )
         except Exception as e:
             logger.error(f"Weaviate error {e}")
-        finally:
-            self.close()
 
         # logger.info(f"Weaviate Keyword search result: {response}")
         return response
@@ -458,7 +483,6 @@ class WeaviateConnector(BaseVectorDatabase):
 
         try:
             query_vector = self.vectorizer.vectorize(query)
-            self.client.connect()
             collection = self.__get_tenant_collection_object(
                 self.collection_name, self.collection_name
             )
@@ -469,8 +493,6 @@ class WeaviateConnector(BaseVectorDatabase):
             )
         except Exception as e:
             logger.error(f"Weaviate error {e}")
-        finally:
-            self.close()
 
         # logger.info(f"Weaviate vector search result: {response}")
         return response
@@ -490,8 +512,7 @@ class WeaviateConnector(BaseVectorDatabase):
 
         """
         response = QueryReturn(objects=[])
-        if not self.connected:
-            self.connect()
+
         try:
             kw_results = self.kw_search(query, limit)
             vector_results = self.vector_search(query, limit)
@@ -500,8 +521,6 @@ class WeaviateConnector(BaseVectorDatabase):
         except Exception as e:
             logger.error(f"Weaviate error {e}")
             raise e
-        finally:
-            self.close()
 
         # logger.info(f"Weaviate Hybrid search result: {response}")
         return response
@@ -592,11 +611,6 @@ class WeaviateConnector(BaseVectorDatabase):
                     ]
                 }
         """
-        try:
-            self.client.connect()
-        except Exception as e:
-            logger.error(f"Error retrieving documents: {e}")
-
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
 
@@ -616,8 +630,6 @@ class WeaviateConnector(BaseVectorDatabase):
         except Exception as e:
             logger.error(f"Error retrieving documents: {e}")
             return None
-        finally:
-            self.close()
 
         if not response.objects:
             return None
@@ -627,7 +639,7 @@ class WeaviateConnector(BaseVectorDatabase):
         else:
             return response
 
-    def count_with_filter(self, filter_expression: dict):
+    def count_with_filter(self, filter_expression: dict, group_by_prop: str = None):
         """
         Count the number of objects in a Weaviate collection by applying filters based on the given filter expression.
 
@@ -663,8 +675,8 @@ class WeaviateConnector(BaseVectorDatabase):
 
         Examples:
         --------
-        >>> handler = WeaviateConnector(params)
-        >>> filter_expression = filter_expression = {
+        >>> handler = VectorDatabaseFactory.create_database(vdb_params)
+        >>> filter_expression = {
                 "or": [
                     {
                         "and": [
@@ -680,7 +692,7 @@ class WeaviateConnector(BaseVectorDatabase):
                     }
                 ]
             }
-        >>> handler.count_objects_by_properties(properties, "like")
+        >>> handler.count_objects_by_properties(filter_expression)
             WeaviateObjectsBatchGetResponse({"totalCount": 100})
 
         >>> handler.count_objects_by_properties([], "like")
@@ -693,18 +705,18 @@ class WeaviateConnector(BaseVectorDatabase):
         collection = self.__get_tenant_collection_object(
             self.collection_name, self.collection_name
         )
-        try:
-            self.client.connect()
-        except Exception as e:
-            logger.error(f"Error connecting to Weaviate: {e}")
-            return None
 
-        response = collection.aggregate.over_all(
-            total_count=True,
-            filters=filters,  # Pass the generated filters directly here
-        )
-
-        self.close()
+        if group_by_prop:
+            response = collection.aggregate.over_all(
+                total_count=True,
+                filters=filters
+            )
+        else:
+            response = collection.aggregate.over_all(
+                total_count=True,
+                filters=filters,
+                group_by=GroupByAggregate(group_by_prop)
+            )
 
         return response
 
@@ -735,7 +747,7 @@ class WeaviateConnector(BaseVectorDatabase):
         collection and all its data permanently.
 
         Using this method will close the connection to the Weaviate client after the operation. This is done
-        in a finally block to ensure the connection is closed even if an exception occurs.
+        in a finally, block to ensure the connection is closed even if an exception occurs.
 
         Example:
         --------
@@ -751,29 +763,4 @@ class WeaviateConnector(BaseVectorDatabase):
         except Exception:
             logger.error(f"Error deleting collection: {e}")
             return False
-        finally:
-            self.close()
-
-    # Helper methods
-
-    def _construct_weaviate_filter(self, filter_expression: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Construct Weaviate filter from filter expression.
-
-        Parameters:
-        ----------
-        filter_expression : Dict[str, Any]
-            The filter expression in a generic format.
-
-        Returns:
-        -------
-        Dict[str, Any]
-            The filter expression formatted for Weaviate.
-        """
-        # Convert your generic filter_expression to Weaviate's filter format
-        query_builder = QueryBuilder()
-        weaviate_filter = query_builder.construct_query(filter_expression)
-        return weaviate_filter
-
-    # Add any other Weaviate-specific methods as needed
 
