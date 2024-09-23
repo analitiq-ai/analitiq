@@ -3,7 +3,6 @@ from typing import List, Tuple, Optional
 from analitiq.logger.logger import logger, chat_logger
 from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.code_extractor import CodeExtractor
-from analitiq.base.Database import DatabaseWrapper
 from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
 from analitiq.agents.sql.schema import Table, Tables, SQL, TableCheck
 from langchain.prompts import PromptTemplate
@@ -142,7 +141,7 @@ class Sql:
                 chunks_loaded = self.vdb.load_chunks(chunks)
 
                 logger.info(
-                    f"Loaded {counter} chunks for schema {schema_name} into Vector Database."
+                    f"Loaded {loaded_chunk_counter} chunks for schema {schema_name} into Vector Database."
                 )
 
         return loaded_chunk_counter

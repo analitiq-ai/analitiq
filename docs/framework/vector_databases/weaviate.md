@@ -9,7 +9,7 @@ The `WeaviateHandler` module provides a set of tools for managing and querying a
 Here's a simple example demonstrating the basic functionality of the `WeaviateHandler` module:
 
 ```python
-from analitiq.vectordb.weaviate import WeaviateHandler
+from analitiq.vector_databases.weaviate import WeaviateHandler
 
 params = {
     "project_name": "my_project",
@@ -103,7 +103,7 @@ def __init__(self, params):
 #### Loading all SQL files from a directory
 
 ```python
-from analitiq.vectordb.weaviate import WeaviateHandler
+from analitiq.vector_databases.weaviate import WeaviateHandler
 
 params = {
     "project_name": "my_project",
@@ -119,7 +119,7 @@ vdb.load(FILE_PATH, 'sql')
 #### Loading a single file
 
 ```python
-from analitiq.vectordb.weaviate import WeaviateHandler
+from analitiq.vector_databases.weaviate import WeaviateHandler
 
 params = {
     "project_name": "my_project",

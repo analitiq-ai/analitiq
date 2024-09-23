@@ -3,7 +3,7 @@ import sys
 from libs.analitiq.agents.sql.sql import Sql
 from libs.analitiq.base.Database import DatabaseWrapper
 from libs.analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
+from analitiq.vector_databases.weaviate.weaviate_handler import WeaviateHandler
 from dotenv import load_dotenv
 
 

@@ -16,7 +16,7 @@ import os
 import sys
 from dotenv import load_dotenv
 from analitiq.utils.db.table_comparison import compare_columns_between_tables
-from analitiq.base.Database import DatabaseWrapper
+from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
 
 # Define the environment
 env = 'dev'  # This could be determined in multiple ways, e.g., command-line arguments, another environment variable, etc.
@@ -76,9 +76,9 @@ if __name__ == "__main__":
     db_params_1 = load_env_variables('prod')
     db_params_2 = load_env_variables('prod')
 
-    # Instantiate DatabaseWrapper objects for both production and development databases
-    db_1 = DatabaseWrapper(db_params_1)
-    db_2 = DatabaseWrapper(db_params_2)
+    # Instantiate RelationalDatabaseFactory objects for both production and development databases
+    db_1 = RelationalDatabaseFactory.create_database(db_params_1)
+    db_2 = RelationalDatabaseFactory.create_database(db_params_2)
 
     # Example usage:
     # Prepare the table data dictionary containing details of the tables to be compared
@@ -87,8 +87,8 @@ if __name__ == "__main__":
     # - The schema name
     # - The table name to compare
     table_data = {
-        "DB1": (DatabaseWrapper(db_params_1), db_params_1['db_schemas'], "model_final_output"),
-        "DB2": (DatabaseWrapper(db_params_2), db_params_2['db_schemas'], "model_final_output_v2")
+        "DB1": (db_1, db_params_1['db_schemas'], "model_final_output"),
+        "DB2": (db_2, db_params_2['db_schemas'], "model_final_output_v2")
     }
 
     # Compare the columns between the production and development databases

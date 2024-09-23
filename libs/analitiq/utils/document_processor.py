@@ -6,7 +6,7 @@ import ast
 from datetime import datetime, timezone
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
-from analitiq.vectordb.schema import Chunk
+from analitiq.databases.vector.schema import Chunk
 from analitiq.utils import sql_recursive_text_splitter
 from analitiq.utils import keyword_extractions
 

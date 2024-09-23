@@ -1,54 +1,75 @@
+# File: databases/base/base_vector_database.py
+
 from abc import ABC, abstractmethod
-from analitiq.logger.logger import logger
+from typing import List, Dict, Any
 
 
 class BaseVectorDatabase(ABC):
-    """A base class for database handlers to manage common functionalities."""
+    """
+    Abstract base class for vector database connectors.
+    Defines the interface that all vector database connectors should implement.
+    """
 
-    def __init__(self, params):
-        """Initialize the Base Class."""
-        self.params = params
+    @abstractmethod
+    def __init__(self, params: Dict[str, Any]):
+        pass
 
-        self.collection_name = params["collection_name"]
-        self.client = None
-        self.connected = False
-
+    @abstractmethod
     def connect(self):
-        """Connect to the database. This method should be implemented by subclasses."""
-        errmsg = "Connect method not implemented."
-        raise NotImplementedError(errmsg)
-
-    def close(self):
-        """Close the database connection. This method should be implemented by subclasses."""
-        errmsg = "Execute query method not implemented."
-        raise NotImplementedError(errmsg)
-
-    def try_connect(self):
-        """Attempt to connect to the database. Returns None if the connection fails."""
-        try:
-            self.connect()
-            self.connected = True
-        except Exception as e:
-            logger.error({e})
-            self.connected = False
-            return None
-        return self
+        """Connect to the vector database."""
+        pass
 
     @abstractmethod
     def create_collection(self, collection_name: str) -> str:
-        """Create a collection."""
+        """Create a collection in the vector database."""
         pass
 
     @abstractmethod
-    def delete_collection(self, collection_name: str):
-        """Delete the entire collection."""
+    def close(self):
+        """Close the connection to the vector database."""
         pass
 
-    def update_collection(self):
-        """Delete the entire collection."""
-        errmsg = "Update collection method not implemented."
-        raise NotImplementedError(errmsg)
+    @abstractmethod
+    def load_chunks(self, chunks: List[Any]) -> int:
+        """Load chunks into the vector database."""
+        pass
 
     @abstractmethod
-    def hybrid_search(self, collection_name: str):
+    def load_file(self, path: str) -> int:
+        """Load a file into the vector database."""
+        pass
+
+    @abstractmethod
+    def load_dir(self, path: str, extension: str) -> int:
+        """Load files from a directory into the vector database."""
+        pass
+
+    @abstractmethod
+    def kw_search(self, query: str, limit: int = 3) -> Any:
+        """Perform a keyword search."""
+        pass
+
+    @abstractmethod
+    def vector_search(self, query: str, limit: int = 3) -> Any:
+        """Perform a vector search."""
+        pass
+
+    @abstractmethod
+    def hybrid_search(self, query: str, limit: int = 3) -> Any:
+        """Perform a hybrid search."""
+        pass
+
+    @abstractmethod
+    def search_with_filter(self, query: str, filter_expression: Dict, group_properties: List[str]) -> Any:
+        """Perform a search with filters."""
+        pass
+
+    @abstractmethod
+    def count_with_filter(self, filter_expression: Dict) -> Any:
+        """Count items with a filter."""
+        pass
+
+    @abstractmethod
+    def delete_collection(self, collection_name: str) -> bool:
+        """Delete a collection."""
         pass

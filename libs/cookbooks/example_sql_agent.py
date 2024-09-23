@@ -2,8 +2,8 @@ import os
 import sys
 from analitiq.agents.sql.sql import Sql
 from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
-from analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
+from analitiq.factories.llm_factory import LlmFactory
+from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 from dotenv import load_dotenv
 
 ENV_VARIABLES = ["WEAVIATE_COLLECTION", "WEAVIATE_URL", "WEAVIATE_CLIENT_SECRET", "LLM_MODEL_NAME",
@@ -58,6 +58,7 @@ def define_llm_params(env_vars):
 def define_vdb_params(env_vars):
     return {
         "collection_name": env_vars.get("WEAVIATE_COLLECTION"),
+        "type": "weaviate",
         "host": env_vars.get("WEAVIATE_URL"),
         "api_key": env_vars.get("WEAVIATE_CLIENT_SECRET")
     }
@@ -71,9 +72,9 @@ if __name__ == "__main__":
     llm_params = define_llm_params(env_vars)
     vdb_params = define_vdb_params(env_vars)
 
-    db = RelationalDatabaseFactory.create_database(db_type="postgres", params=db_params)
-    llm = BaseLlm(llm_params)
-    vdb = WeaviateHandler(vdb_params)
+    db = RelationalDatabaseFactory.create_database(db_params)
+    vdb = VectorDatabaseFactory.create_database(vdb_params)
+    llm = LlmFactory.create_llm(llm_params)
 
     agent = Sql(db, llm, vdb=vdb)
     result_generator = agent.run("show me sales by venue.")

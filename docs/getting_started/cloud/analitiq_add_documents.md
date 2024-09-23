@@ -33,7 +33,7 @@ To upload documents one by one using the Analitiq Web UI, follow these steps:
 To upload multiple documents at once, you can use the Analitiq Python application. The following code snippet, available in the Analitiq Cookbooks, demonstrates how to scan a whole directory of objects and upload them to the VectorDatabase:
 
 ```python
-from libs.analitiq.vectordb.weaviate import WeaviateHandler
+from libs.analitiq.vector_databases.weaviate import WeaviateHandler
 
 params = {
     "collection_name": "xxx",

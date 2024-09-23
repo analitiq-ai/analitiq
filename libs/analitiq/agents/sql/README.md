@@ -49,9 +49,9 @@ We need 3 things for SQL service to work with:
 
 ```python
 from sql import Sql
-from analitiq.base.Database import DatabaseWrapper
+from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
 from analitiq.base.llm.BaseLlm import BaseLlm
-from analitiq.vectordb.weaviate.weaviate_handler import WeaviateHandler
+from analitiq.databases.vector.weaviate.weaviate_connector import WeaviateConnector
 
 user_prompt = "Please give me revenues by month."
 
@@ -66,7 +66,7 @@ db_params = {'name': 'prod_dw'
     , 'threads': 4
     , 'keepalives_idle': 240
     , 'connect_timeout': 10}
-db = DatabaseWrapper(db_params)
+db = RelationalDatabaseFactory(db_params)
 
 llm_params = {'type': 'bedrock'
     , 'name': 'aws_llm'
@@ -80,7 +80,7 @@ llm_params = {'type': 'bedrock'
     , 'region_name': 'eu-central-1'}
 llm = BaseLlm(llm_params)
 
-vdb = WeaviateHandler('https://12345.weaviate.network', 'xxxxxxx', 'my_project')
+vdb = WeaviateConnector('https://12345.weaviate.network', 'xxxxxxx', 'my_project')
 
 # Example of using the SQLGenerator class
 sql_gen = Sql("Please give me revenues by month.", db, llm, vector_db=vdb)

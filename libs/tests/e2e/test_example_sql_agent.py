@@ -1,16 +1,16 @@
 import pytest
 from libs.analitiq.agents.sql.sql import Sql
-from libs.analitiq.base.Database import DatabaseWrapper
+from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
 from libs.analitiq.base.llm.BaseLlm import BaseLlm
-from libs.analitiq.vectordb.weaviate import WeaviateHandler
+from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 
 
 @pytest.fixture(name="sql_agent")
 def sql_agent_fixture(db_params, llm_params, vdb_params):
     """Set up the sql Agent."""
-    db = DatabaseWrapper(db_params)
+    db = RelationalDatabaseFactory.create_database(db_params)
     llm = BaseLlm(llm_params)
-    vdb = WeaviateHandler(vdb_params)
+    vdb = VectorDatabaseFactory.create_database(vdb_params)
     return Sql(db, llm, vdb=vdb)
 
 

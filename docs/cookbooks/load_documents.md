@@ -15,7 +15,7 @@ Make sure you have the necessary parameters:
 ### 1. Initialize the Weaviate Handler
 
 ```python
-from libs.analitiq.vectordb.weaviate import WeaviateHandler
+from libs.analitiq.vector_databases.weaviate import WeaviateHandler
 
 params = {
     "collection_name": "xxx",
