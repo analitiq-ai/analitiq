@@ -233,7 +233,7 @@ def test_count_with_filter_like(weaviate_handler):
     assert result.total_count == 3
 
 
-"""
+
 def test_delete_collection(weaviate_handler):
     weaviate_handler.client.connect()
     result = weaviate_handler.delete_collection(COLLECTION_NAME)
@@ -242,4 +242,4 @@ def test_delete_collection(weaviate_handler):
     weaviate_handler.client.connect()
     check = weaviate_handler.client.collections.exists(COLLECTION_NAME)
     assert check == False
-"""
+
