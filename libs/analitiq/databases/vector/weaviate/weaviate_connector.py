@@ -709,13 +709,13 @@ class WeaviateConnector(BaseVectorDatabase):
         if group_by_prop:
             response = collection.aggregate.over_all(
                 total_count=True,
-                filters=filters
+                filters=filters,
+                group_by=GroupByAggregate(prop=group_by_prop)
             )
         else:
             response = collection.aggregate.over_all(
                 total_count=True,
-                filters=filters,
-                group_by=GroupByAggregate(group_by_prop)
+                filters=filters
             )
 
         return response

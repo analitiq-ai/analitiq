@@ -8,7 +8,7 @@ load_dotenv()
 
 
 vdb_params = {
-        "collection_name": "test",
+        "collection_name": "test_collection",
         "type": "weaviate",
         "host": os.getenv("WEAVIATE_URL"),
         "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
@@ -16,12 +16,15 @@ vdb_params = {
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
-filter_expression = {"property": "document_name", "operator": "equal", "value": "test"}
 #response = vdb.delete_collection("test")
 #response = vdb.create_collection("test")
 #response = vdb.load_dir('/Users/kirillandriychuk/Documents/Projects/analitiq-ai/libs/tests/unit/databases/vector/', 'txt')
 #response = vdb.hybrid_search("bikes")
-response = vdb.count_with_filter(filter_expression,"date_loaded")
+
+filter_expression = {"property": "document_name", "operator": "like", "value": "test"}
+
+with vdb:
+    response = vdb.delete_collection("test_collection")
 print(response)
 sys.exit()
 #for g in response.groups:

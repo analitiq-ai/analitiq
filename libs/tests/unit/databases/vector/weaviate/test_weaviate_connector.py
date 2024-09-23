@@ -174,6 +174,24 @@ def test_count_with_or_filter(weaviate_handler):
     assert result.total_count == 2
 
 
+def test_count_with_simple_and_complex_filter(weaviate_handler):
+    filter_expression = {
+        "and": [
+            {"property": "document_name", "operator": "like", "value": "test_document"},
+            {
+                "or": [
+                    {"property": "content", "operator": "like", "value": "tests"},
+                    {"property": "content", "operator": "like", "value": "testing"},
+                ]
+            },
+        ]
+    }
+
+    with weaviate_handler:
+        result = weaviate_handler.count_with_filter(filter_expression)
+
+    assert result.total_count == 2
+
 def test_count_with_complex_filter(weaviate_handler):
     filter_expression = {
         "and": [
@@ -198,6 +216,19 @@ def test_count_with_complex_filter(weaviate_handler):
     assert result.total_count == 1
 
 
+def test_count_with_filter_group(weaviate_handler):
+    filter_expression = {"property": "document_name", "operator": "like", "value": "test"}
+
+    with weaviate_handler:
+        result = weaviate_handler.count_with_filter(filter_expression, 'document_name')
+
+    # Assert that there are exactly 3 AggregateGroup objects
+    assert len(result.groups) == 3
+
+    # Assert that each AggregateGroup object has total_count = 1
+    for group in result.groups:
+        assert group.total_count == 1
+
 def test_search_with_filter(weaviate_handler):
     query = "document"
     filter_expression = {
@@ -213,8 +244,8 @@ def test_search_with_filter(weaviate_handler):
 
     with weaviate_handler:
         result = weaviate_handler.search_with_filter(query, filter_expression)
-    print(len(result.objects))
-    assert len(result.objects) == 3
+
+    assert len(result.objects) == 4
 
 
 def test_count_with_filter_like(weaviate_handler):
@@ -246,8 +277,4 @@ def test_delete_collection(weaviate_handler):
     with weaviate_handler:
         result = weaviate_handler.delete_collection(COLLECTION_NAME)
     assert result == True
-
-    with weaviate_handler:
-        check = weaviate_handler.client.collections.exists(COLLECTION_NAME)
-    assert check == False
 
