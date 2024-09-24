@@ -43,7 +43,7 @@ class BaseLlm(ABC):
         return response
 
     def extract_info_from_db_docs(
-            self, user_query, schemas_list, docs: Optional[str] = None
+        self, user_query, schemas_list, docs: Optional[str] = None
     ):
         if docs is None:
             docs = ""
@@ -59,7 +59,7 @@ class BaseLlm(ABC):
         return response
 
     def extract_info_from_db_ddl(
-            self, user_query: str, ddl: str, docs: Optional[str] = None
+        self, user_query: str, ddl: str, docs: Optional[str] = None
     ):
         if docs is not None:
             docs = f"\nHere is some documentation about tables that you might find useful:\n{docs}"

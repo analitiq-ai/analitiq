@@ -1,4 +1,3 @@
-
 def get_prompt_extra_info(prompts):
     """
     Get the user prompt and extra information based on the provided prompts.
@@ -17,14 +16,14 @@ def get_prompt_extra_info(prompts):
 
     if len(prompts["feedback"]) > 10:
         extra_info = (
-                extra_info
-                + f"Your previous thoughts about this query were '{prompts['feedback']}'.\n"
+            extra_info
+            + f"Your previous thoughts about this query were '{prompts['feedback']}'.\n"
         )
 
     if len(prompts["hints"]) > 10:
         extra_info = (
-                extra_info
-                + f"Your previous thoughts about this query were '{prompts['hints']}'.\n"
+            extra_info
+            + f"Your previous thoughts about this query were '{prompts['hints']}'.\n"
         )
 
     return user_prompt, extra_info

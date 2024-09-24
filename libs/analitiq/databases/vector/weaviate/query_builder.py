@@ -49,7 +49,7 @@ class QueryBuilder:
             "like": "like",
             "=": "equal",
             "!=": "not_equal",
-            "not like": "not_like"
+            "not like": "not_like",
         }
 
     def construct_query(self, expression: Dict[str, Any]) -> Filter:
@@ -57,7 +57,11 @@ class QueryBuilder:
 
     def build_filters(self, expression: Dict[str, Any]) -> Filter:
         # Check if the expression is a single filter clause
-        if "property" in expression and "operator" in expression and "value" in expression:
+        if (
+            "property" in expression
+            and "operator" in expression
+            and "value" in expression
+        ):
             prop_name = expression["property"]
             operator = expression["operator"].lower()
             value = expression["value"]

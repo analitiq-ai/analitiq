@@ -440,9 +440,7 @@ class Sql:
             ]
         }
 
-        return self.vdb.search_filter(
-            user_prompt, filter_expression, ["document_name"]
-        )
+        return self.vdb.search_filter(user_prompt, filter_expression, ["document_name"])
 
     def run(self, user_prompt: str) -> BaseResponse:
         """Main method to run the SQL agent based on the user's prompt.

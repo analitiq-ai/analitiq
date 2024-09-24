@@ -20,12 +20,13 @@ class LlmFactory:
         db = factory.create_llm(params)
 
     """
+
     @staticmethod
     def create_llm(params: dict):
-        if 'type' not in params:
+        if "type" not in params:
             raise KeyError("'type' not found in params. Please specify llm type")
 
-        llm_type = params['type']
+        llm_type = params["type"]
 
         """Factory function to create a database wrapper instance based on db_type."""
         module_path = f"analitiq.llms.{llm_type}.{llm_type}_connector"
@@ -37,4 +38,3 @@ class LlmFactory:
             return database_class(params)
         except (ImportError, AttributeError) as e:
             raise ValueError(f"Unknown llm type: {llm_type}") from e
-

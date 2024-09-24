@@ -1,6 +1,7 @@
 from typing import List, Optional, Any
 from langchain_core.pydantic_v1 import BaseModel, Field
 
+
 class PromptClarification(BaseModel):
     """This class is used to capture primary product details of each task."""
 

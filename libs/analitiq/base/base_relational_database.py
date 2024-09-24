@@ -110,7 +110,7 @@ class BaseRelationalDatabase(ABC):
         return count
 
     def get_summary_statistics(
-            self, schema_name: str, table_name: str, column_name: str
+        self, schema_name: str, table_name: str, column_name: str
     ) -> Tuple[float, float, float]:
         """Get summary statistics (min, max, avg) for a numeric column."""
         sql = f"""

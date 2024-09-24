@@ -13,7 +13,10 @@ from weaviate.classes.query import MetadataQuery
 from weaviate.classes.aggregate import GroupByAggregate
 from analitiq.base.base_vector_database import BaseVectorDatabase
 from analitiq.databases.vector.weaviate.query_builder import QueryBuilder
-from analitiq.utils.document_processor import DocumentProcessor, group_results_by_properties
+from analitiq.utils.document_processor import (
+    DocumentProcessor,
+    group_results_by_properties,
+)
 from analitiq.utils.keyword_extractions import extract_keywords
 from analitiq.databases.vector.utils.analitiq_vectorizer import AnalitiqVectorizer
 from weaviate.collections.classes.internal import QueryReturn
@@ -147,10 +150,10 @@ class WeaviateConnector(BaseVectorDatabase):
         """
         super().__init__(params)
         self.params = params
-        self.host = self.params.get('host')
-        self.api_key = self.params.get('api_key')
-        self.collection_name = self.params.get('collection_name', 'default_collection')
-        self.tenant_name = self.params.get('tenant_name', self.collection_name)
+        self.host = self.params.get("host")
+        self.api_key = self.params.get("api_key")
+        self.collection_name = self.params.get("collection_name", "default_collection")
+        self.tenant_name = self.params.get("tenant_name", self.collection_name)
         self.connected = False
         self.client = None
         self.vectorizer = AnalitiqVectorizer(VECTOR_MODEL_NAME)
@@ -207,7 +210,7 @@ class WeaviateConnector(BaseVectorDatabase):
             logger.info("Closed connection to Weaviate")
 
     def __get_tenant_collection_object(
-            self, collection_name: str, tenant_name: str
+        self, collection_name: str, tenant_name: str
     ) -> object:
         """
         Returns the tenant-specific collection object for multi-tenancy.
@@ -332,7 +335,9 @@ class WeaviateConnector(BaseVectorDatabase):
                         hf_vector = self.vectorizer.vectorize(chunk.content)
                         try:
                             response = batch.add_object(
-                                properties=chunk.model_dump(), uuid=uuid, vector=hf_vector
+                                properties=chunk.model_dump(),
+                                uuid=uuid,
+                                vector=hf_vector,
                             )
                             logger.info(response)
                             chunks_loaded += 1
@@ -546,10 +551,10 @@ class WeaviateConnector(BaseVectorDatabase):
 
     @staticmethod
     def __combine_and_rerank_results(
-            kw_results: QueryReturn,
-            vector_results: QueryReturn,
-            limit: int = 3,
-            kw_vector_weights: Tuple[float, float] = [0.3, 0.7],
+        kw_results: QueryReturn,
+        vector_results: QueryReturn,
+        limit: int = 3,
+        kw_vector_weights: Tuple[float, float] = [0.3, 0.7],
     ) -> List[dict]:
         """Combine and rerank keyword search and vector search results.
 
@@ -601,7 +606,7 @@ class WeaviateConnector(BaseVectorDatabase):
         return QueryReturn(objects=reranked_results)
 
     def search_filter(
-            self, query: str, filter_expression: dict = None, group_properties: list = None
+        self, query: str, filter_expression: dict = None, group_properties: list = None
     ):
         """Retrieve objects from the collection that have a property whose value matches the given pattern.
 
@@ -734,15 +739,13 @@ class WeaviateConnector(BaseVectorDatabase):
             self.collection_name, self.collection_name
         )
 
-        response = collection.aggregate.over_all(
-            total_count=True,
-            filters=filters
-        )
+        response = collection.aggregate.over_all(total_count=True, filters=filters)
 
         return response
 
-
-    def filter_group_count(self, filter_expression: dict, group_by_prop: str) -> AggregateGroupByReturn:
+    def filter_group_count(
+        self, filter_expression: dict, group_by_prop: str
+    ) -> AggregateGroupByReturn:
         """
         Example response:
         AggregateGroupByReturn(groups=[AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.068792Z'), properties={}, total_count=1), AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.067935Z'), properties={}, total_count=1), AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.06836Z'), properties={}, total_count=1)])
@@ -769,7 +772,7 @@ class WeaviateConnector(BaseVectorDatabase):
         response = collection.aggregate.over_all(
             total_count=True,
             filters=filters,
-            group_by=GroupByAggregate(prop=group_by_prop)
+            group_by=GroupByAggregate(prop=group_by_prop),
         )
 
         return response
@@ -817,4 +820,3 @@ class WeaviateConnector(BaseVectorDatabase):
         except Exception:
             logger.error(f"Error deleting collection: {e}")
             return False
-
