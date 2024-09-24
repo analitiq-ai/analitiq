@@ -40,4 +40,4 @@ def test_create_unknown_database(params):
     params['type'] = 'oracle'
     with pytest.raises(ValueError) as excinfo:
         RelationalDatabaseFactory.create_database(params)
-    assert 'Unknown relational database type: unknown_db' in str(excinfo.value)
+    assert f"Unknown relational database type: {params['type']}" in str(excinfo.value)
