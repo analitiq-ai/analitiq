@@ -7,8 +7,9 @@ import weaviate
 from weaviate.auth import AuthApiKey
 from weaviate.util import generate_uuid5
 from weaviate.collections.classes.tenants import Tenant
+from weaviate.collections.classes.aggregate import AggregateGroupByReturn
 from weaviate.classes.config import Configure
-from weaviate.classes.query import Filter, MetadataQuery
+from weaviate.classes.query import MetadataQuery
 from weaviate.classes.aggregate import GroupByAggregate
 from analitiq.base.base_vector_database import BaseVectorDatabase
 from analitiq.databases.vector.weaviate.query_builder import QueryBuilder
@@ -189,13 +190,6 @@ class WeaviateConnector(BaseVectorDatabase):
             )
             self.connected = True
 
-            # Check if the collection exists in the schema
-            if not self.client.collections.exists(self.collection_name):
-                self.create_collection(self.collection_name)
-                logger.info(f"Collection created {self.collection_name}")
-            else:
-                logger.info(f"Existing VDB Collection name: {self.collection_name}")
-
         except Exception as e:
             logger.error(f"Failed to connect to Weaviate: {e}")
             self.connected = False
@@ -216,13 +210,22 @@ class WeaviateConnector(BaseVectorDatabase):
             self, collection_name: str, tenant_name: str
     ) -> object:
         """
-        Returns the collection object for multi tenancy collection
+        Returns the tenant-specific collection object for multi-tenancy.
 
-        :param collection_name: The name of the collection to retrieve the collection object from.
-        :param tenant_name: The name of the tenant for which the collection object is being retrieved.
-        :return: The collection object specific to the required tenant.
+        Parameters
+        ----------
+        collection_name : str
+            The name of the collection.
+        tenant_name : str
+            The tenant name within the collection.
+
+        Returns
+        -------
+        object
+            The collection object specific to the tenant.
         """
         multi_collection = self.client.collections.get(collection_name)
+        logger.info(f"Existing VDB Collection name: {collection_name}")
 
         # Get collection specific to the required tenant
         return multi_collection.with_tenant(tenant_name)
@@ -278,6 +281,7 @@ class WeaviateConnector(BaseVectorDatabase):
         # Add a tenant to the collection. Right now the tenant is the same as the collection.
         # In the future, this could be users
         collection.tenants.create(tenants=tenants)
+        logger.info(f"Collection created {collection_name}")
 
         return collection_name
 
@@ -458,10 +462,17 @@ class WeaviateConnector(BaseVectorDatabase):
     def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
         """Use Vector Search for document retrieval from Weaviate Database.
 
-        :param query: A string representing the query to be performed.
-        :param limit: An optional integer representing the maximum number of results to return.
-        Default value is 3.
-        :return: A QueryReturn object containing the search results.
+        Parameters
+        ----------
+        query : str
+            The query string for vector search.
+        limit : int, optional
+            Maximum number of results to return (default is 3).
+
+        Returns
+        -------
+        QueryReturn
+            The search results.
 
         This method performs a vector search using the Weaviate API. It takes a query string and an optional limit parameter to specify the maximum number of results to return. The method returns
         * a QueryReturn object which contains the search results.
@@ -504,9 +515,17 @@ class WeaviateConnector(BaseVectorDatabase):
 
         Perform a hybrid search by combining keyword-based search and vector-based search.
 
-        :param query: The query string used for searching.
-        :param limit: The maximum number of results to return. Default is 3.
-        :return: A QueryReturn object containing the search results.
+        Parameters
+        ----------
+        query : str
+            The search query.
+        limit : int, optional
+            The maximum number of results to return (default is 3).
+
+        Returns
+        -------
+        QueryReturn
+            The hybrid search results.
 
         :raises Exception: If there is an error during the search.
 
@@ -534,16 +553,21 @@ class WeaviateConnector(BaseVectorDatabase):
     ) -> List[dict]:
         """Combine and rerank keyword search and vector search results.
 
-        :param kw_results: Keyword search results.
-        :type kw_results: QueryReturn
-        :param vector_results: Vector search results.
-        :type vector_results: QueryReturn
-        :param limit: Number of results to return.
-        :type limit: int, optional
-        :param kw_vector_weights: Weights for keyword and vector search results, default is [0.3, 0.7].
-        :type kw_vector_weights: Tuple[float, float], optional
-        :return: Reranked results.
-        :rtype: List[dict]
+        Parameters
+        ----------
+        kw_results : QueryReturn
+            Keyword search results.
+        vector_results : QueryReturn
+            Vector search results.
+        limit : int, optional
+            The maximum number of combined results to return (default is 3).
+        kw_vector_weights : Tuple[float, float], optional
+            Weights for keyword and vector results (default is (0.3, 0.7)).
+
+        Returns
+        -------
+        List[dict]
+            The combined and reranked search results.
         """
         if not kw_results.objects:
             return None
@@ -576,21 +600,25 @@ class WeaviateConnector(BaseVectorDatabase):
 
         return QueryReturn(objects=reranked_results)
 
-    def search_with_filter(
+    def search_filter(
             self, query: str, filter_expression: dict = None, group_properties: list = None
     ):
         """Retrieve objects from the collection that have a property whose value matches the given pattern.
 
-        Example:
+        Parameters
+        ----------
+        query : str
+            The search query.
+        filter_expression : dict, optional
+            A filter expression to apply to the query (default is None).
+        group_properties : list, optional
+            A list of properties to group results by (default is None).
+
+        Returns
         -------
-        response = vector_db_client.get_many_like("document_name", "schema")
+        list or None
+            Filtered and grouped search results, or None if no results found.
 
-        :param query: The search string.
-        :param filter_expression: The name of the property used for filtering.
-        :param group_properties: Properties by which to group the results, if needed
-
-        :return: A list of objects that have a property matching the pattern.
-        :rtype: list or None
         Examples:
             --------
             >>> handler = WeaviateConnector(params)
@@ -639,7 +667,7 @@ class WeaviateConnector(BaseVectorDatabase):
         else:
             return response
 
-    def count_with_filter(self, filter_expression: dict, group_by_prop: str = None):
+    def filter_count(self, filter_expression: dict):
         """
         Count the number of objects in a Weaviate collection by applying filters based on the given filter expression.
 
@@ -706,17 +734,43 @@ class WeaviateConnector(BaseVectorDatabase):
             self.collection_name, self.collection_name
         )
 
-        if group_by_prop:
-            response = collection.aggregate.over_all(
-                total_count=True,
-                filters=filters,
-                group_by=GroupByAggregate(prop=group_by_prop)
-            )
-        else:
-            response = collection.aggregate.over_all(
-                total_count=True,
-                filters=filters
-            )
+        response = collection.aggregate.over_all(
+            total_count=True,
+            filters=filters
+        )
+
+        return response
+
+
+    def filter_group_count(self, filter_expression: dict, group_by_prop: str) -> AggregateGroupByReturn:
+        """
+        Example response:
+        AggregateGroupByReturn(groups=[AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.068792Z'), properties={}, total_count=1), AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.067935Z'), properties={}, total_count=1), AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.06836Z'), properties={}, total_count=1)])
+
+        Parameters
+        ----------
+        filter_expression : dict
+            A filter expression to apply to the query.
+        group_by_prop : str
+            The property to group results by.
+
+        Returns
+        -------
+        AggregateGroupByReturn
+            The grouped count results.
+        """
+        query_builder = QueryBuilder()
+        filters = query_builder.construct_query(filter_expression)
+
+        collection = self.__get_tenant_collection_object(
+            self.collection_name, self.collection_name
+        )
+
+        response = collection.aggregate.over_all(
+            total_count=True,
+            filters=filters,
+            group_by=GroupByAggregate(prop=group_by_prop)
+        )
 
         return response
 

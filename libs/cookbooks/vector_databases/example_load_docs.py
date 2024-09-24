@@ -21,11 +21,26 @@ vdb = VectorDatabaseFactory.create_database(vdb_params)
 #response = vdb.load_dir('/Users/kirillandriychuk/Documents/Projects/analitiq-ai/libs/tests/unit/databases/vector/', 'txt')
 #response = vdb.hybrid_search("bikes")
 
-filter_expression = {"property": "document_name", "operator": "like", "value": "test"}
-
+filter_expression = {
+    "and": [
+        {
+            "or": [
+                {"property": "document_name1", "operator": "like", "value": "test"},
+                {"property": "content", "operator": "!=", "value": "This is the first test document."},
+            ]
+        },
+        {
+            "or": [
+                {"property": "document_name", "operator": "=", "value": "project_plan.txt"},
+                {"property": "content", "operator": "like", "value": "project"},
+            ]
+        },
+    ]
+}
 with vdb:
-    response = vdb.delete_collection("test_collection")
+    response = vdb.filter_count(filter_expression)
 print(response)
+
 sys.exit()
 #for g in response.groups:
 #    print(g.total_count)

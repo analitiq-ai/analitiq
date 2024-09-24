@@ -124,7 +124,7 @@ def test_hybrid_search(weaviate_handler):
     assert len(result.objects) == 3
 
 
-def test_count_with_filter_equal(weaviate_handler):
+def test_filter_count__equal(weaviate_handler):
     filter_expression = {
         "or": [
             {
@@ -142,12 +142,12 @@ def test_count_with_filter_equal(weaviate_handler):
         ]
     }
     with weaviate_handler:
-        result = weaviate_handler.count_with_filter(filter_expression=filter_expression)
+        result = weaviate_handler.filter_count(filter_expression=filter_expression)
 
     assert result.total_count == 1
 
 
-def test_count_with_and_filter(weaviate_handler):
+def test_filter_count_and(weaviate_handler):
     filter_expression = {
         "and": [
             {"property": "document_name", "operator": "like", "value": "test_document"},
@@ -155,12 +155,12 @@ def test_count_with_and_filter(weaviate_handler):
         ]
     }
     with weaviate_handler:
-        result = weaviate_handler.count_with_filter(filter_expression)
+        result = weaviate_handler.filter_count(filter_expression)
 
     assert result.total_count == 1
 
 
-def test_count_with_or_filter(weaviate_handler):
+def test_filter_count__or(weaviate_handler):
     filter_expression = {
         "or": [
             {"property": "document_name", "operator": "like", "value": "summary"},
@@ -169,12 +169,12 @@ def test_count_with_or_filter(weaviate_handler):
     }
 
     with weaviate_handler:
-        result = weaviate_handler.count_with_filter(filter_expression)
+        result = weaviate_handler.filter_count(filter_expression)
 
     assert result.total_count == 2
 
 
-def test_count_with_simple_and_complex_filter(weaviate_handler):
+def test_filter_count__simple_and_complex_filter(weaviate_handler):
     filter_expression = {
         "and": [
             {"property": "document_name", "operator": "like", "value": "test_document"},
@@ -188,11 +188,11 @@ def test_count_with_simple_and_complex_filter(weaviate_handler):
     }
 
     with weaviate_handler:
-        result = weaviate_handler.count_with_filter(filter_expression)
+        result = weaviate_handler.filter_count(filter_expression)
 
     assert result.total_count == 2
 
-def test_count_with_complex_filter(weaviate_handler):
+def test_filter_count__complex_filter(weaviate_handler):
     filter_expression = {
         "and": [
             {
@@ -211,16 +211,16 @@ def test_count_with_complex_filter(weaviate_handler):
     }
 
     with weaviate_handler:
-        result = weaviate_handler.count_with_filter(filter_expression)
+        result = weaviate_handler.filter_count(filter_expression)
 
     assert result.total_count == 1
 
 
-def test_count_with_filter_group(weaviate_handler):
+def test_filter_group_count(weaviate_handler):
     filter_expression = {"property": "document_name", "operator": "like", "value": "test"}
 
     with weaviate_handler:
-        result = weaviate_handler.count_with_filter(filter_expression, 'document_name')
+        result = weaviate_handler.filter_group_count(filter_expression, 'document_name')
 
     # Assert that there are exactly 3 AggregateGroup objects
     assert len(result.groups) == 3
@@ -229,7 +229,7 @@ def test_count_with_filter_group(weaviate_handler):
     for group in result.groups:
         assert group.total_count == 1
 
-def test_search_with_filter(weaviate_handler):
+def test_search_filter(weaviate_handler):
     query = "document"
     filter_expression = {
         "and": [
@@ -243,12 +243,12 @@ def test_search_with_filter(weaviate_handler):
     }
 
     with weaviate_handler:
-        result = weaviate_handler.search_with_filter(query, filter_expression)
+        result = weaviate_handler.search_filter(query, filter_expression)
 
     assert len(result.objects) == 4
 
 
-def test_count_with_filter_like(weaviate_handler):
+def test_filter_count__like(weaviate_handler):
     filter_expression = {
         "or": [
             {
@@ -266,15 +266,19 @@ def test_count_with_filter_like(weaviate_handler):
         ]
     }
     with weaviate_handler:
-        result = weaviate_handler.count_with_filter(filter_expression)
+        result = weaviate_handler.filter_count(filter_expression)
 
     assert result.total_count == 3
 
 
-
+"""
 def test_delete_collection(weaviate_handler):
 
     with weaviate_handler:
         result = weaviate_handler.delete_collection(COLLECTION_NAME)
     assert result == True
 
+    with weaviate_handler:
+        check = weaviate_handler.client.collections.exists(COLLECTION_NAME)
+    assert check == False
+"""

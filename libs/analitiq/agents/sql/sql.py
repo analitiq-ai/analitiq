@@ -119,7 +119,7 @@ class Sql:
                     },
                 ]
             }
-            response = self.vdb.count_with_filter(filter_expression)
+            response = self.vdb.filter_count(filter_expression)
 
             loaded_chunk_counter = 0
             if response.total_count and response.total_count > 0:
@@ -269,7 +269,7 @@ class Sql:
             ]
         }
 
-        response = self.vdb.search_with_filter(
+        response = self.vdb.search_filter(
             query, filter_expression, ["document_name", "document_type"]
         )
 
@@ -440,7 +440,7 @@ class Sql:
             ]
         }
 
-        return self.vdb.search_with_filter(
+        return self.vdb.search_filter(
             user_prompt, filter_expression, ["document_name"]
         )
 

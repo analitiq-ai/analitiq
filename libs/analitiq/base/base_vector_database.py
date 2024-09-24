@@ -68,12 +68,17 @@ class BaseVectorDatabase(ABC):
         pass
 
     @abstractmethod
-    def search_with_filter(self, query: str, filter_expression: Dict, group_properties: List[str]) -> Any:
+    def search_filter(self, query: str, filter_expression: Dict, group_properties: List[str]) -> Any:
         """Perform a search with filters."""
         pass
 
     @abstractmethod
-    def count_with_filter(self, filter_expression: Dict, group_by_prop: str = None) -> Any:
+    def filter_count(self, filter_expression: Dict, group_by_prop: str = None) -> Any:
+        """Count items with a filter."""
+        pass
+
+    @abstractmethod
+    def filter_group_count(self, filter_expression: Dict, group_by_prop: str = None) -> Any:
         """Count items with a filter."""
         pass
 
