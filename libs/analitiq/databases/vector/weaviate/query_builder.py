@@ -1,10 +1,9 @@
 from weaviate.classes.query import Filter
-from typing import Any, Dict, List, Union
+from typing import Any, Dict
 
 
 class PropertyFilter:
-    """
-    The PropertyFilter class represents a filter on a specific property name.
+    """The PropertyFilter class represents a filter on a specific property name.
     https://weaviate.io/developers/weaviate/api/graphql/filters
 
     :param name: The name of the property to filter on.
@@ -19,17 +18,21 @@ class PropertyFilter:
     def equal(self, value: Any) -> Filter:
         return Filter.by_property(self.name).equal(value)
 
+    def not_equal(self, value: Any) -> Filter:
+        return Filter.by_property(self.name).not_equal(value)
+
 
 class QueryBuilder:
-    """
-    QueryBuilder
+    """QueryBuilder
 
     A class for constructing queries using a given expression.
 
-    Attributes:
+    Attributes
+    ----------
         operators (dict): A dictionary mapping operators to their corresponding filter methods.
 
-    Methods:
+    Methods
+    -------
         construct_query(expression: Dict[str, Any]) -> Filter:
             Constructs a query based on the given expression.
 
@@ -42,35 +45,56 @@ class QueryBuilder:
     """
 
     def __init__(self):
-        self.operators = {"=": "equal", "!=": "notequal", "like": "like"}
+        self.operator_methods = {
+            "like": "like",
+            "=": "equal",
+            "!=": "not_equal",
+            "not like": "not_like",
+        }
 
     def construct_query(self, expression: Dict[str, Any]) -> Filter:
         return self.build_filters(expression)
 
     def build_filters(self, expression: Dict[str, Any]) -> Filter:
-        # Assume the root is an "or" or "and" logical operator
-        logical_op, clauses = next(iter(expression.items()))
-        filters = []
+        # Check if the expression is a single filter clause
+        if "property" in expression and "operator" in expression and "value" in expression:
+            prop_name = expression["property"]
+            operator = expression["operator"].lower()
+            value = expression["value"]
 
-        for clause in clauses:
-            if "property" in clause and "operator" in clause and "value" in clause:
-                prop_name = clause["property"]
-                operator = clause["operator"].lower()
-                value = clause["value"]
-
-                if operator == "like":
-                    filters.append(PropertyFilter(prop_name).like(value))
-                elif operator == "=":
-                    filters.append(PropertyFilter(prop_name).equal(value))
-                elif operator == "not like":
-                    filters.append(PropertyFilter(prop_name).not_like(value))
+            if operator == "like":
+                return PropertyFilter(prop_name).like(value)
+            elif operator == "=":
+                return PropertyFilter(prop_name).equal(value)
+            elif operator == "not like":
+                return PropertyFilter(prop_name).not_like(value)
             else:
-                # Recursively handle nested logical structures
-                filters.append(self.build_filters(clause))
-
-        if logical_op.lower() == "and":
-            return Filter.all_of(filters)
-        elif logical_op.lower() == "or":
-            return Filter.any_of(filters)
+                # Handle other operators as needed
+                raise ValueError(f"Unsupported operator: {operator}")
         else:
-            raise ValueError(f"Unsupported logical operator: {logical_op}")
+            # Assume the root is an "or" or "and" logical operator
+            logical_op, clauses = next(iter(expression.items()))
+            filters = []
+
+            for clause in clauses:
+                if "property" in clause and "operator" in clause and "value" in clause:
+                    prop_name = clause["property"]
+                    operator = clause["operator"].lower()
+                    value = clause["value"]
+
+                    if operator in self.operator_methods:
+                        method_name = self.operator_methods[operator]
+                        method = getattr(PropertyFilter(prop_name), method_name)
+                        filters.append(method(value))
+                    else:
+                        raise ValueError(f"Unsupported operator: {operator}")
+                else:
+                    # Recursively handle nested logical structures
+                    filters.append(self.build_filters(clause))
+
+            if logical_op.lower() == "and":
+                return Filter.all_of(filters)
+            elif logical_op.lower() == "or":
+                return Filter.any_of(filters)
+            else:
+                raise ValueError(f"Unsupported logical operator: {logical_op}")

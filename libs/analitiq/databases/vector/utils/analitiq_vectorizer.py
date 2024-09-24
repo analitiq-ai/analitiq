@@ -48,9 +48,7 @@ class AnalitiqVectorizer:
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
         self.model = AutoModel.from_pretrained(self.model_name_or_path)
 
-    def vectorize(
-        self, text: Union[str, List[str]], flatten: bool = True
-    ) -> np.ndarray:
+    def vectorize(self, text: Union[str, List[str]], flatten: bool = True) -> np.ndarray:
         """Generate vectors for the given input text.
 
         Parameters
@@ -72,9 +70,7 @@ class AnalitiqVectorizer:
         if self.model is None:
             errmsg = "ERROR: No Model is set."
             raise TypeError(errmsg)
-        inputs = self.tokenizer(
-            text, return_tensors="pt", padding=True, truncation=True
-        )
+        inputs = self.tokenizer(text, return_tensors="pt", padding=True, truncation=True)
         outputs = self.model(**inputs)
         vectors = outputs.last_hidden_state.mean(dim=1)
 
@@ -84,8 +80,7 @@ class AnalitiqVectorizer:
             return vectors.detach().cpu().numpy()
 
     def normalize(self, vectors: np.ndarray) -> np.ndarray:
-        """
-        Normalizes the input vectors.
+        """Normalizes the input vectors.
 
         :param vectors: A numpy array of vectors to be normalized.
         :return: A numpy array of normalized vectors.
@@ -94,8 +89,7 @@ class AnalitiqVectorizer:
         return vectors / norms
 
     def create_embeddings(self, texts: List[str]):
-        """
-        Create embeddings for the given texts.
+        """Create embeddings for the given texts.
 
         :param texts: A list of strings representing the texts to create embeddings for.
         :type texts: list[str]
@@ -107,8 +101,7 @@ class AnalitiqVectorizer:
         self.embeddings = self.normalize(embeddings)
 
     def search(self, query: str, k: int = 3):
-        """
-        Search for similar texts based on the given query.
+        """Search for similar texts based on the given query.
 
         :param query: The text to search for similarities.
         :param k: The number of most similar texts to return. Default is 3.

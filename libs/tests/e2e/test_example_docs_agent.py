@@ -1,3 +1,5 @@
+# pylint: disable=redefined-outer-name
+
 """Test the docs Agent."""
 
 import pytest

@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
-from analitiq.logger.logger import logger
-from typing import Dict, Optional, Any
+from typing import Dict, Any
 from langchain.prompts import PromptTemplate
 from langchain.output_parsers import PydanticOutputParser
 from analitiq.llms.utils import get_prompt_extra_info
-from analitiq.llms import schemas
+from analitiq.llms.schemas import *
 
 from analitiq.llms.prompts import (
     PROMPT_CLARIFICATION,
@@ -27,7 +26,6 @@ class BaseLlm(ABC):
     @abstractmethod
     def create_llm(self):
         """Create and return a SQLAlchemy engine."""
-        pass
 
     def llm_invoke(self, user_prompt: str, prompt: Any, parser: Any):
         """Invokes a call to LLM with user_prompt, constructed_prompt and parser.
@@ -42,9 +40,7 @@ class BaseLlm(ABC):
 
         return response
 
-    def extract_info_from_db_docs(
-            self, user_query, schemas_list, docs: Optional[str] = None
-    ):
+    def extract_info_from_db_docs(self, user_query, schemas_list, docs: Optional[str] = None):
         if docs is None:
             docs = ""
 
@@ -58,9 +54,7 @@ class BaseLlm(ABC):
 
         return response
 
-    def extract_info_from_db_ddl(
-            self, user_query: str, ddl: str, docs: Optional[str] = None
-    ):
+    def extract_info_from_db_ddl(self, user_query: str, ddl: str, docs: Optional[str] = None):
         if docs is not None:
             docs = f"\nHere is some documentation about tables that you might find useful:\n{docs}"
 
@@ -94,13 +88,9 @@ class BaseLlm(ABC):
         :param user_prompt_hist: History of user prompts, including current prompt
         :return: str
         """
-        prompt = PromptTemplate(
-            template=SUMMARISE_REQUEST, input_variables=["user_prompt_hist"]
-        )
+        prompt = PromptTemplate(template=SUMMARISE_REQUEST, input_variables=["user_prompt_hist"])
         table_chain = prompt | self.llm
-        response = table_chain.invoke(
-            {"user_prompt_hist": user_prompt_hist + "\n" + user_prompt}
-        )
+        response = table_chain.invoke({"user_prompt_hist": user_prompt_hist + "\n" + user_prompt})
 
         return response
 
@@ -112,9 +102,7 @@ class BaseLlm(ABC):
         :return: str
         """
         parser = PydanticOutputParser(pydantic_object=PromptClarification)
-        prompt = PromptTemplate(
-            template=PROMPT_CLARIFICATION, input_variables=["user_prompt"]
-        )
+        prompt = PromptTemplate(template=PROMPT_CLARIFICATION, input_variables=["user_prompt"])
         table_chain = prompt | self.llm | parser
         response = table_chain.invoke(
             {

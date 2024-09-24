@@ -9,9 +9,7 @@ from analitiq.databases.vector.chromadb.schema import VectorStoreCollection
 
 
 def get_vector_store():
-    vector_store = chromadb.HttpClient(
-        host=os.getenv("CHROMA_DB_HOST"), port=os.getenv("CHROMA_DB_PORT")
-    )
+    vector_store = chromadb.HttpClient(host=os.getenv("CHROMA_DB_HOST"), port=os.getenv("CHROMA_DB_PORT"))
     try:
         yield vector_store
     finally:
@@ -49,14 +47,10 @@ class ChromaHandler:
             )
             return response
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Failed to create document: {e}"
-            ) from e
+            raise HTTPException(status_code=500, detail=f"Failed to create document: {e}") from e
         return False
 
-    def delete_document(
-        client: ClientAPI, collection_name: str, document_uuid: str
-    ) -> bool:
+    def delete_document(client: ClientAPI, collection_name: str, document_uuid: str) -> bool:
         """Delete a document from a specified collection.
 
         Args:
@@ -124,9 +118,7 @@ class ChromaHandler:
             logger.error(f"Error getting document by ID: {e}")
             return None
 
-    def get_all_documents(
-        client: ClientAPI, collection_name: str
-    ) -> list[VectorStoreCollection]:
+    def get_all_documents(client: ClientAPI, collection_name: str) -> list[VectorStoreCollection]:
         """Retrieve all documents from a specified collection.
 
         Args:

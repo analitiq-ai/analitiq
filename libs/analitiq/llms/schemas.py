@@ -1,5 +1,6 @@
-from typing import List, Optional, Any
+from typing import List, Optional
 from langchain_core.pydantic_v1 import BaseModel, Field
+
 
 class PromptClarification(BaseModel):
     """This class is used to capture primary product details of each task."""
@@ -34,15 +35,9 @@ class Tasks(BaseModel):
 
 class SelectedService(BaseModel):
     Action: str = Field(description="Name of a service.")
-    ActionInput: str = Field(
-        description="Action input require for successful completion of this action."
-    )
-    Instructions: str = Field(
-        description="Instructions of what needs to be done by this action."
-    )
-    DependsOn: List[str] = Field(
-        description="List of names of actions this action depends on."
-    )
+    ActionInput: str = Field(description="Action input require for successful completion of this action.")
+    Instructions: str = Field(description="Instructions of what needs to be done by this action.")
+    DependsOn: List[str] = Field(description="List of names of actions this action depends on.")
 
 
 class SelectedServices(BaseModel):
@@ -53,12 +48,8 @@ class SelectedServices(BaseModel):
 
 class ServiceDependencies(BaseModel):
     Name: str = Field(description="Name of the service")
-    Dependencies: list[str] = Field(
-        "List of tasks that this service depends on for completion "
-    )
+    Dependencies: list[str] = Field("List of tasks that this service depends on for completion ")
 
 
 class Service(BaseModel):
-    ServicesList: List[ServiceDependencies] = Field(
-        description="A list of selected services"
-    )
+    ServicesList: List[ServiceDependencies] = Field(description="A list of selected services")

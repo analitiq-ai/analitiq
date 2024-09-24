@@ -1,21 +1,22 @@
 def compare_columns_between_tables(table_data, detailed: bool = False):
-    """
-    Compares the columns of tables from two different databases and provides detailed numeric column comparisons if requested.
+    """Compares the columns of tables from two different databases and provides detailed numeric column comparisons if requested.
 
     Args:
+    ----
         table_data (dict): A dictionary where keys are database names, and values are tuples containing
                            (db_wrapper, schema_name, table_name). The function expects exactly two items in the dictionary.
         detailed (bool): If True, the function will also compare numeric column statistics (min, max, avg) between the tables.
 
     Raises:
+    ------
         ValueError: If the number of databases provided in `table_data` is not exactly two.
 
     Prints:
         - Summary of columns that are only present in one of the databases.
         - List of common columns between the databases.
         - Discrepancies in numeric column statistics if `detailed` is set to True.
-    """
 
+    """
     # Ensure the comparison is between exactly two tables
     if len(table_data) != 2:
         raise ValueError("Comparison should be between tables in exactly 2 databases.")
@@ -81,7 +82,7 @@ def compare_columns_between_tables(table_data, detailed: bool = False):
             if values["columns_only"]:
                 print(f"- Unique Columns: {', '.join(values['columns_only'])}")
             else:
-                print(f"- No unique columns")
+                print("- No unique columns")
 
         print(f"\nCommon Columns: {len(common_columns)}\n")
 
@@ -89,10 +90,7 @@ def compare_columns_between_tables(table_data, detailed: bool = False):
     num_col_discrepancies = []
 
     for column in common_columns:
-        if (
-            column in metadata[db1]["num_col_stats"]
-            and column in metadata[db2]["num_col_stats"]
-        ):
+        if column in metadata[db1]["num_col_stats"] and column in metadata[db2]["num_col_stats"]:
             # Extract min, max, avg statistics for the common column from both databases
             min_1, max_1, avg_1 = metadata[db1]["num_col_stats"][column]
             min_2, max_2, avg_2 = metadata[db2]["num_col_stats"][column]
@@ -115,9 +113,7 @@ def compare_columns_between_tables(table_data, detailed: bool = False):
             db1_stats = discrepancy[f"{db1}_stats"]
             db2_stats = discrepancy[f"{db2}_stats"]
             print(f"Column: '{column}'")
-            print(
-                f"  {db1} - Min: {db1_stats[0]:,.2f}, Max: {db1_stats[1]:,.2f}, Avg: {db1_stats[2]:,.10f}"
-            )
+            print(f"  {db1} - Min: {db1_stats[0]:,.2f}, Max: {db1_stats[1]:,.2f}, Avg: {db1_stats[2]:,.10f}")
             print(
                 f"  {db2} - Min: {db2_stats[0]:,.2f}, Max: {db2_stats[1]:,.2f}, Avg: {db2_stats[2]:,.10f}\n"
             )

@@ -19,9 +19,7 @@ class GlobalConfig:
     def __init__(self):
         """ """
         if not self._initialized:
-            self.project_config = self.load_config(
-                "project.yml"
-            )  # this is the users project.yml
+            self.project_config = self.load_config("project.yml")  # this is the users project.yml
             self.profiles: Dict = None
             self.profile_configs: Dict = None
 
@@ -29,9 +27,7 @@ class GlobalConfig:
             serv_loader = ServicesLoader()
 
             # This is where project services from the YAML will be stored
-            self.services: Dict[str, Any] = serv_loader.load_services_from_config(
-                self.project_config
-            )
+            self.services: Dict[str, Any] = serv_loader.load_services_from_config(self.project_config)
 
             if not self.services:
                 msg = "The 'Available Services' dictionary is empty!"
@@ -56,9 +52,7 @@ class GlobalConfig:
 
             # Load and validate the Profile configuration
             profile_loader = ProfileLoader(self.profiles)
-            self.profile_configs = profile_loader._validate_config(
-                self.project_config["profile"]
-            )
+            self.profile_configs = profile_loader._validate_config(self.project_config["profile"])
 
     def load_config(self, file_path: str):
         try:

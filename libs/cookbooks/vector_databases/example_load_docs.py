@@ -8,7 +8,7 @@ load_dotenv()
 
 
 vdb_params = {
-        "collection_name": "test",
+        "collection_name": "test_collection",
         "type": "weaviate",
         "host": os.getenv("WEAVIATE_URL"),
         "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
@@ -16,13 +16,31 @@ vdb_params = {
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
-vdb.client.connect()
-response = vdb.delete_collection("test")
-vdb.client.connect()
-response = vdb.create_collection("test")
-response = vdb.load_dir('/Users/kirillandriychuk/Documents/Projects/analitiq-ai/libs/tests/unit/databases/vector/', 'txt')
-response = vdb.hybrid_search("bikes")
+#response = vdb.delete_collection("test")
+#response = vdb.create_collection("test")
+#response = vdb.load_dir('/Users/kirillandriychuk/Documents/Projects/analitiq-ai/libs/tests/unit/databases/vector/', 'txt')
+#response = vdb.hybrid_search("bikes")
+
+filter_expression = {
+    "and": [
+        {
+            "or": [
+                {"property": "document_name1", "operator": "like", "value": "test"},
+                {"property": "content", "operator": "!=", "value": "This is the first test document."},
+            ]
+        },
+        {
+            "or": [
+                {"property": "document_name", "operator": "=", "value": "project_plan.txt"},
+                {"property": "content", "operator": "like", "value": "project"},
+            ]
+        },
+    ]
+}
+with vdb:
+    response = vdb.filter_count(filter_expression)
 print(response)
+
 sys.exit()
 #for g in response.groups:
 #    print(g.total_count)

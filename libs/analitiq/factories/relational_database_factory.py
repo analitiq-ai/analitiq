@@ -3,8 +3,7 @@ import importlib
 
 
 class RelationalDatabaseFactory:
-    """
-    Factory class for creating instances of different relational database types.
+    """Factory class for creating instances of different relational database types.
 
     :param params: additional keyword arguments to pass to the database class constructor.
 
@@ -20,12 +19,13 @@ class RelationalDatabaseFactory:
         db = factory.create_database("mysql", host="localhost", port=3306, user="root", password="password")
 
     """
+
     @staticmethod
     def create_database(params: dict):
-        if 'type' not in params:
+        if "type" not in params:
             raise KeyError("'type' not found in params. Please specify database type")
 
-        db_type = params['type']
+        db_type = params["type"]
         """Factory function to create a database wrapper instance based on db_type."""
         module_path = f"analitiq.databases.relational.{db_type}.{db_type}_connector"
         class_name = f"{db_type.capitalize()}Connector"
@@ -36,4 +36,3 @@ class RelationalDatabaseFactory:
             return database_class(params)
         except (ImportError, AttributeError) as e:
             raise ValueError(f"Unknown relational database type: {db_type}") from e
-

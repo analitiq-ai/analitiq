@@ -75,9 +75,7 @@ class BaseMemory:
         file_path = os.path.join(self.log_directory, self.filename)
 
         if not os.path.exists(file_path):
-            logger.info(
-                f"No chat history file found for session UUID {self.session_uuid}."
-            )
+            logger.info(f"No chat history file found for session UUID {self.session_uuid}.")
             return
 
         with open(file_path, "r") as file:
@@ -109,9 +107,7 @@ class BaseMemory:
         file_path = os.path.join(self.log_directory, self.filename)
 
         if not os.path.exists(file_path):
-            logger.info(
-                f"No chat history file found for session UUID {self.session_uuid}."
-            )
+            logger.info(f"No chat history file found for session UUID {self.session_uuid}.")
             return
 
         now = datetime.now()

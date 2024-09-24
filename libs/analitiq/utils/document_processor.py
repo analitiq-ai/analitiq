@@ -19,12 +19,11 @@ LOAD_DOC_CHUNK_OVERLAP = 200
 
 
 def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
-    """
-    Converts a given chunk of text into a Chunk object using the provided metadata.
+    """Converts a given chunk of text into a Chunk object using the provided metadata.
 
     This function takes in a chunk string and a metadata dictionary as parameters and creates an instance of the Chunk class using the provided data and additional generated attributes.
 
-    Parameters:
+    Parameters
     ----------
     chunk : str
         The chunk of text to be converted into a Chunk object.
@@ -36,7 +35,7 @@ def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
         - "document_type": The type of the document that the text chunk is part of. (Eg. 'ddl')
         - "document_name": The name of the document that the text chunk is part of. (Eg. 'schema.table')
 
-    Returns:
+    Returns
     -------
     Chunk
         A Chunk object representing the provided text chunk. The Chunk object includes the original text chunk, the source, the document type, the document name, the number of characters in the chunk, the date it was loaded, and the extracted keywords from the chunk content.
@@ -56,8 +55,8 @@ def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
     'ddl'
     >>> print(result.document_name)
     'schema.table'
-    """
 
+    """
     return Chunk(
         content=chunk,
         source=metadata["source"],
@@ -70,9 +69,7 @@ def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
     )
 
 
-def group_results_by_properties(
-    results: object, group_by_properties: List[str]
-) -> List:
+def group_results_by_properties(results: object, group_by_properties: List[str]) -> List:
     """Groups a list of dictionaries (chunks of data) by given keys and return the grouped data as a list of dictionaries.
 
     Each dictionary in the returned list corresponds to a unique group as determined by `group_by_properties`. The keys of the
@@ -147,12 +144,11 @@ def chunk_text(
     chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP,
     token: str = ",",
 ) -> List[str]:
-    """
-    Split the provided text into chunks based on a token.
+    """Split the provided text into chunks based on a token.
 
     This function divides the input text into chunks of defined size. If the specified chunk end happens to split a part that is essential (defined by the token parameter), the function looks back to the previous token and the chunk is split there. The next chunk begins from the end of previous chunk minus the chunk overlap, so this way some of the text from the previous chunk may repeat in the next chunk.
 
-    Parameters:
+    Parameters
     ----------
     text : str
         The input string which needs to be divided into chunks.
@@ -168,12 +164,12 @@ def chunk_text(
         If a token falls within the last 200 characters of a chunk, the chunk will end
         on the last token before the chunk size. Default is ",".
 
-    Returns:
+    Returns
     -------
     List[str]
         A list of str where each str is a chunk of approximately 'chunk_size' characters.
 
-    Examples:
+    Examples
     --------
     Suppose 'text' is a string: "Hello, my name is AI. I am a programmer."
 
@@ -186,8 +182,8 @@ def chunk_text(
     last 'chunk_overlap' characters of a chunk, the chunk will end there, so some chunks
     can be slightly smaller than the defined 'chunk_size'. Chunks will never be larger
     than 'chunk_size' unless a token is not found.
-    """
 
+    """
     text_length = len(text)
     chunks = []
 
@@ -213,18 +209,17 @@ def chunk_text(
 
 
 class DocumentProcessor:
-    """
-    DocumentProcessor is a class that provides utilities to process and handle various types of documents.
+    """DocumentProcessor is a class that provides utilities to process and handle various types of documents.
     It allows you to perform tasks such as checking if a given text is valid Python code or contains SQL statements,
     and chunk documents through the contents while classifying them based on their content.
 
-    Attributes:
+    Attributes
     ----------
     project_name : str
         The name of the project.
 
-    Methods:
-    --------
+    Methods
+    -------
     is_python_code(text: str) -> bool:
         Static method that checks if the provided text is a valid Python code.
 
@@ -235,34 +230,35 @@ class DocumentProcessor:
                     chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP) -> Tuple[List[Chunk], Dict[str, int]]:
         Instance method that loads documents from a given path, chunks them according to the specified
         parameters, and classifies them based on their content.
+
     """
 
     def __init__(self, project_name: str):
-        """
-        This method is the constructor for the class. It initializes the project_name attribute
+        """This method is the constructor for the class. It initializes the project_name attribute
         of the object with the provided value.
 
-        Parameters:
+        Parameters
         ----------
         project_name : str
             The name of the project.
+
         """
         self.project_name = project_name
 
     @staticmethod
     def is_python_code(text: str) -> bool:
-        """
-        Check if the given text is valid Python code.
+        """Check if the given text is valid Python code.
 
-        Parameters:
+        Parameters
         ----------
         text : str
             The Python code to be checked.
 
-        Returns:
+        Returns
         -------
         bool
             Returns True if the text is valid Python code, False otherwise.
+
         """
         try:
             ast.parse(text)
@@ -273,20 +269,20 @@ class DocumentProcessor:
 
     @staticmethod
     def is_sql_statements(text: str) -> bool:
-        """
-        Check if the given text contains SQL statements.
+        """Check if the given text contains SQL statements.
 
         The function uses regular expressions to search for patterns that match to SQL keywords in the given text.
 
-        Parameters:
+        Parameters
         ----------
         text : str
             The text to check.
 
-        Returns:
+        Returns
         -------
         bool
             Returns True if the text contains SQL statements, False otherwise.
+
         """
         # Patterns for SQL code
         sql_patterns = [
@@ -311,8 +307,7 @@ class DocumentProcessor:
         chunk_size: int = LOAD_DOC_CHUNK_SIZE,
         chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP,
     ):
-        """
-        Loads documents from a given path and chunks them according to the specified parameters.
+        """Loads documents from a given path and chunks them according to the specified parameters.
 
         This method takes in a path to a directory or a single file, loads the documents found
         (filtered by the provided extension if any), and splits them into chunks using the specified
@@ -324,7 +319,7 @@ class DocumentProcessor:
 
         This method returns a list of these chunk objects, along with a dictionary of the original documents' lengths.
 
-        Parameters:
+        Parameters
         ----------
         path : str
             Path to the file or directory containing files to be chunked.
@@ -338,13 +333,13 @@ class DocumentProcessor:
         chunk_overlap : int = 200
             The size in characters of the overlap between consecutive chunks. Default is 200 characters.
 
-        Returns:
+        Returns
         -------
         list of Chunk objects, dict
             A list containing Chunk objects produced from the chunking process, and a dictionary where each entry is
             a source document's name and its corresponding length in characters.
 
-        Raises:
+        Raises
         ------
         FileNotFoundError
             If the specified path does not exist or refers to a special file (e.g., socket, device file, etc.)
@@ -354,10 +349,11 @@ class DocumentProcessor:
         The method is generally used as part of a document processing pipeline, prior to further text processing tasks or
         storage of chunked documents in a database or filesystem.
 
-        Examples:
+        Examples
         --------
         >>> chunk_documents("./documents", extension=".txt", chunk_size=1000, chunk_overlap=100)
         ([<Chunk object>, <Chunk object>, ...], {"document1": 5000, "document2": 4000, ...})
+
         """
         if not os.path.exists(path):
             msg = f"The path {path} does not exist."
@@ -365,44 +361,37 @@ class DocumentProcessor:
 
         if os.path.isfile(path):
             loader = TextLoader(path)
-            extension = os.path.splitext(path)[1][
-                1:
-            ]  # Extract the file extension without the dot
+            extension = os.path.splitext(path)[1][1:]  # Extract the file extension without the dot
         elif os.path.isdir(path):
-            loader = DirectoryLoader(
-                path, glob=f"**/*.{extension}", loader_cls=TextLoader
-            )
+            loader = DirectoryLoader(path, glob=f"**/*.{extension}", loader_cls=TextLoader)
 
         else:
             msg = f"{path} does not exist or is a special file (e.g., socket, device file, etc.)."
             raise FileNotFoundError(msg)
 
         if extension not in ALLOWED_EXTENSIONS:
-            error_msg = f"The file extension .{extension} is not allowed. Allowed extensions: {ALLOWED_EXTENSIONS}"
+            error_msg = (
+                f"The file extension .{extension} is not allowed. Allowed extensions: {ALLOWED_EXTENSIONS}"
+            )
             raise ValueError(error_msg)
 
         documents = loader.load()
-        doc_lengths = {
-            doc.metadata["source"]: len(doc.page_content) for doc in documents
-        }
+        doc_lengths = {doc.metadata["source"]: len(doc.page_content) for doc in documents}
 
         python_documents = [
             doc
             for doc in documents
-            if self.is_python_code(doc.page_content)
-            and not self.is_sql_statements(doc.page_content)
+            if self.is_python_code(doc.page_content) and not self.is_sql_statements(doc.page_content)
         ]
         sql_documents = [
             doc
             for doc in documents
-            if not self.is_python_code(doc.page_content)
-            and self.is_sql_statements(doc.page_content)
+            if not self.is_python_code(doc.page_content) and self.is_sql_statements(doc.page_content)
         ]
         text_documents = [
             doc
             for doc in documents
-            if not self.is_python_code(doc.page_content)
-            and not self.is_sql_statements(doc.page_content)
+            if not self.is_python_code(doc.page_content) and not self.is_sql_statements(doc.page_content)
         ]
 
         python_splitter = RecursiveCharacterTextSplitter.from_language(
@@ -412,12 +401,10 @@ class DocumentProcessor:
         )
         python_chunks = python_splitter.split_documents(python_documents)
 
-        sql_splitter = (
-            sql_recursive_text_splitter.SQLRecursiveCharacterTextSplitter.from_language(
-                language="SQL",
-                chunk_size=int(chunk_size),
-                chunk_overlap=int(chunk_overlap),
-            )
+        sql_splitter = sql_recursive_text_splitter.SQLRecursiveCharacterTextSplitter.from_language(
+            language="SQL",
+            chunk_size=int(chunk_size),
+            chunk_overlap=int(chunk_overlap),
         )
         sql_chunks = sql_splitter.split_documents(sql_documents)
 

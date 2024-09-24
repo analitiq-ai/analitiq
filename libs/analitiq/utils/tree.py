@@ -9,15 +9,14 @@ last = "└── "
 
 
 def tree(dir_path: Path, prefix: str = ""):
-    """
-    Generate a formatted string representation of a directory tree.
+    """Generate a formatted string representation of a directory tree.
 
     This function traverses a given directory and generates a formatted string representation of its structure, similar
     to the output of `tree` command in Unix. It ignores directories and files that start with ".", "__", "venv", and "env".
     It is a recursive function which uses depth-first search to traverse all the directories. When a directory is encountered,
     this function is called recursively with an updated prefix.
 
-    Parameters:
+    Parameters
     ----------
     dir_path : Path
         The Path object of the directory to be traversed.
@@ -25,7 +24,7 @@ def tree(dir_path: Path, prefix: str = ""):
     prefix : str, optional
         The prefix to be added before each file/folder name in the tree structure (default is "").
 
-    Returns:
+    Returns
     -------
     generator
         A generator that yields each line of the tree structure as a formatted string.
@@ -49,8 +48,8 @@ def tree(dir_path: Path, prefix: str = ""):
     │   └── file_inside_subdir.txt
     └── file.txt
     ```
-    """
 
+    """
     prefixes = [".", "__", "venv", "env"]
     contents = list(dir_path.iterdir())
     # contents each get pointers that are ├── with a final └── :
@@ -74,4 +73,4 @@ if __name__ == "__main__":
 
     # Iterate over the generator and print each line
     for _line in tree_generator:
-        print(line)
+        print(_line)

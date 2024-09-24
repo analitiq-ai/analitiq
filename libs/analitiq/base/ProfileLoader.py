@@ -81,14 +81,10 @@ class Configuration(BaseModel):
             connection_list = getattr(self.connections, category, [])
 
             # Find the specified connection by name within the connection list
-            connection = next(
-                (conn for conn in connection_list if conn.name == name), None
-            )
+            connection = next((conn for conn in connection_list if conn.name == name), None)
 
             if not connection:
-                msg = (
-                    f"Specified connection '{name}' not found in category '{category}'"
-                )
+                msg = f"Specified connection '{name}' not found in category '{category}'"
                 raise ValueError(msg)
 
             specified_configs[category] = connection
@@ -117,9 +113,7 @@ class ProfileLoader:
             # skip profiles that user does not want to load
             if load_profile_name == profile_name:
                 try:
-                    validated_config = Configuration(
-                        **self.profile_config[profile_name]
-                    )
+                    validated_config = Configuration(**self.profile_config[profile_name])
                     specified_configs = validated_config.validate_and_load()
                     logger.info(
                         f"Configuration for profile '{profile_name}' loaded and validated successfully."
