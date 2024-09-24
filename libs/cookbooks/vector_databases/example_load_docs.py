@@ -8,7 +8,7 @@ load_dotenv()
 
 
 vdb_params = {
-        "collection_name": "test_collection",
+        "collection_name": "c3b428e2_8031_7034_2cb0_dc342a086229",
         "type": "weaviate",
         "host": os.getenv("WEAVIATE_URL"),
         "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
@@ -23,22 +23,13 @@ vdb = VectorDatabaseFactory.create_database(vdb_params)
 
 filter_expression = {
     "and": [
-        {
-            "or": [
-                {"property": "document_name1", "operator": "like", "value": "test"},
-                {"property": "content", "operator": "!=", "value": "This is the first test document."},
-            ]
-        },
-        {
-            "or": [
-                {"property": "document_name", "operator": "=", "value": "project_plan.txt"},
-                {"property": "content", "operator": "like", "value": "project"},
-            ]
-        },
+        {"property": "document_name", "operator": "=", "value": "schema.table"},
+        {"property": "document_type", "operator": "=", "value": "ddl"},
+        {"property": "source", "operator": "=", "value": "host.database"}
     ]
 }
 with vdb:
-    response = vdb.filter_count(filter_expression)
+    response = vdb.search('sample')
 print(response)
 
 sys.exit()

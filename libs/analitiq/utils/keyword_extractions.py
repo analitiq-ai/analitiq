@@ -22,9 +22,13 @@ def is_resource_downloaded(resource):
 
 punkt_downloaded = is_resource_downloaded("tokenizers/punkt")
 stopwords_downloaded = is_resource_downloaded("corpora/stopwords")
+punkt_tab_downloaded = is_resource_downloaded("tokenizers/punkt_tab")
 
 if not punkt_downloaded:
     nltk.download("punkt")
+
+if not punkt_tab_downloaded:
+    nltk.download("punkt_tab")
 
 if not stopwords_downloaded:
     nltk.download("stopwords")

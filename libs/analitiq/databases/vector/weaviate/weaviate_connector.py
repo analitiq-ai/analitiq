@@ -429,6 +429,9 @@ class WeaviateConnector(BaseVectorDatabase):
         # logger.info(f"Weaviate vector search result: {response}")
         return response
 
+    def search(self, query: str, limit: int = 3) -> QueryReturn:
+        return self.hybrid_search(query, limit)
+
     @search_only
     def hybrid_search(self, query: str, limit: int = 3) -> QueryReturn:
         """Use Hybrid Search for document retrieval from Weaviate Database.
