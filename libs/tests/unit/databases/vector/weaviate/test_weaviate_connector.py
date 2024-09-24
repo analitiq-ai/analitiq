@@ -1,3 +1,5 @@
+# pylint: disable=redefined-outer-name
+
 import pytest
 import os
 from dotenv import load_dotenv
@@ -12,16 +14,18 @@ def params():
     return {
         "collection_name": COLLECTION_NAME,
         "tenant_name": COLLECTION_NAME,
-        "type": 'weaviate',
-        "host": os.getenv('WEAVIATE_URL'),
-        "api_key": os.getenv('WEAVIATE_CLIENT_SECRET'),
+        "type": "weaviate",
+        "host": os.getenv("WEAVIATE_URL"),
+        "api_key": os.getenv("WEAVIATE_CLIENT_SECRET"),
     }
 
-@pytest.fixture(autouse=True, scope='module')
+
+@pytest.fixture(autouse=True, scope="module")
 def load_environment():
     """Loads environment variables from .env file"""
 
-    load_dotenv('.env', override=True)
+    load_dotenv(".env", override=True)
+
 
 @pytest.fixture(scope="module")
 def weaviate_handler(params):
@@ -30,11 +34,23 @@ def weaviate_handler(params):
 
 
 test_documents = [
-    {"document_name": "test_document_1.txt", "content": "This is the first test document."},
-    {"document_name": "test_document_2.txt", "content": "Another document for testing."},
-    {"document_name": "project_plan.txt", "content": "This document contains the project plan."},
+    {
+        "document_name": "test_document_1.txt",
+        "content": "This is the first test document.",
+    },
+    {
+        "document_name": "test_document_2.txt",
+        "content": "Another document for testing.",
+    },
+    {
+        "document_name": "project_plan.txt",
+        "content": "This document contains the project plan.",
+    },
     {"document_name": "summary_report.txt", "content": "The summary of all reports."},
-    {"document_name": "test_document_3.txt", "content": "This document is for additional tests."},
+    {
+        "document_name": "test_document_3.txt",
+        "content": "This document is for additional tests.",
+    },
 ]
 
 
@@ -129,14 +145,26 @@ def test_filter_count__equal(weaviate_handler):
         "or": [
             {
                 "and": [
-                    {"property": "document_name", "operator": "like", "value": "test_document"},
+                    {
+                        "property": "document_name",
+                        "operator": "like",
+                        "value": "test_document",
+                    },
                     {"property": "document_name", "operator": "like", "value": "1"},
                 ]
             },
             {
                 "and": [
-                    {"property": "document_name", "operator": "=", "value": "test_document_1.txt"},
-                    {"property": "document_name", "operator": "=", "value": "test_document_2.txt"},
+                    {
+                        "property": "document_name",
+                        "operator": "=",
+                        "value": "test_document_1.txt",
+                    },
+                    {
+                        "property": "document_name",
+                        "operator": "=",
+                        "value": "test_document_2.txt",
+                    },
                 ]
             },
         ]
@@ -192,18 +220,27 @@ def test_filter_count__simple_and_complex_filter(weaviate_handler):
 
     assert result.total_count == 2
 
+
 def test_filter_count__complex_filter(weaviate_handler):
     filter_expression = {
         "and": [
             {
                 "or": [
                     {"property": "document_name", "operator": "like", "value": "test"},
-                    {"property": "content", "operator": "!=", "value": "This is the first test document."},
+                    {
+                        "property": "content",
+                        "operator": "!=",
+                        "value": "This is the first test document.",
+                    },
                 ]
             },
             {
                 "or": [
-                    {"property": "document_name", "operator": "=", "value": "project_plan.txt"},
+                    {
+                        "property": "document_name",
+                        "operator": "=",
+                        "value": "project_plan.txt",
+                    },
                     {"property": "content", "operator": "like", "value": "project"},
                 ]
             },
@@ -217,10 +254,14 @@ def test_filter_count__complex_filter(weaviate_handler):
 
 
 def test_filter_group_count(weaviate_handler):
-    filter_expression = {"property": "document_name", "operator": "like", "value": "test"}
+    filter_expression = {
+        "property": "document_name",
+        "operator": "like",
+        "value": "test",
+    }
 
     with weaviate_handler:
-        result = weaviate_handler.filter_group_count(filter_expression, 'document_name')
+        result = weaviate_handler.filter_group_count(filter_expression, "document_name")
 
     # Assert that there are exactly 3 AggregateGroup objects
     assert len(result.groups) == 3
@@ -229,6 +270,7 @@ def test_filter_group_count(weaviate_handler):
     for group in result.groups:
         assert group.total_count == 1
 
+
 def test_search_filter(weaviate_handler):
     query = "document"
     filter_expression = {
@@ -236,7 +278,11 @@ def test_search_filter(weaviate_handler):
             {
                 "or": [
                     {"property": "document_name", "operator": "like", "value": "test"},
-                    {"property": "content", "operator": "!=", "value": "This is the first test document."},
+                    {
+                        "property": "content",
+                        "operator": "!=",
+                        "value": "This is the first test document.",
+                    },
                 ]
             }
         ]
@@ -259,8 +305,16 @@ def test_filter_count__like(weaviate_handler):
             },
             {
                 "and": [
-                    {"property": "document_name", "operator": "=", "value": "test_document_1.txt"},
-                    {"property": "document_name", "operator": "=", "value": "test_document_1"},
+                    {
+                        "property": "document_name",
+                        "operator": "=",
+                        "value": "test_document_1.txt",
+                    },
+                    {
+                        "property": "document_name",
+                        "operator": "=",
+                        "value": "test_document_1",
+                    },
                 ]
             },
         ]

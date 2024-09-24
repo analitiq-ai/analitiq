@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from analitiq.logger.logger import logger
 from typing import List, Dict, Tuple, Optional
 from sqlalchemy import inspect
 from sqlalchemy.exc import DatabaseError, SQLAlchemyError
@@ -20,13 +19,10 @@ class BaseRelationalDatabase(ABC):
     @abstractmethod
     def create_engine(self):
         """Create and return a SQLAlchemy engine."""
-        pass
 
     def create_session(self):
         """Create a scoped session bound to the engine."""
-        session_factory = sessionmaker(
-            autocommit=False, autoflush=False, bind=self.engine
-        )
+        session_factory = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
         session = scoped_session(session_factory)
         return session
 
@@ -54,19 +50,14 @@ class BaseRelationalDatabase(ABC):
     def get_schemas_and_tables(self, target_schema_list: List[str]) -> List[str]:
         """Retrieve the schemas and tables from the database engine."""
         inspector = inspect(self.engine)
-        schemas = [
-            schema
-            for schema in inspector.get_schema_names()
-            if schema in target_schema_list
-        ]
+        schemas = [schema for schema in inspector.get_schema_names() if schema in target_schema_list]
         response = []
         for schema in schemas:
             tables = inspector.get_table_names(schema=schema)
             for table in tables:
                 columns = self.get_table_columns(table_name=table, schema=schema)
                 column_details = ", ".join(
-                    f"{schema}.{table}.{column['name']} ({column['type']})"
-                    for column in columns
+                    f"{schema}.{table}.{column['name']} ({column['type']})" for column in columns
                 )
                 response.append(column_details)
         self.engine.dispose()
@@ -94,10 +85,7 @@ class BaseRelationalDatabase(ABC):
         numeric_columns = {
             col["name"]: str(col["type"])
             for col in columns
-            if any(
-                str(col["type"]).upper().startswith(num_type)
-                for num_type in numeric_types
-            )
+            if any(str(col["type"]).upper().startswith(num_type) for num_type in numeric_types)
         }
         return numeric_columns
 
@@ -130,7 +118,7 @@ class BaseRelationalDatabase(ABC):
         try:
             result = read_sql(sql, self.engine)
             return True, result
-        except DatabaseError as e:
+        except DatabaseError:
             return False, None
 
     def run(self, sql: str, include_columns: bool = True):

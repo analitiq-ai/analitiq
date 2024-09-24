@@ -73,9 +73,7 @@ class Graph:
         if service not in self.available_services:
             logger.warning(f"Trying to add non existent service: {service}")
             return
-        node = Node(
-            service, self.available_services[service]["path"], details["Instructions"]
-        )
+        node = Node(service, self.available_services[service]["path"], details["Instructions"])
 
         self.nodes[node.name] = node
 
@@ -90,9 +88,7 @@ class Graph:
 
                 for master_name in details["DependsOn"]:
                     try:
-                        master_node = self.nodes.get(
-                            master_name
-                        )  # Retrieve the node from temporary storage
+                        master_node = self.nodes.get(master_name)  # Retrieve the node from temporary storage
                     except Exception as e:
                         logger.warning(f"Dep node not found: {dependency_node}. {e}")
 
@@ -117,16 +113,12 @@ class Graph:
             executed_nodes = set()  # Track executed nodes
 
             # Identify initially ready nodes (no dependencies)
-            ready_nodes = [
-                node for node in self.nodes.values() if not node.dependencies
-            ]
+            ready_nodes = [node for node in self.nodes.values() if not node.dependencies]
 
             while ready_nodes or futures_to_nodes:
                 # Execute all ready nodes
                 for node in ready_nodes:
-                    if (
-                        node.name not in executed_nodes
-                    ):  # Check if node has been executed
+                    if node.name not in executed_nodes:  # Check if node has been executed
                         logger.info(
                             f"[Service][Run]: {node.name}\n Prompt: {node.instructions} \n Inputs: {node_outputs!s}"
                         )  # Print the current node being executed
@@ -144,9 +136,7 @@ class Graph:
 
                 # Wait for at least one node to complete
                 for future in as_completed(futures_to_nodes):
-                    completed_node = futures_to_nodes.pop(
-                        future
-                    )  # Pop to prevent re-execution
+                    completed_node = futures_to_nodes.pop(future)  # Pop to prevent re-execution
                     result = future.result()
 
                     # Store the result for dependent nodes as a BaseResponse object.
@@ -161,8 +151,7 @@ class Graph:
                     for consumer in completed_node.consumers:
                         if (
                             all(
-                                dep.name in node_outputs
-                                and node_outputs[dep.name] is not None
+                                dep.name in node_outputs and node_outputs[dep.name] is not None
                                 for dep in consumer.dependencies
                             )
                             and consumer.name not in executed_nodes
@@ -205,11 +194,7 @@ class Graph:
             params["user_prompt"] = user_prompt
         if "service_input" in sig.parameters:
             # Aggregate inputs from dependencies
-            inputs = [
-                node_outputs[dep.name]
-                for dep in node.dependencies
-                if dep.name in node_outputs
-            ]
+            inputs = [node_outputs[dep.name] for dep in node.dependencies if dep.name in node_outputs]
             params["service_input"] = inputs if inputs else None
 
         response = service_instance.run(**params)

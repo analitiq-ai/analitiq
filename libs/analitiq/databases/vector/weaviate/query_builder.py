@@ -3,8 +3,7 @@ from typing import Any, Dict
 
 
 class PropertyFilter:
-    """
-    The PropertyFilter class represents a filter on a specific property name.
+    """The PropertyFilter class represents a filter on a specific property name.
     https://weaviate.io/developers/weaviate/api/graphql/filters
 
     :param name: The name of the property to filter on.
@@ -24,15 +23,16 @@ class PropertyFilter:
 
 
 class QueryBuilder:
-    """
-    QueryBuilder
+    """QueryBuilder
 
     A class for constructing queries using a given expression.
 
-    Attributes:
+    Attributes
+    ----------
         operators (dict): A dictionary mapping operators to their corresponding filter methods.
 
-    Methods:
+    Methods
+    -------
         construct_query(expression: Dict[str, Any]) -> Filter:
             Constructs a query based on the given expression.
 
@@ -57,11 +57,7 @@ class QueryBuilder:
 
     def build_filters(self, expression: Dict[str, Any]) -> Filter:
         # Check if the expression is a single filter clause
-        if (
-            "property" in expression
-            and "operator" in expression
-            and "value" in expression
-        ):
+        if "property" in expression and "operator" in expression and "value" in expression:
             prop_name = expression["property"]
             operator = expression["operator"].lower()
             value = expression["value"]

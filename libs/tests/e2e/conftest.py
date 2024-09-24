@@ -28,6 +28,7 @@ ENV_VARIABLES = [
     "DB_CONNECT_TIMEOUT",
 ]
 
+
 @pytest.fixture(name="env_vars")
 def env_vars_fixture():
     """Set the variables and return dict."""

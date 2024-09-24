@@ -80,7 +80,7 @@ def pytest(session):
         # "--cov-omit=src/demo/*",
         "libs/tests/unit/",
         # "--ignore=tests/unit/demo",
-        external=True
+        external=True,
     )  # in order to see output to stdout set: --capture=tee-sys
 
 
@@ -109,6 +109,7 @@ def pytest_integration(session):
         "--capture=sys",
         "libs/tests/integration/",
     )  # in order to see output to stdout set: --capture=tee-sys
+
 
 @nox.session(python=False)
 def pytest_e2e(session):

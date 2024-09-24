@@ -1,4 +1,4 @@
-from typing import Any, List, Optional, Iterable
+from typing import Any, List, Iterable
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.docstore.document import Document
 import sqlparse
@@ -23,9 +23,7 @@ class SQLRecursiveCharacterTextSplitter(RecursiveCharacterTextSplitter):
         )
 
     @classmethod
-    def from_language(
-        cls, language: str = "SQL", **kwargs: Any
-    ) -> "SQLRecursiveCharacterTextSplitter":
+    def from_language(cls, language: str = "SQL", **kwargs: Any) -> "SQLRecursiveCharacterTextSplitter":
         """Get data from Language."""
         if language.upper() != "SQL":
             errmsg = "This splitter only supports SQL language."

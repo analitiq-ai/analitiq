@@ -88,13 +88,9 @@ class SearchVdb:
             return self.response
 
         # Initialize an empty string to hold the formatted content
-        document_name_list, formatted_documents_string = self.format_docs_into_string(
-            docs
-        )
+        document_name_list, formatted_documents_string = self.format_docs_into_string(docs)
         if self.llm is not None:
-            ai_response = self.llm.llm_summ_docs(
-                user_prompt, formatted_documents_string
-            )
+            ai_response = self.llm.llm_summ_docs(user_prompt, formatted_documents_string)
             self.response.set_content(ai_response)
             self.response.set_metadata({"documents": ", ".join(document_name_list)})
         else:
@@ -122,13 +118,9 @@ class SearchVdb:
 
             return
 
-        document_name_list, formatted_documents_string = self.format_docs_into_string(
-            docs
-        )
+        document_name_list, formatted_documents_string = self.format_docs_into_string(docs)
         if self.llm is not None:
-            ai_response = self.llm.llm_summ_docs(
-                user_prompt, formatted_documents_string
-            )
+            ai_response = self.llm.llm_summ_docs(user_prompt, formatted_documents_string)
             self.response.set_content(ai_response)
             self.response.set_metadata({"documents": ", ".join(document_name_list)})
         else:

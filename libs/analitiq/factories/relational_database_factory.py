@@ -3,8 +3,7 @@ import importlib
 
 
 class RelationalDatabaseFactory:
-    """
-    Factory class for creating instances of different relational database types.
+    """Factory class for creating instances of different relational database types.
 
     :param params: additional keyword arguments to pass to the database class constructor.
 

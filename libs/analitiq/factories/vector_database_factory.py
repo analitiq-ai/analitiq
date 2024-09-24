@@ -3,8 +3,7 @@ import importlib
 
 
 class VectorDatabaseFactory:
-    """
-    Factory class for creating instances of different vector database types.
+    """Factory class for creating instances of different vector database types.
 
     :param params: additional keyword arguments to pass to the database class constructor.
 

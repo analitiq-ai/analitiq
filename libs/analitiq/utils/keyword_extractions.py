@@ -8,8 +8,7 @@ from nltk.data import find
 
 
 def is_resource_downloaded(resource):
-    """
-    Checks if a resource has been downloaded.
+    """Checks if a resource has been downloaded.
 
     :param resource: The resource to be checked.
     :return: True if the resource has been downloaded, False otherwise.
@@ -32,19 +31,18 @@ if not stopwords_downloaded:
 
 
 def extract_keywords(text: str) -> str:
-    """
-    Extracts keywords from a provided text string.
+    """Extracts keywords from a provided text string.
 
     This function performs several transformations on the input text to isolate the most relevant keywords. The
     processing includes tokenization, removing any stop words from the English language (as defined by the NLTK corpus),
     and applying the Porter Stemming algorithm.
 
-    Parameters:
+    Parameters
     ----------
     text : str
         The input text from which to extract keywords.
 
-    Returns:
+    Returns
     -------
     str
         The extracted keywords, returned as a space-separated string. In the case that the same keyword is extracted
@@ -56,14 +54,13 @@ def extract_keywords(text: str) -> str:
     >>> extract_keywords("This_ is a sample text, which has repeated text and some other_text...")
     'sampl text repeat'
 
-    Notes:
+    Notes
     -----
     - Internally, underscores in the input string are replaced with spaces prior to tokenization.
     - Only alphanumeric tokens that do not appear in the NLTK English stop words list are considered keywords.
     - The Porter Stemming algorithm is applied to all potential keywords prior to inclusion in the final output string.
 
     """
-
     tmp_text = text.replace("_", " ")
     tmp_text = word_tokenize(tmp_text.lower())
     stop_words = set(stopwords.words("english"))

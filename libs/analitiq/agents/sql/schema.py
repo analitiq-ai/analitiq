@@ -3,12 +3,13 @@ from typing import List
 
 
 class Column(BaseModel):
-    """
-    Represents a column in a table.
+    """Represents a column in a table.
 
-    Attributes:
+    Attributes
+    ----------
         ColumnName (str): The name of the column.
         DataType (str): Data type of the column.
+
     """
 
     ColumnName: str = Field(description="The name of the column.")
@@ -16,26 +17,25 @@ class Column(BaseModel):
 
 
 class Table(BaseModel):
-    """
-    :class: Table
+    """:class: Table
 
     The `Table` class represents a table in a database. It inherits from the `BaseModel` class.
 
-    Attributes:
+    Attributes
+    ----------
         SchemaName (str): The schema where this table resides.
         TableName (str): The name of the table.
         Columns (List[Column]): A list of relevant columns in the table.
 
-    Methods:
+    Methods
+    -------
         to_json(): Converts the model to a JSON string.
 
     """
 
     SchemaName: str = Field(description="The schema where this table resides.")
     TableName: str = Field(description="The name of the table.")
-    Columns: List[Column] = Field(
-        description="A list of relevant columns in the table."
-    )
+    Columns: List[Column] = Field(description="A list of relevant columns in the table.")
 
     def to_json(self):
         # Convert model to JSON string
@@ -43,8 +43,7 @@ class Table(BaseModel):
 
 
 class Tables(BaseModel):
-    """
-    Represents a list of relevant tables from the list of all tables in a database.
+    """Represents a list of relevant tables from the list of all tables in a database.
 
     :param TableList (List[Table]): A list of relevant tables.
     """
@@ -59,17 +58,15 @@ class Tables(BaseModel):
 
 
 class SQL(BaseModel):
-    """
+    """.. py:class:: SQL(BaseModel)
 
-    .. py:class:: SQL(BaseModel)
+    Represents a class for storing SQL code and additional explanations.
 
-        Represents a class for storing SQL code and additional explanations.
+    :ivar SQL_Code: The SQL code.
+    :vartype SQL_Code: str
 
-        :ivar SQL_Code: The SQL code.
-        :vartype SQL_Code: str
-
-        :ivar Explanation: Additional text or explanation other than SQL code.
-        :vartype Explanation: str
+    :ivar Explanation: Additional text or explanation other than SQL code.
+    :vartype Explanation: str
 
     """
 
@@ -82,7 +79,8 @@ class TableCheck(BaseModel):
 
     This class is used to determine whether a table is necessary to answer users' queries.
 
-    Attributes:
+    Attributes
+    ----------
         Required (bool): Indicates whether the table is necessary or not.
 
     """

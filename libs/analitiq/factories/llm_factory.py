@@ -3,8 +3,7 @@ import importlib
 
 
 class LlmFactory:
-    """
-    Factory class for creating instances of different large language model types.
+    """Factory class for creating instances of different large language model types.
 
     :param params: additional parameters to pass to the llm class constructor.
 
