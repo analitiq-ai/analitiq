@@ -17,7 +17,7 @@ def db_params():
 
 @pytest.fixture
 def db_instance(db_params):
-    with patch('analitiq.relational_databases.relational.postgres.postgres_connector.create_engine'):
+    with patch('analitiq.databases.relational.postgres.postgres_connector.create_engine'):
         db = PostgresConnector(db_params)
     return db
 
@@ -148,14 +148,14 @@ def test_run_error(db_instance):
 
 
 def test_create_session(db_params):
-    with patch('analitiq.relational_databases.relational.postgres.postgres_connector.create_engine'):
+    with patch('analitiq.databases.relational.postgres.postgres_connector.create_engine'):
         db = PostgresConnector(db_params)
         session = db.create_session()
         assert session is not None
 
 
 def test_create_db(db_params):
-    with patch('analitiq.relational_databases.relational.postgres.postgres_connector.create_engine'):
+    with patch('analitiq.databases.relational.postgres.postgres_connector.create_engine'):
         # Patch 'create_db' during initialization to prevent the first call to SQLDatabase
         with patch.object(PostgresConnector, 'create_db') as mock_create_db_init:
             db = PostgresConnector(db_params)
