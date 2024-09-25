@@ -3,6 +3,9 @@ import os
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 from dotenv import load_dotenv
 import sys
+from analitiq.utils.document_processor import (
+    group_results_by_properties,
+)
 
 load_dotenv()
 
@@ -23,15 +26,15 @@ vdb = VectorDatabaseFactory.create_database(vdb_params)
 
 filter_expression = {
     "and": [
-        {"property": "document_name", "operator": "=", "value": "schema.table"},
         {"property": "document_type", "operator": "=", "value": "ddl"},
-        {"property": "source", "operator": "=", "value": "host.database"}
     ]
 }
 with vdb:
-    response = vdb.search('sample')
+    response = vdb.filter(filter_expression)
 print(response)
 
+result = group_results_by_properties(response,['uuid'])
+print(result)
 sys.exit()
 #for g in response.groups:
 #    print(g.total_count)
