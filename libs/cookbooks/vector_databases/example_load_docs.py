@@ -3,12 +3,15 @@ import os
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 from dotenv import load_dotenv
 import sys
+from analitiq.utils.document_processor import (
+    group_results_by_properties,
+)
 
 load_dotenv()
 
 
 vdb_params = {
-        "collection_name": "test_collection",
+        "collection_name": "c3b428e2_8031_7034_2cb0_dc342a086229",
         "type": "weaviate",
         "host": os.getenv("WEAVIATE_URL"),
         "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
@@ -23,24 +26,15 @@ vdb = VectorDatabaseFactory.create_database(vdb_params)
 
 filter_expression = {
     "and": [
-        {
-            "or": [
-                {"property": "document_name1", "operator": "like", "value": "test"},
-                {"property": "content", "operator": "!=", "value": "This is the first test document."},
-            ]
-        },
-        {
-            "or": [
-                {"property": "document_name", "operator": "=", "value": "project_plan.txt"},
-                {"property": "content", "operator": "like", "value": "project"},
-            ]
-        },
+        {"property": "document_type", "operator": "=", "value": "ddl"},
     ]
 }
 with vdb:
-    response = vdb.filter_count(filter_expression)
+    response = vdb.filter(filter_expression)
 print(response)
 
+result = group_results_by_properties(response,['uuid'])
+print(result)
 sys.exit()
 #for g in response.groups:
 #    print(g.total_count)

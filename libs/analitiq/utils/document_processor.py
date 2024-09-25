@@ -19,6 +19,7 @@ LOAD_DOC_CHUNK_OVERLAP = 200
 
 
 def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
+
     """Converts a given chunk of text into a Chunk object using the provided metadata.
 
     This function takes in a chunk string and a metadata dictionary as parameters and creates an instance of the Chunk class using the provided data and additional generated attributes.
@@ -43,8 +44,8 @@ def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
     Example Usage:
     ------------
     >>> metadata = {"source": "host/database", "document_type": "ddl", "document_name": "schema.table"}
-    >>> chunk = "CREATE TABLE public.users ( id integer NOT NULL, name text NOT NULL);"
-    >>> result = string_to_chunk(chunk, metadata)
+    >>> document_text = "CREATE TABLE public.users ( id integer NOT NULL, name text NOT NULL);"
+    >>> result = string_to_chunk(document_text, metadata)
     >>> print(type(result))
     <class 'Chunk'>
     >>> print(result.content)
@@ -55,8 +56,13 @@ def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
     'ddl'
     >>> print(result.document_name)
     'schema.table'
-
     """
+    if not isinstance(metadata, dict):
+        raise TypeError("Expected dictionary for 'metadata'")
+
+    if not isinstance(chunk, str):
+        raise TypeError("Expected string for 'chunk'")
+
     return Chunk(
         content=chunk,
         source=metadata["source"],

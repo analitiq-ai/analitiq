@@ -9,7 +9,7 @@ from weaviate.util import generate_uuid5
 from weaviate.collections.classes.tenants import Tenant
 from weaviate.collections.classes.aggregate import AggregateGroupByReturn
 from weaviate.classes.config import Configure
-from weaviate.classes.query import MetadataQuery
+from weaviate.classes.query import MetadataQuery, Filter
 from weaviate.classes.aggregate import GroupByAggregate
 from analitiq.base.base_vector_database import BaseVectorDatabase
 from analitiq.databases.vector.weaviate.query_builder import QueryBuilder
@@ -429,6 +429,9 @@ class WeaviateConnector(BaseVectorDatabase):
         # logger.info(f"Weaviate vector search result: {response}")
         return response
 
+    def search(self, query: str, limit: int = 3) -> QueryReturn:
+        return self.hybrid_search(query, limit)
+
     @search_only
     def hybrid_search(self, query: str, limit: int = 3) -> QueryReturn:
         """Use Hybrid Search for document retrieval from Weaviate Database.
@@ -583,6 +586,17 @@ class WeaviateConnector(BaseVectorDatabase):
         else:
             return response
 
+    def filter(self, filter_expression: dict) -> QueryReturn:
+        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
+        query_builder = QueryBuilder()
+        filters = query_builder.construct_query(filter_expression)
+
+        response: QueryReturn = collection.query.fetch_objects(
+            filters=filters
+        )
+
+        return response
+
     def filter_count(self, filter_expression: dict):
         """Count the number of objects in a Weaviate collection by applying filters based on the given filter expression.
 
@@ -648,6 +662,50 @@ class WeaviateConnector(BaseVectorDatabase):
         collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
 
         response = collection.aggregate.over_all(total_count=True, filters=filters)
+
+        return response
+
+    def filter_delete(self, property_name: str, property_value: str):
+        """
+            Filter out objects and delete them from a given collection in Weaviate,
+            a cloud-native, modular, real-time and scalable Semantic Search Engine.
+
+            This method creates a QueryBuilder instance, gets the collection object for a specific tenant,
+            applies the filter on it, and deletes the matching records.
+
+            Parameters:
+            ----------
+            filter_expression : dict
+                A Python dictionary representing a filter expression that decides which objects should be selected for deletion.
+                The key is the property name and the value is the property value that needs to be matched.
+
+            Returns:
+            -------
+            Response
+                A weaviate-client Response object which contains the status and details of the delete operation.
+
+            Examples:
+            --------
+            >>> filter_delete({'property_name': 'age', 'property_value': 18})
+            <Response [200]>
+            This implies that all objects with the 'age' property equal to 18 have been removed.
+
+            Note:
+            ----
+            This method relies on the weaviate-client library to interact with the Weaviate Semantic Search Engine.
+            Make sure you have it installed and correctly configured to interact with your Weaviate instance.
+
+            Ensure that the collection and property exist in your Weaviate instance before performing the delete operation.
+        """
+
+
+        query_builder = QueryBuilder()
+
+        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
+
+        response = collection.data.delete_many(
+            where=Filter.by_property(property_name).equal(property_value)
+        )
 
         return response
 

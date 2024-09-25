@@ -325,7 +325,28 @@ def test_filter_count__like(weaviate_handler):
     assert result.total_count == 3
 
 
-"""
+def test_filter(weaviate_handler):
+    filter_expression = {
+        "and": [
+            {"property": "document_name", "operator": "=", "value": "project_plan.txt"},
+        ]
+    }
+
+    with weaviate_handler:
+        result = weaviate_handler.filter(filter_expression)
+        print(QueryReturn)
+    assert len(result.objects) == 1
+
+
+def test_filter_delete(weaviate_handler):
+
+    with weaviate_handler:
+        result = weaviate_handler.filter_delete('document_name', 'test_document_1.txt')
+
+    assert result.matches == 1
+    assert result.successful == 1
+
+
 def test_delete_collection(weaviate_handler):
 
     with weaviate_handler:
@@ -335,4 +356,4 @@ def test_delete_collection(weaviate_handler):
     with weaviate_handler:
         check = weaviate_handler.client.collections.exists(COLLECTION_NAME)
     assert check == False
-"""
+
