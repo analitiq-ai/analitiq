@@ -359,7 +359,8 @@ class DocumentProcessor:
         --------
         >>> chunk_documents("./documents", extension=".txt", chunk_size=1000, chunk_overlap=100)
         ([<Chunk object>, <Chunk object>, ...], {"document1": 5000, "document2": 4000, ...})
-
+        TODO this actually need to be split into method that loads directory / file into a list of dictionaries
+        TODO and a method that processes the list of dictionaries and splits them
         """
         if not os.path.exists(path):
             msg = f"The path {path} does not exist."

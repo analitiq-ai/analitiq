@@ -2,7 +2,6 @@ from typing import List, Dict, Any
 import os
 from pathlib import Path
 import yaml
-import logging.config
 import logging
 
 logger = logging.getLogger(__name__)
@@ -52,6 +51,9 @@ def check_env_vars(project_config: Dict[str, Any]):
 
 log_config = yaml_parse(log_config_file_path)
 proj_config = yaml_parse(proj_config_file_path)
+
+if proj_config is None:
+    raise ValueError(f"proj_config is None. Check that project.yml file exists in {proj_config_file_path}.")
 
 _log_dir = base_dir / "logs"
 

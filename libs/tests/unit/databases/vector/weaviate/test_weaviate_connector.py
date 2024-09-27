@@ -81,11 +81,26 @@ def test_create_collection(weaviate_handler):
         if check:
             weaviate_handler.delete_collection(COLLECTION_NAME)
 
-        collection_name = weaviate_handler.create_collection(COLLECTION_NAME)
-        assert collection_name == COLLECTION_NAME
+        response = weaviate_handler.create_collection(COLLECTION_NAME)
+        assert response.name == COLLECTION_NAME.capitalize()
 
         check = weaviate_handler.client.collections.exists(COLLECTION_NAME)
         assert check == True
+
+
+def test_create_tenant(weaviate_handler):
+    with weaviate_handler:
+        weaviate_handler.collection_add_tenant(COLLECTION_NAME)
+        multi_collection = weaviate_handler.client.collections.get(COLLECTION_NAME)
+
+        tenants = multi_collection.tenants.get()
+
+        if COLLECTION_NAME in tenants:
+            result = True
+        else:
+            result = False
+
+        assert result == True
 
 
 def test_load_single_document(weaviate_handler):

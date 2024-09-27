@@ -71,7 +71,7 @@ params = {
     },
     'vdb_params': {
         'type': 'weaviate',
-        'collection_name': 'test',
+        'collection_name': 'Analitiq',
         'host': os.getenv("WEAVIATE_URL"),
         'api_key': os.getenv("WEAVIATE_CLIENT_SECRET")
     }

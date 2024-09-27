@@ -93,7 +93,7 @@ services:
     inputs: "dataframe as serialized json"
     outputs: "javascript that is used by the frontend to visualize data"
 ```
-5. Run the example file `example.py` (located in the root directory.)
+5. Run the example file `cookbooks/example_analitiq.py`
 
 ## Configuration files
 

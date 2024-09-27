@@ -2,7 +2,7 @@
 1. Clone the Git repo [Analitiq AI](https://github.com/analitiq-ai/analitiq)
 2. Set up `profiles.yml`. In order to understand where and how to place it, please read [Profiles Configuration](/getting_started/profiles/)
 3. Set up `project.yml` in root directory. In order to understand more about it, please check out [Project Configuration](/getting_started/project/)
-4. Run the example file `example.py` located in the root directory, to ask your first question.
+4. Edit and run the example file `libs/cookbooks/example_analitiq.py`, to ask your first question.
 
 ## Configuration files
 There are 2 configuration files:

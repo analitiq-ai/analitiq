@@ -11,7 +11,7 @@ load_dotenv()
 
 
 vdb_params = {
-        "collection_name": "c3b428e2_8031_7034_2cb0_dc342a086229",
+        "collection_name": "Analitiq",
         "type": "weaviate",
         "host": os.getenv("WEAVIATE_URL"),
         "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
@@ -19,22 +19,28 @@ vdb_params = {
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
-#response = vdb.delete_collection("test")
-#response = vdb.create_collection("test")
+with vdb:
+    response = vdb.delete_collection(vdb_params['collection_name'])
+    print(response)
+    response = vdb.create_collection(vdb_params['collection_name'])
+    print(response)
+
+exit()
 #response = vdb.load_dir('/Users/kirillandriychuk/Documents/Projects/analitiq-ai/libs/tests/unit/databases/vector/', 'txt')
 #response = vdb.hybrid_search("bikes")
 
-filter_expression = {
-    "and": [
-        {"property": "document_type", "operator": "=", "value": "ddl"},
-    ]
+document = {
+    "document_text": "This is sample document text",
+    "metadata": {
+        "document_name": "schema.table",
+        "document_type": "ddl",
+        "source": "host.database"
+    }
 }
 with vdb:
-    response = vdb.filter(filter_expression)
+    response = vdb.create_collection('Analitiq')
 print(response)
 
-result = group_results_by_properties(response,['uuid'])
-print(result)
 sys.exit()
 #for g in response.groups:
 #    print(g.total_count)
