@@ -11,7 +11,6 @@ from weaviate.collections.classes.aggregate import AggregateGroupByReturn
 from weaviate.classes.config import Configure
 from weaviate.classes.query import MetadataQuery
 from weaviate.classes.aggregate import GroupByAggregate
-
 from analitiq.base.base_vector_database import BaseVectorDatabase
 from analitiq.databases.vector.weaviate.query_builder import QueryBuilder
 from analitiq.utils.document_processor import (
@@ -73,6 +72,31 @@ def search_only(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+# Define a reusable search method that encapsulates the common logic
+def search_and_handle_errors(search_func, *args, logger, **kwargs):
+    """
+    Executes the given search function, handles any errors that occur, and logs them.
+
+    :param search_func: The search function to execute.
+    :param args: Additional positional arguments to pass to the search function.
+    :param logger: The logger to use for logging any errors.
+    :param kwargs: Additional keyword arguments to pass to the search function.
+    :return: The result of the search function.
+    :raises: Any exception that occurs during the search.
+    """
+    try:
+        return search_func(*args, **kwargs)
+    except weaviate.exceptions.WeaviateQueryError as e:
+        if 'tenant not found' in str(e) or 'no such prop' in str(e) :
+            logger.warning(str(e))
+            return QueryReturn(objects=[])
+        else:
+            raise e
+    except Exception as e:
+        logger.error(f"Error during search: {e}")
+        raise e
 
 
 class WeaviateConnector(BaseVectorDatabase):
@@ -163,14 +187,11 @@ class WeaviateConnector(BaseVectorDatabase):
             The collection object specific to the tenant.
 
         """
+        tenant_name = self.params.get("tenant_name")
         collection_name = self.params.get("collection_name", "default_collection")
-        tenant_name = self.params.get("tenant_name", "default_tenant")
+        logger.info(f"Existing VDB Collection name: {collection_name} with tenant: {tenant_name}")
 
-        multi_collection = self.client.collections.get(collection_name)
-        logger.info(f"Existing VDB Collection name: {collection_name}")
-
-        # Get collection specific to the required tenant
-        return multi_collection.with_tenant(tenant_name)
+        return self.client.collections.get(collection_name).with_tenant(tenant_name)
 
     def create_collection(self, collection_name: str) -> str:
         """Create a collection in a Weaviate database.
@@ -204,18 +225,21 @@ class WeaviateConnector(BaseVectorDatabase):
         "MyCollection"
 
         """
-        check = self.client.collections.exists(collection_name)
+        with self:
+            check = self.client.collections.exists(collection_name)
 
         if check:
+            logger.info(f"Collection exists: {collection_name}")
             return collection_name
 
-        result = self.client.collections.create(
-            collection_name,
-            multi_tenancy_config=Configure.multi_tenancy(
-                enabled=True,
-                auto_tenant_creation=True
+        with self:
+            result = self.client.collections.create(
+                collection_name,
+                multi_tenancy_config=Configure.multi_tenancy(
+                    enabled=True,
+                    auto_tenant_creation=True
+                )
             )
-        )
 
         logger.info(f"Collection created {collection_name}")
 
@@ -230,7 +254,7 @@ class WeaviateConnector(BaseVectorDatabase):
         """
         tenants = [Tenant(name=tenant_name)]
 
-        collection_name = self.params.get("collection_name", "default_collection")
+        collection_name = self.params.get("collection_name")
         multi_collection = self.client.collections.get(collection_name)
         multi_collection.tenants.create(tenants=tenants)
 
@@ -259,32 +283,30 @@ class WeaviateConnector(BaseVectorDatabase):
             If there is an error during the loading process.
 
         """
-        chunks_loaded = 0
-        try:
-            with self:  # Ensure connection is properly handled
-                collection = self.__get_tenant_collection_object()
 
-                with collection.batch.dynamic() as batch:
-                    for chunk in chunks:
-                        uuid = generate_uuid5(chunk.model_dump())
-                        hf_vector = self.vectorizer.vectorize(chunk.content)
-                        try:
-                            response = batch.add_object(
-                                properties=chunk.model_dump(),
-                                uuid=uuid,
-                                vector=hf_vector,
-                            )
-                            logger.info(response)
-                            chunks_loaded += 1
-                        except Exception as e:
-                            raise e
+        collection = self.__get_tenant_collection_object()
 
-            logger.info("Loaded chunks: %s", chunks_loaded)
+        with collection.batch.dynamic() as batch:
 
-        except Exception as e:
-            logger.error(f"Error loading chunks into Weaviate: {e}")
+            for chunk in chunks:
+                chunk_model_json = chunk.model_dump()
+                uuid = generate_uuid5(chunk_model_json)
+                hf_vector = self.vectorizer.vectorize(chunk.content)
+                try:
+                    response = batch.add_object(
+                        properties=chunk_model_json,
+                        uuid=uuid,
+                        vector=hf_vector,
+                    )
+                    logger.info(response)
+                except Exception as e:
+                    raise e
 
-        return chunks_loaded
+        # Check for failed objects
+        if len(collection.batch.failed_objects) > 0:
+            logger.warning(f"Failed to import {len(collection.batch.failed_objects)} objects. {collection.batch.failed_objects[0].message}")
+
+        return len(chunks) - len(collection.batch.failed_objects)
 
     def load_file(self, path: str) -> int:
         """Load a file into Weaviate.
@@ -353,17 +375,12 @@ class WeaviateConnector(BaseVectorDatabase):
         :param metadata: Optional metadata related to the text. Default is None.
         :return: The number of chunks that were loaded (always returns 1).
         """
-        chunks = []
-        counter = 0
-
         chunk = string_to_chunk(text, metadata)
-        chunks.append(chunk)
-        counter = counter + 1
 
         with self:
-            self.load_chunks(chunks)
+            chunks_loaded = self.load_chunks([chunk])
 
-        return 1  # returning number of chunks that were loaded
+        return chunks_loaded  # returning number of chunks that were loaded
 
 
     @search_only
@@ -407,19 +424,16 @@ class WeaviateConnector(BaseVectorDatabase):
         logger.info("Extracted keywords to search for: %s", search_kw)
         response = QueryReturn(objects=[])
 
-        try:
+        def ksearch():
             collection = self.__get_tenant_collection_object()
-            response: QueryReturn = collection.query.bm25(
+            return collection.query.bm25(
                 query=search_kw,
                 query_properties=QUERY_PROPERTIES,
                 return_metadata=MetadataQuery(score=True, distance=True),
                 limit=limit,
             )
-        except Exception as e:
-            logger.error(f"Weaviate error {e}")
 
-        # logger.info(f"Weaviate Keyword search result: {response}")
-        return response
+        return search_and_handle_errors(ksearch, logger=logger)
 
     @search_only
     def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
@@ -456,19 +470,16 @@ class WeaviateConnector(BaseVectorDatabase):
         """
         response = QueryReturn(objects=[])
 
-        try:
+        def vsearch() -> QueryReturn:
             query_vector = self.vectorizer.vectorize(query)
             collection = self.__get_tenant_collection_object()
-            response: QueryReturn = collection.query.near_vector(
+            return collection.query.near_vector(
                 near_vector=query_vector,
                 limit=limit,
                 return_metadata=MetadataQuery(distance=True, score=True),
             )
-        except Exception as e:
-            logger.error(f"Weaviate error {e}")
 
-        # logger.info(f"Weaviate vector search result: {response}")
-        return response
+        return search_and_handle_errors(vsearch, logger=logger)
 
     def search(self, query: str, limit: int = 3) -> QueryReturn:
         return self.hybrid_search(query, limit)
@@ -496,17 +507,13 @@ class WeaviateConnector(BaseVectorDatabase):
         """
         response = QueryReturn(objects=[])
 
-        try:
+        def search():
             kw_results = self.kw_search(query, limit)
             vector_results = self.vector_search(query, limit)
 
-            response = self.__combine_and_rerank_results(kw_results, vector_results)
-        except Exception as e:
-            logger.error(f"Weaviate error {e}")
-            raise e
+            return self.__combine_and_rerank_results(kw_results, vector_results)
 
-        # logger.info(f"Weaviate Hybrid search result: {response}")
-        return response
+        return search_and_handle_errors(search, logger=logger)
 
     @staticmethod
     def __combine_and_rerank_results(
@@ -740,9 +747,10 @@ class WeaviateConnector(BaseVectorDatabase):
 
         collection = self.__get_tenant_collection_object()
 
-        response = collection.aggregate.over_all(total_count=True, filters=filters)
+        def aggregation():
+            return collection.aggregate.over_all(total_count=True, filters=filters)
 
-        return response
+        return search_and_handle_errors(aggregation, logger=logger)
 
     def filter_group_count(self, filter_expression: dict, group_by_prop: str) -> AggregateGroupByReturn:
         """Example response:

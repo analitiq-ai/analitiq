@@ -6,15 +6,13 @@ from dotenv import load_dotenv
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 from weaviate.collections.classes.internal import QueryReturn
 
-COLLECTION_NAME = "test_collection"
-
 
 @pytest.fixture(autouse=True, scope="module")
 def params():
     return {
-        "collection_name": COLLECTION_NAME,
-        "tenant_name": COLLECTION_NAME,
-        "type": "weaviate",
+        "collection_name": os.getenv("WEAVIATE_COLLECTION"),
+        "tenant_name": f"{os.getenv('WEAVIATE_TENANT_NAME')}",
+        "type": os.getenv("VDB_TYPE"),
         "host": os.getenv("WEAVIATE_URL"),
         "api_key": os.getenv("WEAVIATE_CLIENT_SECRET"),
     }
@@ -28,7 +26,7 @@ def load_environment():
 
 
 @pytest.fixture(scope="module")
-def weaviate_handler(params):
+def vdb(params):
     handler = VectorDatabaseFactory.create_database(params)
     yield handler
 
@@ -75,27 +73,30 @@ def delete_documents(documents, test_dir: str = "test_dir"):
     os.rmdir(test_dir)
 
 
-def test_create_collection(weaviate_handler):
-    with weaviate_handler:
-        check = weaviate_handler.client.collections.exists(COLLECTION_NAME)
+def test_create_collection(vdb):
+    with vdb:
+        collection_name = vdb.params.get("collection_name")
+        check = vdb.client.collections.exists(collection_name)
         if check:
-            weaviate_handler.delete_collection(COLLECTION_NAME)
+            vdb.delete_collection(collection_name)
 
-        response = weaviate_handler.create_collection(COLLECTION_NAME)
-        assert response.name == COLLECTION_NAME.capitalize()
+        response = vdb.create_collection(collection_name)
+        assert response.name == collection_name.capitalize()
 
-        check = weaviate_handler.client.collections.exists(COLLECTION_NAME)
+        check = vdb.client.collections.exists(collection_name)
         assert check == True
 
 
-def test_create_tenant(weaviate_handler):
-    with weaviate_handler:
-        weaviate_handler.collection_add_tenant(COLLECTION_NAME)
-        multi_collection = weaviate_handler.client.collections.get(COLLECTION_NAME)
+def test_create_tenant(vdb):
+    tenant_name = vdb.params.get("tenant_name")
+    with vdb:
+        collection_name = vdb.params.get("collection_name")
+        vdb.collection_add_tenant(tenant_name)
+        multi_collection = vdb.client.collections.get(collection_name)
 
         tenants = multi_collection.tenants.get()
 
-        if COLLECTION_NAME in tenants:
+        if tenant_name in tenants:
             result = True
         else:
             result = False
@@ -103,59 +104,59 @@ def test_create_tenant(weaviate_handler):
         assert result == True
 
 
-def test_load_single_document(weaviate_handler):
+def test_load_single_document(vdb):
     test_document_path = "document.txt"
     with open(test_document_path, "w") as f:
         f.write("This is a test document.")
 
-    with weaviate_handler:
-        response = weaviate_handler.load_file(test_document_path)
+    with vdb:
+        response = vdb.load_file(test_document_path)
 
     assert response > 0
 
     os.remove(test_document_path)
 
 
-def test_load_documents_from_directory(weaviate_handler):
+def test_load_documents_from_directory(vdb):
     test_dir = "test_dir"
     create_documents(test_documents, test_dir)
 
-    with weaviate_handler:
-        response = weaviate_handler.load_dir(test_dir, "txt")
+    with vdb:
+        response = vdb.load_dir(test_dir, "txt")
 
     assert response >= 3
 
     delete_documents(test_documents, test_dir)
 
 
-def test_keyword_search(weaviate_handler):
+def test_keyword_search(vdb):
     query = "test document"
-    with weaviate_handler:
-        result = weaviate_handler.kw_search(query)
+    with vdb:
+        result = vdb.kw_search(query)
 
     assert isinstance(result, QueryReturn)
     assert len(result.objects) == 3
 
 
-def test_vector_search(weaviate_handler):
+def test_vector_search(vdb):
     query = "test document"
-    with weaviate_handler:
-        result = weaviate_handler.vector_search(query)
+    with vdb:
+        result = vdb.vector_search(query)
 
     assert isinstance(result, QueryReturn)
     assert len(result.objects) == 3
 
 
-def test_hybrid_search(weaviate_handler):
+def test_hybrid_search(vdb):
     query = "test document"
-    with weaviate_handler:
-        result = weaviate_handler.hybrid_search(query)
+    with vdb:
+        result = vdb.hybrid_search(query)
 
     assert isinstance(result, QueryReturn)
     assert len(result.objects) == 3
 
 
-def test_filter_count__equal(weaviate_handler):
+def test_filter_count__equal(vdb):
     filter_expression = {
         "or": [
             {
@@ -184,26 +185,26 @@ def test_filter_count__equal(weaviate_handler):
             },
         ]
     }
-    with weaviate_handler:
-        result = weaviate_handler.filter_count(filter_expression=filter_expression)
+    with vdb:
+        result = vdb.filter_count(filter_expression=filter_expression)
 
     assert result.total_count == 1
 
 
-def test_filter_count_and(weaviate_handler):
+def test_filter_count_and(vdb):
     filter_expression = {
         "and": [
             {"property": "document_name", "operator": "like", "value": "test_document"},
             {"property": "content", "operator": "like", "value": "first"},
         ]
     }
-    with weaviate_handler:
-        result = weaviate_handler.filter_count(filter_expression)
+    with vdb:
+        result = vdb.filter_count(filter_expression)
 
     assert result.total_count == 1
 
 
-def test_filter_count__or(weaviate_handler):
+def test_filter_count__or(vdb):
     filter_expression = {
         "or": [
             {"property": "document_name", "operator": "like", "value": "summary"},
@@ -211,13 +212,13 @@ def test_filter_count__or(weaviate_handler):
         ]
     }
 
-    with weaviate_handler:
-        result = weaviate_handler.filter_count(filter_expression)
+    with vdb:
+        result = vdb.filter_count(filter_expression)
 
     assert result.total_count == 2
 
 
-def test_filter_count__simple_and_complex_filter(weaviate_handler):
+def test_filter_count__simple_and_complex_filter(vdb):
     filter_expression = {
         "and": [
             {"property": "document_name", "operator": "like", "value": "test_document"},
@@ -230,13 +231,13 @@ def test_filter_count__simple_and_complex_filter(weaviate_handler):
         ]
     }
 
-    with weaviate_handler:
-        result = weaviate_handler.filter_count(filter_expression)
+    with vdb:
+        result = vdb.filter_count(filter_expression)
 
     assert result.total_count == 2
 
 
-def test_filter_count__complex_filter(weaviate_handler):
+def test_filter_count__complex_filter(vdb):
     filter_expression = {
         "and": [
             {
@@ -262,21 +263,21 @@ def test_filter_count__complex_filter(weaviate_handler):
         ]
     }
 
-    with weaviate_handler:
-        result = weaviate_handler.filter_count(filter_expression)
+    with vdb:
+        result = vdb.filter_count(filter_expression)
 
     assert result.total_count == 1
 
 
-def test_filter_group_count(weaviate_handler):
+def test_filter_group_count(vdb):
     filter_expression = {
         "property": "document_name",
         "operator": "like",
         "value": "test",
     }
 
-    with weaviate_handler:
-        result = weaviate_handler.filter_group_count(filter_expression, "document_name")
+    with vdb:
+        result = vdb.filter_group_count(filter_expression, "document_name")
 
     # Assert that there are exactly 3 AggregateGroup objects
     assert len(result.groups) == 3
@@ -286,7 +287,7 @@ def test_filter_group_count(weaviate_handler):
         assert group.total_count == 1
 
 
-def test_search_filter(weaviate_handler):
+def test_search_filter(vdb):
     query = "document"
     filter_expression = {
         "and": [
@@ -303,13 +304,13 @@ def test_search_filter(weaviate_handler):
         ]
     }
 
-    with weaviate_handler:
-        result = weaviate_handler.search_filter(query, filter_expression)
+    with vdb:
+        result = vdb.search_filter(query, filter_expression)
 
     assert len(result.objects) == 4
 
 
-def test_filter_count__like(weaviate_handler):
+def test_filter_count__like(vdb):
     filter_expression = {
         "or": [
             {
@@ -334,41 +335,43 @@ def test_filter_count__like(weaviate_handler):
             },
         ]
     }
-    with weaviate_handler:
-        result = weaviate_handler.filter_count(filter_expression)
+    with vdb:
+        result = vdb.filter_count(filter_expression)
 
     assert result.total_count == 3
 
 
-def test_filter(weaviate_handler):
+def test_filter(vdb):
     filter_expression = {
         "and": [
             {"property": "document_name", "operator": "=", "value": "project_plan.txt"},
         ]
     }
 
-    with weaviate_handler:
-        result = weaviate_handler.filter(filter_expression)
+    with vdb:
+        result = vdb.filter(filter_expression)
         print(QueryReturn)
     assert len(result.objects) == 1
 
 
-def test_filter_delete(weaviate_handler):
+def test_filter_delete(vdb):
 
-    with weaviate_handler:
-        result = weaviate_handler.filter_delete('document_name', 'test_document_1.txt')
+    with vdb:
+        result = vdb.filter_delete('document_name', 'test_document_1.txt')
 
     assert result.matches == 1
     assert result.successful == 1
 
 
-def test_delete_collection(weaviate_handler):
+def test_delete_collection(vdb):
 
-    with weaviate_handler:
-        result = weaviate_handler.delete_collection(COLLECTION_NAME)
+    with vdb:
+        collection_name = vdb.params.get("collection_name")
+        result = vdb.delete_collection(collection_name)
     assert result == True
 
-    with weaviate_handler:
-        check = weaviate_handler.client.collections.exists(COLLECTION_NAME)
+    with vdb:
+        collection_name = vdb.params.get("collection_name")
+        check = vdb.client.collections.exists(collection_name)
     assert check == False
 

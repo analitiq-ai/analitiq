@@ -9,24 +9,6 @@ from analitiq.utils.document_processor import (
 
 load_dotenv()
 
-
-vdb_params = {
-        "collection_name": "Analitiq",
-        "type": "weaviate",
-        "host": os.getenv("WEAVIATE_URL"),
-        "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
-    }
-
-vdb = VectorDatabaseFactory.create_database(vdb_params)
-
-with vdb:
-    response = vdb.delete_collection(vdb_params['collection_name'])
-    print(response)
-    response = vdb.create_collection(vdb_params['collection_name'])
-    print(response)
-
-exit()
-#response = vdb.load_dir('/Users/kirillandriychuk/Documents/Projects/analitiq-ai/libs/tests/unit/databases/vector/', 'txt')
 #response = vdb.hybrid_search("bikes")
 
 document = {
@@ -37,9 +19,7 @@ document = {
         "source": "host.database"
     }
 }
-with vdb:
-    response = vdb.create_collection('Analitiq')
-print(response)
+
 
 sys.exit()
 #for g in response.groups:
@@ -48,17 +28,6 @@ sys.exit()
     #print(g.grouped_by)
 
 
-"""
-Load a directory
-"""
-# FILE_PATH = '/xxx/xxx/xxx/xxx/models'
-# vdb.load(FILE_PATH, 'sql')
-
-"""
-Loading a single file
-"""
-# FILE_PATH = '/xxx/xxx/xxx/xxx/models'
-# vdb.load(FILE_PATH)
 
 """
 Search for results
@@ -73,10 +42,6 @@ Search for results and filter by parameter
 # result = vdb.search_vector_database_with_filter('revenue', 'document_name', 'schema.yml')
 # print(result)
 
-"""
-Delete a collection
-"""
-# vdb.delete_collection(vdb_params['collection_name'])
 
 """
 Delete by document type
