@@ -1,5 +1,5 @@
 """
-This is an example of how to create a collection in Vector Database using Analitiq.
+This is an example of how to gete all objects from Weaviate.
 """
 import os
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
@@ -16,18 +16,11 @@ vdb_params = {
 }
 
 
-filter_expression = {
-    "and": [
-        {
-            "property": "document_type",
-            "operator": "=",
-            "value": 'txt',
-        },
-    ]
-}
-
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
-with vdb:
-    response = vdb.filter_count(filter_expression)
-    print(response)
+collection = vdb.client.collections.get(vdb_params['collection_name']).with_tenant(vdb_params['tenant_name'])
+
+for item in collection.iterator():
+    print(item.uuid, item.properties)
+
+vdb.client.close()

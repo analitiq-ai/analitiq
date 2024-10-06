@@ -9,7 +9,7 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from analitiq.databases.vector.schema import Chunk
 from analitiq.utils import sql_recursive_text_splitter
 from analitiq.utils import keyword_extractions
-
+from analitiq.databases.vector.schema import DocumentSchema
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "services/search_vdb/examples/example_test_files"
@@ -18,60 +18,17 @@ LOAD_DOC_CHUNK_SIZE = 2000
 LOAD_DOC_CHUNK_OVERLAP = 200
 
 
-def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
-
-    """Converts a given chunk of text into a Chunk object using the provided metadata.
-
-    This function takes in a chunk string and a metadata dictionary as parameters and creates an instance of the Chunk class using the provided data and additional generated attributes.
-
-    Parameters
-    ----------
-    chunk : str
-        The chunk of text to be converted into a Chunk object.
-
-    metadata : dict
-        A dictionary containing the required attributes needed to create a Chunk object. The following keys are expected in the dictionary:
-
-        - "source": The source of the chunk text. (Eg. 'host/database')
-        - "document_type": The type of the document that the text chunk is part of. (Eg. 'ddl')
-        - "document_name": The name of the document that the text chunk is part of. (Eg. 'schema.table')
-
-    Returns
-    -------
-    Chunk
-        A Chunk object representing the provided text chunk. The Chunk object includes the original text chunk, the source, the document type, the document name, the number of characters in the chunk, the date it was loaded, and the extracted keywords from the chunk content.
-
-    Example Usage:
-    ------------
-    >>> metadata = {"source": "host/database", "document_type": "ddl", "document_name": "schema.table"}
-    >>> document_text = "CREATE TABLE public.users ( id integer NOT NULL, name text NOT NULL);"
-    >>> result = string_to_chunk(document_text, metadata)
-    >>> print(type(result))
-    <class 'Chunk'>
-    >>> print(result.content)
-    "CREATE TABLE public.users ( id integer NOT NULL, name text NOT NULL);"
-    >>> print(result.source)
-    'host/database'
-    >>> print(result.document_type)
-    'ddl'
-    >>> print(result.document_name)
-    'schema.table'
-    """
-    if not isinstance(metadata, dict):
-        raise TypeError("Expected dictionary for 'metadata'")
-
-    if not isinstance(chunk, str):
-        raise TypeError("Expected string for 'chunk'")
+def string_to_chunk(document: DocumentSchema) -> Chunk:
 
     return Chunk(
-        content=chunk,
-        source=metadata["source"],
-        document_type=metadata["document_type"],
-        document_name=metadata["document_name"],
-        document_num_char=len(chunk),
-        chunk_num_char=len(chunk),
-        date_loaded=datetime.now(timezone.utc),
-        content_kw=keyword_extractions.extract_keywords(chunk),
+        content=document.document_content,
+        document_source=document.document_source,
+        document_type=document.document_type,
+        document_name=document.document_name,
+        document_num_char=len(document.document_content),
+        chunk_num_char=len(document.document_content),
+        content_kw=keyword_extractions.extract_keywords(document.document_content),
+        document_uuid=document.uuid
     )
 
 
@@ -431,7 +388,7 @@ class DocumentProcessor:
                 document_name=pathlib.Path(chunk.metadata["source"]).name,
                 document_num_char=doc_lengths[chunk.metadata["source"]],
                 chunk_num_char=len(chunk.page_content),
-                date_loaded=datetime.now(timezone.utc),
+                created_ts=datetime.now(timezone.utc),
                 content_kw=keyword_extractions.extract_keywords(chunk.page_content),
             )
             for chunk in documents_chunks

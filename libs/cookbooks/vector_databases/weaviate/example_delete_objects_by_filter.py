@@ -16,18 +16,9 @@ vdb_params = {
 }
 
 
-filter_expression = {
-    "and": [
-        {
-            "property": "document_type",
-            "operator": "=",
-            "value": 'txt',
-        },
-    ]
-}
-
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
 with vdb:
-    response = vdb.filter_count(filter_expression)
-    print(response)
+    response = vdb.filter_delete("document_source", 'system')
+
+print(response)

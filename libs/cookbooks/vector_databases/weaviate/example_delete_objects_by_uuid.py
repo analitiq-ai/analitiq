@@ -1,5 +1,5 @@
 """
-This is an example of how to create a collection in Vector Database using Analitiq.
+This is an example of how to load a directory into the Vector Database using Analitiq.
 """
 import os
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
@@ -16,18 +16,9 @@ vdb_params = {
 }
 
 
-filter_expression = {
-    "and": [
-        {
-            "property": "document_type",
-            "operator": "=",
-            "value": 'txt',
-        },
-    ]
-}
-
 vdb = VectorDatabaseFactory.create_database(vdb_params)
+collection = vdb.client.collections.get(vdb_params['collection_name']).with_tenant(vdb_params['tenant_name'])
 
-with vdb:
-    response = vdb.filter_count(filter_expression)
-    print(response)
+collection.data.delete_by_id("ec841025-702b-5d6d-83ff-800ea052dccf")
+
+vdb.client.close()

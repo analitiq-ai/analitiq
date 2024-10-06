@@ -2,14 +2,13 @@
 
 import logging
 from typing import List, Dict, Any, Tuple
-from datetime import datetime, timedelta, timezone
 import weaviate
 from weaviate.auth import AuthApiKey
 from weaviate.util import generate_uuid5
 from weaviate.collections.classes.tenants import Tenant
 from weaviate.collections.classes.aggregate import AggregateGroupByReturn
 from weaviate.classes.config import Configure
-from weaviate.classes.query import MetadataQuery
+from weaviate.classes.query import MetadataQuery, Filter
 from weaviate.classes.aggregate import GroupByAggregate
 from analitiq.base.base_vector_database import BaseVectorDatabase
 from analitiq.databases.vector.weaviate.query_builder import QueryBuilder
@@ -18,9 +17,9 @@ from analitiq.utils.document_processor import (
     group_results_by_properties,
 )
 from analitiq.utils.keyword_extractions import extract_keywords
-from analitiq.utils.document_processor import string_to_chunk
 from analitiq.databases.vector.utils.analitiq_vectorizer import AnalitiqVectorizer
 from weaviate.collections.classes.internal import QueryReturn
+from analitiq.databases.vector.schema import Chunk
 
 logger = logging.getLogger(__name__)
 
@@ -260,7 +259,7 @@ class WeaviateConnector(BaseVectorDatabase):
 
         return True
 
-    def load_chunks(self, chunks: List[Dict[str, Any]]) -> int:
+    def load_chunks(self, chunks: List[Chunk]) -> int:
         """Load chunks into Weaviate.
 
         This method loads a list of chunks into the Weaviate Vector Database. Each chunk is expected
@@ -285,11 +284,11 @@ class WeaviateConnector(BaseVectorDatabase):
         """
 
         collection = self.__get_tenant_collection_object()
-
         with collection.batch.dynamic() as batch:
 
             for chunk in chunks:
                 chunk_model_json = chunk.model_dump()
+
                 uuid = generate_uuid5(chunk_model_json)
                 hf_vector = self.vectorizer.vectorize(chunk.content)
                 try:
@@ -361,26 +360,6 @@ class WeaviateConnector(BaseVectorDatabase):
         chunks = chunk_processor.chunk_documents(path, extension)
 
         return self.load_chunks(chunks)
-
-    def load_text(self, text: str, metadata: dict = None) -> int:
-        """
-        Load a text chunk into the Vector Database.
-        metadata = {
-            "document_name": "",
-            "document_type": "",
-            "source": ""
-        }
-
-        :param text: The text to be loaded.
-        :param metadata: Optional metadata related to the text. Default is None.
-        :return: The number of chunks that were loaded (always returns 1).
-        """
-        chunk = string_to_chunk(text, metadata)
-
-        with self:
-            chunks_loaded = self.load_chunks([chunk])
-
-        return chunks_loaded  # returning number of chunks that were loaded
 
 
     @search_only
@@ -754,7 +733,7 @@ class WeaviateConnector(BaseVectorDatabase):
 
     def filter_group_count(self, filter_expression: dict, group_by_prop: str) -> AggregateGroupByReturn:
         """Example response:
-        AggregateGroupByReturn(groups=[AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.068792Z'), properties={}, total_count=1), AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.067935Z'), properties={}, total_count=1), AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.06836Z'), properties={}, total_count=1)])
+        AggregateGroupByReturn(groups=[AggregateGroup(grouped_by=GroupedBy(prop='created_ts', value='2024-09-24T07:11:53.068792Z'), properties={}, total_count=1), AggregateGroup(grouped_by=GroupedBy(prop='created_ts', value='2024-09-24T07:11:53.067935Z'), properties={}, total_count=1), AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.06836Z'), properties={}, total_count=1)])
 
         Parameters
         ----------
@@ -782,25 +761,75 @@ class WeaviateConnector(BaseVectorDatabase):
 
         return response
 
-    def delete_on_metadata(self, metadata: Dict):
-        filters = {
-            "operator": "And",
-            "operands": [
-                {
-                    "path": [key],
-                    "operator": "Equal",
-                    "valueString": value
-                } for key, value in metadata.items()
-            ]
-        }
-
+    def filter_delete(self, property_name, property_value):
         collection = self.__get_tenant_collection_object()
 
         response = collection.data.delete_many(
-            where=filters
+            where=weaviate.classes.query.Filter.by_property(property_name).equal(property_value)
         )
 
         return response
+
+    def delete_on_metadata_and(self, filter_list: List):
+        """
+        Removes multiple documents from the collection based on provided filters.
+
+        The function converts the input list of dictionaries into Weaviate DELETE filters,
+        uses the filters to determine the documents that match all specified properties,
+        and deletes those documents from the Weaviate collection.
+
+        Args:
+            filter_list (List[Dict]): A list of dictionaries each containing the property name,
+                                      operator, and value to filter the documents by. An AND operation
+                                      is performed across filters.
+
+                                      Each dict has the form:
+                                          {
+                                              "property": <property name>,
+                                              "operator": <comparison operator>,
+                                              "value": <value to compare>
+                                          }
+
+                                      Currently, only the "=" (equal) operator is supported.
+
+        Returns:
+            result : The Weaviate Delete Result object that contains information about the delete operation,
+                     like the number of records deleted.
+
+        Raises:
+            WeaviateException: If the delete operation is not successful.
+
+        Examples:
+            metadata = [
+                {"property": "document_name", "operator": "=", "value": "doc1"},
+                {"property": "document_type", "operator": "=", "value": "type1"},
+                {"property": "source", "operator": "=", "value": "src1"}
+            ]
+
+            result = instance.delete_on_metadata_and(metadata)
+
+        """
+        initial_filter = None
+
+        for filter_dict in filter_list:
+            prop = filter_dict["property"]
+            val = filter_dict["value"]
+
+            if filter_dict["operator"] == "=":
+                current_filter = Filter.by_property(prop).equal(val)
+
+            if initial_filter is None:
+                initial_filter = current_filter
+            else:
+                initial_filter = initial_filter & current_filter
+
+        collection = self.__get_tenant_collection_object()
+
+        result = collection.data.delete_many(
+            where=( initial_filter )
+        )
+
+        return result
 
     def delete_collection(self, collection_name: str):
         """Deletes a collection from the Weaviate Vector Database.
@@ -845,39 +874,3 @@ class WeaviateConnector(BaseVectorDatabase):
             logger.error(f"Error deleting collection: {e}")
             return False
 
-    def check_and_update_document(self,
-                                  text: Dict[str, Dict[str, str]],
-                                  metadata: dict,
-                                  lookback_days: int = 5
-                                  ) -> bool:
-        """
-        Check if the document already exists in Weaviate. If it does, check the dates of the chunks.
-        If any chunk is older than 5 days, delete all chunks belonging to this document and reload the document.
-
-        Parameters
-        ----------
-        document : Dict[str, Dict[str, str]]
-            The document to check and update.
-        """
-        filter_expression = {
-            "and": [
-                {"property": "document_name", "operator": "=", "value": metadata["document_name"]},
-                {"property": "document_type", "operator": "=", "value": metadata["document_type"]},
-                {"property": "source", "operator": "=", "value": metadata["source"]}
-            ]
-        }
-
-        # Search for existing chunks
-        existing_chunks = self.filter(filter_expression=filter_expression)
-
-        if existing_chunks and existing_chunks.objects:
-            # Check the dates of the chunks
-            fresh_from_date = datetime.now(timezone.utc) - timedelta(days=lookback_days)
-            for chunk in existing_chunks.objects:
-                if chunk.metadata.last_update_time < fresh_from_date:
-                    # Delete all chunks belonging to this document
-                    result = self.delete_on_metadata(metadata)
-                    print(result)
-                    # If deletion was successful, reload the document
-                    #self.load_text(text)
-                    break

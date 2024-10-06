@@ -9,6 +9,7 @@ load_dotenv()
 
 vdb_params = {
     "collection_name": os.getenv("WEAVIATE_COLLECTION"),
+    "tenant_name": os.getenv("WEAVIATE_TENANT_NAME"),
     "type": os.getenv("VDB_TYPE"),
     "host": os.getenv("WEAVIATE_URL"),
     "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
@@ -18,6 +19,6 @@ vdb_params = {
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
 with vdb:
-    response = vdb.search_filter('')
+    response = vdb.search_filter('hello')
 
 print(response)

@@ -1,5 +1,5 @@
 """
-This is an example of how to create a collection in Vector Database using Analitiq.
+This is an example of how to delete a bunch of objects from weaviate by specifying their matadata parameters.
 """
 import os
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
@@ -16,18 +16,12 @@ vdb_params = {
 }
 
 
-filter_expression = {
-    "and": [
-        {
-            "property": "document_type",
-            "operator": "=",
-            "value": 'txt',
-        },
-    ]
-}
+filter_list = [
+    {"property": "document_type", "operator": "=", "value": "txt"}
+]
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
-
 with vdb:
-    response = vdb.filter_count(filter_expression)
-    print(response)
+    result = vdb.delete_on_metadata_and(filter_list)
+
+print(result)

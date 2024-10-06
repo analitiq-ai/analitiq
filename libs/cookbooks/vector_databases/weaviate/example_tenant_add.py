@@ -9,7 +9,7 @@ load_dotenv()
 
 vdb_params = {
     "collection_name": "Analitiq",
-    "tenant_name": "b1c32829-b6e5-5bed-90a7-0ab9c6f640f4",
+    "tenant_name": "d3449862-40f1-708f-1e1e-2ebff76034f5",
     "type": os.getenv("VDB_TYPE"),
     "host": os.getenv("WEAVIATE_URL"),
     "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
