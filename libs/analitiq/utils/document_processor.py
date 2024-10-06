@@ -1,26 +1,25 @@
-import os
-from typing import List, Optional
+from typing import List, Optional, Tuple
 import re
 import pathlib
 import ast
 from datetime import datetime, timezone
+from langchain_core.documents.base import Document
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from analitiq.databases.vector.schema import Chunk
-from analitiq.utils import sql_recursive_text_splitter
+from analitiq.utils import sql_recursive_text_splitter, string_loader
 from analitiq.utils import keyword_extractions
 
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "services/search_vdb/examples/example_test_files"
-ALLOWED_EXTENSIONS = ["py", "yaml", "yml", "sql", "txt", "md", "pdf"]
+ALLOWED_EXTENSIONS = [".py", ".yaml", ".yml", ".sql", ".txt", ".md", ".pdf"]
 LOAD_DOC_CHUNK_SIZE = 2000
 LOAD_DOC_CHUNK_OVERLAP = 200
 
 
 def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
-
-    """Converts a given chunk of text into a Chunk object using the provided metadata.
+    """Convert a given chunk of text into a Chunk object using the provided metadata.
 
     This function takes in a chunk string and a metadata dictionary as parameters and creates an instance of the Chunk class using the provided data and additional generated attributes.
 
@@ -31,7 +30,6 @@ def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
 
     metadata : dict
         A dictionary containing the required attributes needed to create a Chunk object. The following keys are expected in the dictionary:
-
         - "source": The source of the chunk text. (Eg. 'host/database')
         - "document_type": The type of the document that the text chunk is part of. (Eg. 'ddl')
         - "document_name": The name of the document that the text chunk is part of. (Eg. 'schema.table')
@@ -42,7 +40,7 @@ def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
         A Chunk object representing the provided text chunk. The Chunk object includes the original text chunk, the source, the document type, the document name, the number of characters in the chunk, the date it was loaded, and the extracted keywords from the chunk content.
 
     Example Usage:
-    ------------
+    -------------
     >>> metadata = {"source": "host/database", "document_type": "ddl", "document_name": "schema.table"}
     >>> document_text = "CREATE TABLE public.users ( id integer NOT NULL, name text NOT NULL);"
     >>> result = string_to_chunk(document_text, metadata)
@@ -56,6 +54,7 @@ def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
     'ddl'
     >>> print(result.document_name)
     'schema.table'
+
     """
     if not isinstance(metadata, dict):
         raise TypeError("Expected dictionary for 'metadata'")
@@ -76,7 +75,7 @@ def string_to_chunk(chunk: str, metadata: dict) -> Chunk:
 
 
 def group_results_by_properties(results: object, group_by_properties: List[str]) -> List:
-    """Groups a list of dictionaries (chunks of data) by given keys and return the grouped data as a list of dictionaries.
+    """Group a list of dictionaries (chunks of data) by given keys and return the grouped data as a list of dictionaries.
 
     Each dictionary in the returned list corresponds to a unique group as determined by `group_by_properties`. The keys of the
     dictionaries are the group properties and a special key 'document_chunks' which stores the associated chunks of data.
@@ -216,6 +215,7 @@ def chunk_text(
 
 class DocumentProcessor:
     """DocumentProcessor is a class that provides utilities to process and handle various types of documents.
+
     It allows you to perform tasks such as checking if a given text is valid Python code or contains SQL statements,
     and chunk documents through the contents while classifying them based on their content.
 
@@ -240,7 +240,9 @@ class DocumentProcessor:
     """
 
     def __init__(self, project_name: str):
-        """This method is the constructor for the class. It initializes the project_name attribute
+        """Initialize class.
+
+        This method is the constructor for the class. It initializes the project_name attribute
         of the object with the provided value.
 
         Parameters
@@ -306,18 +308,73 @@ class DocumentProcessor:
         # Check for SQL code patterns
         return any(re.search(pattern, text) for pattern in sql_patterns)
 
+    def load_chunk_documents(
+            self,
+            path: str | pathlib.Path | List[Tuple[str, str]],
+            extension: Optional[str] = None,
+            chunk_size: int = LOAD_DOC_CHUNK_SIZE,
+            chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP):
+        """Execute loading and chunking of documents."""
+        docs = self.load_documents(path, extension=extension)
+        chunks = self.chunk_documents(docs, extension=extension,
+                                      chunk_size=chunk_size,
+                                      chunk_overlap=chunk_overlap)
+        return chunks
+
+    def load_documents(self, inputs: str | pathlib.Path | List[Tuple[str,str]], 
+                       extension: Optional[str] = None) -> List[Document]:
+        """Load Documents from given path and return documents.
+
+        It can also take a list of texts as input as List[Tuple[str,str]].
+        For each tuple the first entry is the text and the second the filename
+        to use for determining the extension. Extension is only used when directory path is given.
+        """
+        if isinstance(inputs, (str, pathlib.Path)):
+            my_path = pathlib.Path(inputs)
+            if not my_path.exists():
+                msg = f"The path {my_path.__str__} does not exist."
+                raise FileNotFoundError(msg)
+            if my_path.is_file():
+                loader = TextLoader(my_path)
+            elif my_path.is_dir():
+                if not extension:
+                    loader = DirectoryLoader(my_path, glob="**/*.*", loader_cls=TextLoader)
+                else:
+                    msg = f"Extension {extension} not allowed. Allowed Extensions are {ALLOWED_EXTENSIONS}."
+                    if extension[0] != ".":
+                        extension = "." + extension
+                    if extension not in ALLOWED_EXTENSIONS:
+                        raise ValueError(msg)
+                    loader = DirectoryLoader(my_path, glob=f"**/*{extension}", loader_cls=TextLoader)
+            else:
+                msg = f"{my_path} does not exist or is a special file (e.g., socket, device file, etc.)."
+                raise FileNotFoundError(msg)
+        else:
+            loader = string_loader.StringDocumentLoader(inputs)
+
+        documents = loader.load()
+        files = [doc for doc in documents 
+                 if pathlib.Path(doc.metadata.get("source","")).suffix in ALLOWED_EXTENSIONS]
+        disallowed_files = [pathlib.Path(doc.metadata.get("source","")).name for doc in documents
+                            if pathlib.Path(doc.metadata.get("source","")).suffix not in ALLOWED_EXTENSIONS]
+
+        if len(disallowed_files) > 0:
+            error_msg = (
+                f"""The extensions of following files are not allowed: {disallowed_files}. \n
+                Allowed extensions: {ALLOWED_EXTENSIONS}"""
+            )
+            raise ValueError(error_msg)
+
+        return files
+
     def chunk_documents(
         self,
-        path: str,
+        documents: List[Document],
         extension: Optional[str] = None,
         chunk_size: int = LOAD_DOC_CHUNK_SIZE,
         chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP,
     ):
-        """Loads documents from a given path and chunks them according to the specified parameters.
-
-        This method takes in a path to a directory or a single file, loads the documents found
-        (filtered by the provided extension if any), and splits them into chunks using the specified
-        chunk size and overlap.
+        """Chunk a list of documents in documents to specified size.
 
         It categorizes the loaded documents into three distinct groups based on their content: Python code documents,
         SQL statements documents and text documents. Each group of documents is then split into chunks using different
@@ -327,15 +384,12 @@ class DocumentProcessor:
 
         Parameters
         ----------
-        path : str
-            Path to the file or directory containing files to be chunked.
-
-        extension : Optional[str] = None
-            File extension to filter the files in the directory. If not provided, all files in the directory will be loaded.
-
+        documents : List[Document]
+            List of Langchain Documents for chunking.
+        extension : Optional[str]
+            Optional string with the extension info.
         chunk_size : int = 2000
             The size of chunks in characters into which to split the documents. Default is 2000 characters.
-
         chunk_overlap : int = 200
             The size in characters of the overlap between consecutive chunks. Default is 200 characters.
 
@@ -361,43 +415,23 @@ class DocumentProcessor:
         ([<Chunk object>, <Chunk object>, ...], {"document1": 5000, "document2": 4000, ...})
 
         """
-        if not os.path.exists(path):
-            msg = f"The path {path} does not exist."
-            raise FileNotFoundError(msg)
-
-        if os.path.isfile(path):
-            loader = TextLoader(path)
-            extension = os.path.splitext(path)[1][1:]  # Extract the file extension without the dot
-        elif os.path.isdir(path):
-            loader = DirectoryLoader(path, glob=f"**/*.{extension}", loader_cls=TextLoader)
-
-        else:
-            msg = f"{path} does not exist or is a special file (e.g., socket, device file, etc.)."
-            raise FileNotFoundError(msg)
-
-        if extension not in ALLOWED_EXTENSIONS:
-            error_msg = (
-                f"The file extension .{extension} is not allowed. Allowed extensions: {ALLOWED_EXTENSIONS}"
-            )
-            raise ValueError(error_msg)
-
-        documents = loader.load()
         doc_lengths = {doc.metadata["source"]: len(doc.page_content) for doc in documents}
 
         python_documents = [
             doc
             for doc in documents
-            if self.is_python_code(doc.page_content) and not self.is_sql_statements(doc.page_content)
+            if pathlib.Path(doc.metadata.get("source","")).suffix == ".py"
         ]
         sql_documents = [
             doc
             for doc in documents
-            if not self.is_python_code(doc.page_content) and self.is_sql_statements(doc.page_content)
+            if pathlib.Path(doc.metadata.get("source","")).suffix == ".sql"
         ]
         text_documents = [
             doc
             for doc in documents
-            if not self.is_python_code(doc.page_content) and not self.is_sql_statements(doc.page_content)
+            if doc not in sql_documents
+            if doc not in python_documents
         ]
 
         python_splitter = RecursiveCharacterTextSplitter.from_language(
@@ -435,5 +469,4 @@ class DocumentProcessor:
             )
             for chunk in documents_chunks
         ]
-
         return chunks
