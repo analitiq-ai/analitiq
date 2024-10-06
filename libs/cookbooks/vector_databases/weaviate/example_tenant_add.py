@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 vdb_params = {
-    "collection_name": "Analitiq",
-    "tenant_name": "d3449862-40f1-708f-1e1e-2ebff76034f5",
+    "collection_name": os.getenv("WEAVIATE_COLLECTION"),
+    "tenant_name": os.getenv("WEAVIATE_TENANT_NAME"),
     "type": os.getenv("VDB_TYPE"),
     "host": os.getenv("WEAVIATE_URL"),
     "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
