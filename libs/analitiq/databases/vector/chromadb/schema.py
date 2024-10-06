@@ -18,10 +18,10 @@ class FileMetadata(BaseModel):
 class DocChunk(BaseModel):
     """Represents a chunk of text in a document."""
 
-    project_name: str
     document_name: str
     document_type: str
     content: str
     source: str
     document_num_char: int
     chunk_num_char: int
+    document_uuid: str

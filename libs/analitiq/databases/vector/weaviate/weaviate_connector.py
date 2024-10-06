@@ -2,7 +2,6 @@
 
 import logging
 from typing import List, Dict, Any, Tuple
-
 import weaviate
 from weaviate.auth import AuthApiKey
 from weaviate.util import generate_uuid5
@@ -20,6 +19,7 @@ from analitiq.utils.document_processor import (
 from analitiq.utils.keyword_extractions import extract_keywords
 from analitiq.databases.vector.utils.analitiq_vectorizer import AnalitiqVectorizer
 from weaviate.collections.classes.internal import QueryReturn
+from analitiq.databases.vector.schema import Chunk
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +71,31 @@ def search_only(func):
         return func(*args, **kwargs)
 
     return wrapper
+
+
+# Define a reusable search method that encapsulates the common logic
+def search_and_handle_errors(search_func, *args, logger, **kwargs):
+    """
+    Executes the given search function, handles any errors that occur, and logs them.
+
+    :param search_func: The search function to execute.
+    :param args: Additional positional arguments to pass to the search function.
+    :param logger: The logger to use for logging any errors.
+    :param kwargs: Additional keyword arguments to pass to the search function.
+    :return: The result of the search function.
+    :raises: Any exception that occurs during the search.
+    """
+    try:
+        return search_func(*args, **kwargs)
+    except weaviate.exceptions.WeaviateQueryError as e:
+        if 'tenant not found' in str(e) or 'no such prop' in str(e) :
+            logger.warning(str(e))
+            return QueryReturn(objects=[])
+        else:
+            raise e
+    except Exception as e:
+        logger.error(f"Error during search: {e}")
+        raise e
 
 
 class WeaviateConnector(BaseVectorDatabase):
@@ -145,7 +170,7 @@ class WeaviateConnector(BaseVectorDatabase):
             self.connected = False
             logger.info("Closed connection to Weaviate")
 
-    def __get_tenant_collection_object(self, collection_name: str, tenant_name: str) -> object:
+    def __get_tenant_collection_object(self) -> object:
         """Returns the tenant-specific collection object for multi-tenancy.
 
         Parameters
@@ -161,11 +186,11 @@ class WeaviateConnector(BaseVectorDatabase):
             The collection object specific to the tenant.
 
         """
-        multi_collection = self.client.collections.get(collection_name)
-        logger.info(f"Existing VDB Collection name: {collection_name}")
+        tenant_name = self.params.get("tenant_name")
+        collection_name = self.params.get("collection_name", "default_collection")
+        logger.info(f"Existing VDB Collection name: {collection_name} with tenant: {tenant_name}")
 
-        # Get collection specific to the required tenant
-        return multi_collection.with_tenant(tenant_name)
+        return self.client.collections.get(collection_name).with_tenant(tenant_name)
 
     def create_collection(self, collection_name: str) -> str:
         """Create a collection in a Weaviate database.
@@ -199,29 +224,42 @@ class WeaviateConnector(BaseVectorDatabase):
         "MyCollection"
 
         """
-        check = self.client.collections.exists(collection_name)
+        with self:
+            check = self.client.collections.exists(collection_name)
 
         if check:
+            logger.info(f"Collection exists: {collection_name}")
             return collection_name
 
-        self.client.collections.create(
-            collection_name,
-            # enable multi_tenancy_config
-            multi_tenancy_config=Configure.multi_tenancy(enabled=True),
-        )
+        with self:
+            result = self.client.collections.create(
+                collection_name,
+                multi_tenancy_config=Configure.multi_tenancy(
+                    enabled=True,
+                    auto_tenant_creation=True
+                )
+            )
 
-        tenants = [Tenant(name=collection_name)]
-
-        collection = self.client.collections.get(collection_name)
-
-        # Add a tenant to the collection. Right now the tenant is the same as the collection.
-        # In the future, this could be users
-        collection.tenants.create(tenants=tenants)
         logger.info(f"Collection created {collection_name}")
 
-        return collection_name
+        return result
 
-    def load_chunks(self, chunks: List[Dict[str, Any]]) -> int:
+    def collection_add_tenant(self, tenant_name: str) -> bool:
+        """
+        Add a tenant to Weaviate collection
+
+        :param tenant_name: The name of the tenant to be added to the collection.
+        :return: The result of adding the tenant to the collection.
+        """
+        tenants = [Tenant(name=tenant_name)]
+
+        collection_name = self.params.get("collection_name")
+        multi_collection = self.client.collections.get(collection_name)
+        multi_collection.tenants.create(tenants=tenants)
+
+        return True
+
+    def load_chunks(self, chunks: List[Chunk]) -> int:
         """Load chunks into Weaviate.
 
         This method loads a list of chunks into the Weaviate Vector Database. Each chunk is expected
@@ -244,32 +282,30 @@ class WeaviateConnector(BaseVectorDatabase):
             If there is an error during the loading process.
 
         """
-        chunks_loaded = 0
-        try:
-            with self:  # Ensure connection is properly handled
-                collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
 
-                with collection.batch.dynamic() as batch:
-                    for chunk in chunks:
-                        uuid = generate_uuid5(chunk.model_dump())
-                        hf_vector = self.vectorizer.vectorize(chunk.content)
-                        try:
-                            response = batch.add_object(
-                                properties=chunk.model_dump(),
-                                uuid=uuid,
-                                vector=hf_vector,
-                            )
-                            logger.info(response)
-                            chunks_loaded += 1
-                        except Exception as e:
-                            raise e
+        collection = self.__get_tenant_collection_object()
+        with collection.batch.dynamic() as batch:
 
-            logger.info("Loaded chunks: %s", chunks_loaded)
+            for chunk in chunks:
+                chunk_model_json = chunk.model_dump()
 
-        except Exception as e:
-            logger.error(f"Error loading chunks into Weaviate: {e}")
+                uuid = generate_uuid5(chunk_model_json)
+                hf_vector = self.vectorizer.vectorize(chunk.content)
+                try:
+                    response = batch.add_object(
+                        properties=chunk_model_json,
+                        uuid=uuid,
+                        vector=hf_vector,
+                    )
+                    logger.info(response)
+                except Exception as e:
+                    raise e
 
-        return chunks_loaded
+        # Check for failed objects
+        if len(collection.batch.failed_objects) > 0:
+            logger.warning(f"Failed to import {len(collection.batch.failed_objects)} objects. {collection.batch.failed_objects[0].message}")
+
+        return len(chunks) - len(collection.batch.failed_objects)
 
     def load_file(self, path: str) -> int:
         """Load a file into Weaviate.
@@ -325,6 +361,7 @@ class WeaviateConnector(BaseVectorDatabase):
 
         return self.load_chunks(chunks)
 
+
     @search_only
     def kw_search(self, query: str, limit: int = 3) -> QueryReturn:
         """Perform a keyword search in the Weaviate database.
@@ -366,19 +403,16 @@ class WeaviateConnector(BaseVectorDatabase):
         logger.info("Extracted keywords to search for: %s", search_kw)
         response = QueryReturn(objects=[])
 
-        try:
-            collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
-            response: QueryReturn = collection.query.bm25(
+        def ksearch():
+            collection = self.__get_tenant_collection_object()
+            return collection.query.bm25(
                 query=search_kw,
                 query_properties=QUERY_PROPERTIES,
                 return_metadata=MetadataQuery(score=True, distance=True),
                 limit=limit,
             )
-        except Exception as e:
-            logger.error(f"Weaviate error {e}")
 
-        # logger.info(f"Weaviate Keyword search result: {response}")
-        return response
+        return search_and_handle_errors(ksearch, logger=logger)
 
     @search_only
     def vector_search(self, query: str, limit: int = 3) -> QueryReturn:
@@ -415,19 +449,16 @@ class WeaviateConnector(BaseVectorDatabase):
         """
         response = QueryReturn(objects=[])
 
-        try:
+        def vsearch() -> QueryReturn:
             query_vector = self.vectorizer.vectorize(query)
-            collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
-            response: QueryReturn = collection.query.near_vector(
+            collection = self.__get_tenant_collection_object()
+            return collection.query.near_vector(
                 near_vector=query_vector,
                 limit=limit,
                 return_metadata=MetadataQuery(distance=True, score=True),
             )
-        except Exception as e:
-            logger.error(f"Weaviate error {e}")
 
-        # logger.info(f"Weaviate vector search result: {response}")
-        return response
+        return search_and_handle_errors(vsearch, logger=logger)
 
     def search(self, query: str, limit: int = 3) -> QueryReturn:
         return self.hybrid_search(query, limit)
@@ -455,17 +486,13 @@ class WeaviateConnector(BaseVectorDatabase):
         """
         response = QueryReturn(objects=[])
 
-        try:
+        def search():
             kw_results = self.kw_search(query, limit)
             vector_results = self.vector_search(query, limit)
 
-            response = self.__combine_and_rerank_results(kw_results, vector_results)
-        except Exception as e:
-            logger.error(f"Weaviate error {e}")
-            raise e
+            return self.__combine_and_rerank_results(kw_results, vector_results)
 
-        # logger.info(f"Weaviate Hybrid search result: {response}")
-        return response
+        return search_and_handle_errors(search, logger=logger)
 
     @staticmethod
     def __combine_and_rerank_results(
@@ -563,7 +590,7 @@ class WeaviateConnector(BaseVectorDatabase):
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
 
-        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
+        collection = self.__get_tenant_collection_object()
         try:
             query_vector = self.vectorizer.vectorize(query)
 
@@ -587,12 +614,50 @@ class WeaviateConnector(BaseVectorDatabase):
             return response
 
     def filter(self, filter_expression: dict) -> QueryReturn:
-        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
+        """
+        Query objects from the tenant-specific database collection based on a filter expression.
+
+        This method establishes a connection to the appropriate database collection
+        specific to the tenant. It then builds a query from the provided filter expression
+        using the QueryBuilder. The fetched objects are returned along with their creation
+        and last update time.
+
+        Parameters:
+        ----------
+        filter_expression : dict
+            The expression used to filter which objects will be queried. The expressed
+            conditions must be in the form of a dictionary where the keys represent
+            the property fields of the objects and the values specify the conditions
+            for filtering. The conditions could include operators such as "=", ">=",
+            "<=", etc. Nested conditions can be expressed using logical operators such as "and" and "or".
+
+        Returns:
+        -------
+        QueryReturn
+            An instance of QueryReturn which contains the fetched objects and their metadata.
+
+        Examples:
+        --------
+        >>> filter(self, {"property": "name", "operator": "=", "value": "John"})
+
+        This example shows how to use the method to fetch objects whose 'name' property is 'John'.
+
+        Note:
+        ----
+        The actual structure and content of the returned QueryReturn depend on the schema and data in the specific collection.
+
+        """
+
+        collection = self.__get_tenant_collection_object()
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
 
         response: QueryReturn = collection.query.fetch_objects(
-            filters=filters
+            filters=filters,
+            return_metadata=MetadataQuery(
+                creation_time=True,
+                last_update_time=True
+            )
         )
 
         return response
@@ -659,59 +724,16 @@ class WeaviateConnector(BaseVectorDatabase):
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
 
-        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
+        collection = self.__get_tenant_collection_object()
 
-        response = collection.aggregate.over_all(total_count=True, filters=filters)
+        def aggregation():
+            return collection.aggregate.over_all(total_count=True, filters=filters)
 
-        return response
-
-    def filter_delete(self, property_name: str, property_value: str):
-        """
-            Filter out objects and delete them from a given collection in Weaviate,
-            a cloud-native, modular, real-time and scalable Semantic Search Engine.
-
-            This method creates a QueryBuilder instance, gets the collection object for a specific tenant,
-            applies the filter on it, and deletes the matching records.
-
-            Parameters:
-            ----------
-            filter_expression : dict
-                A Python dictionary representing a filter expression that decides which objects should be selected for deletion.
-                The key is the property name and the value is the property value that needs to be matched.
-
-            Returns:
-            -------
-            Response
-                A weaviate-client Response object which contains the status and details of the delete operation.
-
-            Examples:
-            --------
-            >>> filter_delete({'property_name': 'age', 'property_value': 18})
-            <Response [200]>
-            This implies that all objects with the 'age' property equal to 18 have been removed.
-
-            Note:
-            ----
-            This method relies on the weaviate-client library to interact with the Weaviate Semantic Search Engine.
-            Make sure you have it installed and correctly configured to interact with your Weaviate instance.
-
-            Ensure that the collection and property exist in your Weaviate instance before performing the delete operation.
-        """
-
-
-        query_builder = QueryBuilder()
-
-        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
-
-        response = collection.data.delete_many(
-            where=Filter.by_property(property_name).equal(property_value)
-        )
-
-        return response
+        return search_and_handle_errors(aggregation, logger=logger)
 
     def filter_group_count(self, filter_expression: dict, group_by_prop: str) -> AggregateGroupByReturn:
         """Example response:
-        AggregateGroupByReturn(groups=[AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.068792Z'), properties={}, total_count=1), AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.067935Z'), properties={}, total_count=1), AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.06836Z'), properties={}, total_count=1)])
+        AggregateGroupByReturn(groups=[AggregateGroup(grouped_by=GroupedBy(prop='created_ts', value='2024-09-24T07:11:53.068792Z'), properties={}, total_count=1), AggregateGroup(grouped_by=GroupedBy(prop='created_ts', value='2024-09-24T07:11:53.067935Z'), properties={}, total_count=1), AggregateGroup(grouped_by=GroupedBy(prop='date_loaded', value='2024-09-24T07:11:53.06836Z'), properties={}, total_count=1)])
 
         Parameters
         ----------
@@ -729,7 +751,7 @@ class WeaviateConnector(BaseVectorDatabase):
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
 
-        collection = self.__get_tenant_collection_object(self.collection_name, self.collection_name)
+        collection = self.__get_tenant_collection_object()
 
         response = collection.aggregate.over_all(
             total_count=True,
@@ -738,6 +760,76 @@ class WeaviateConnector(BaseVectorDatabase):
         )
 
         return response
+
+    def filter_delete(self, property_name, property_value):
+        collection = self.__get_tenant_collection_object()
+
+        response = collection.data.delete_many(
+            where=weaviate.classes.query.Filter.by_property(property_name).equal(property_value)
+        )
+
+        return response
+
+    def delete_on_metadata_and(self, filter_list: List):
+        """
+        Removes multiple documents from the collection based on provided filters.
+
+        The function converts the input list of dictionaries into Weaviate DELETE filters,
+        uses the filters to determine the documents that match all specified properties,
+        and deletes those documents from the Weaviate collection.
+
+        Args:
+            filter_list (List[Dict]): A list of dictionaries each containing the property name,
+                                      operator, and value to filter the documents by. An AND operation
+                                      is performed across filters.
+
+                                      Each dict has the form:
+                                          {
+                                              "property": <property name>,
+                                              "operator": <comparison operator>,
+                                              "value": <value to compare>
+                                          }
+
+                                      Currently, only the "=" (equal) operator is supported.
+
+        Returns:
+            result : The Weaviate Delete Result object that contains information about the delete operation,
+                     like the number of records deleted.
+
+        Raises:
+            WeaviateException: If the delete operation is not successful.
+
+        Examples:
+            metadata = [
+                {"property": "document_name", "operator": "=", "value": "doc1"},
+                {"property": "document_type", "operator": "=", "value": "type1"},
+                {"property": "source", "operator": "=", "value": "src1"}
+            ]
+
+            result = instance.delete_on_metadata_and(metadata)
+
+        """
+        initial_filter = None
+
+        for filter_dict in filter_list:
+            prop = filter_dict["property"]
+            val = filter_dict["value"]
+
+            if filter_dict["operator"] == "=":
+                current_filter = Filter.by_property(prop).equal(val)
+
+            if initial_filter is None:
+                initial_filter = current_filter
+            else:
+                initial_filter = initial_filter & current_filter
+
+        collection = self.__get_tenant_collection_object()
+
+        result = collection.data.delete_many(
+            where=( initial_filter )
+        )
+
+        return result
 
     def delete_collection(self, collection_name: str):
         """Deletes a collection from the Weaviate Vector Database.
@@ -781,3 +873,4 @@ class WeaviateConnector(BaseVectorDatabase):
         except Exception:
             logger.error(f"Error deleting collection: {e}")
             return False
+

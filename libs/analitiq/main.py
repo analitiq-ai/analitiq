@@ -223,7 +223,7 @@ class Analitiq:
         # Load vector and relational db
         try:
             self.vdb = VectorDatabaseFactory.create_database(self.vdb_params)
-            self.llm = LlmFactory(self.llm_params)
+            self.llm = LlmFactory.create_llm(self.llm_params)
             self.db = RelationalDatabaseFactory.create_database(self.db_params)
         except Exception as e:
             raise Exception(str(e)) from e

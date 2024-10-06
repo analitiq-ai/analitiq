@@ -119,12 +119,12 @@ class Sql:
                     },
                 ]
             }
-            response = self.vdb.filter_count(filter_expression)
+            with self.vdb:
+                response = self.vdb.filter_count(filter_expression)
 
             loaded_chunk_counter = 0
-            if response.total_count and response.total_count > 0:
+            if hasattr(response, 'total_count') and response.total_count > 0:
                 logger.info(f"[VDB] Found {response.total_count} ddl documents for schema {schema_name}.")
-                # TODO add checking here for when it was last loaded
 
             else:  # if the DDL does not exist in VDB, we load it
                 chunks = []
@@ -136,7 +136,8 @@ class Sql:
                     chunks.append(chunk)
                     loaded_chunk_counter += +1
 
-                chunks_loaded = self.vdb.load_chunks(chunks)
+                with self.vdb:
+                    chunks_loaded = self.vdb.load_chunks(chunks) ## TODO shuld this logic even be here? Uploading documents should be outside the reasoning for this Agent.
 
                 logger.info(
                     f"Loaded {loaded_chunk_counter} chunks for schema {schema_name} into Vector Database."
@@ -264,7 +265,8 @@ class Sql:
             ]
         }
 
-        response = self.vdb.search_filter(query, filter_expression, ["document_name", "document_type"])
+        with self.vdb:
+            response = self.vdb.search_filter(query, filter_expression, ["document_name", "document_type"])
 
         if not response:
             logger.info(
@@ -423,7 +425,9 @@ class Sql:
             ]
         }
 
-        return self.vdb.search_filter(user_prompt, filter_expression, ["document_name"])
+        with self.vdb:
+            result = self.vdb.search_filter(user_prompt, filter_expression, ["document_name"])
+        return result
 
     def run(self, user_prompt: str) -> BaseResponse:
         """Main method to run the SQL agent based on the user's prompt.
