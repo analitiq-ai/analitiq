@@ -57,6 +57,6 @@ class CustomRecursiveJsonSplitter(RecursiveJsonSplitter):
             chunks = self.split_json(text)
             for chunk in chunks:
                 split_doc = doc.copy()
-                split_doc.page_content = chunk
+                split_doc.page_content = json.dumps(chunk)
                 split_docs.append(split_doc)
         return split_docs

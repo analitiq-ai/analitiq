@@ -3,13 +3,16 @@ import re
 import pathlib
 import ast
 from datetime import datetime, timezone
+
 from langchain_core.documents.base import Document
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from analitiq.databases.vector.schema import Chunk
 from analitiq.utils import (sql_recursive_text_splitter,
                             custom_recursive_json_splitter,
-                            string_loader, keyword_extractions)
+                            string_loader,
+                            yaml_loader,
+                             keyword_extractions)
 from analitiq.databases.vector.schema import DocumentSchema
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -296,7 +299,10 @@ class DocumentProcessor:
                 msg = f"The path {my_path.__str__} does not exist."
                 raise FileNotFoundError(msg)
             if my_path.is_file():
-                loader = TextLoader(my_path)
+                if my_path.suffix in (".yml",".yaml"):
+                    loader = yaml_loader.YamlLoader(my_path)
+                else:
+                    loader = TextLoader(my_path)
             elif my_path.is_dir():
                 if not extension:
                     loader = DirectoryLoader(my_path, glob="**/*.*", loader_cls=TextLoader)
@@ -416,7 +422,7 @@ class DocumentProcessor:
         sql_chunks = sql_splitter.split_documents(sql_documents)
 
         yml_splitter = custom_recursive_json_splitter.CustomRecursiveJsonSplitter(
-            chunk_size=int(chunk_size), chunk_overlap=int(chunk_overlap)
+            max_chunk_size=int(chunk_size)
         )
         yml_chunks = yml_splitter.split_documents(yml_documents)
 
@@ -428,7 +434,6 @@ class DocumentProcessor:
         documents_chunks.extend(python_chunks)
         documents_chunks.extend(sql_chunks)
         documents_chunks.extend(yml_chunks)
-
         chunks = [
             Chunk(
                 content=chunk.page_content,
@@ -443,3 +448,9 @@ class DocumentProcessor:
             for chunk in documents_chunks
         ]
         return chunks
+
+data = pathlib.Path(__file__).parent / "data" / "test.yml"
+
+processor = DocumentProcessor("dummy")
+
+result = processor.load_chunk_documents(data)
