@@ -7,8 +7,9 @@ from langchain_core.documents.base import Document
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from analitiq.databases.vector.schema import Chunk
-from analitiq.utils import sql_recursive_text_splitter, string_loader
-from analitiq.utils import keyword_extractions
+from analitiq.utils import (sql_recursive_text_splitter,
+                            custom_recursive_json_splitter,
+                            string_loader, keyword_extractions)
 from analitiq.databases.vector.schema import DocumentSchema
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -387,11 +388,17 @@ class DocumentProcessor:
             for doc in documents
             if pathlib.Path(doc.metadata.get("source","")).suffix == ".sql"
         ]
+        yml_documents = [
+            doc
+            for doc in documents
+            if pathlib.Path(doc.metadata.get("source","")).suffix in [".yml", ".yaml"]
+        ]
         text_documents = [
             doc
             for doc in documents
             if doc not in sql_documents
             if doc not in python_documents
+            if doc not in yml_documents
         ]
 
         python_splitter = RecursiveCharacterTextSplitter.from_language(
@@ -408,6 +415,11 @@ class DocumentProcessor:
         )
         sql_chunks = sql_splitter.split_documents(sql_documents)
 
+        yml_splitter = custom_recursive_json_splitter.CustomRecursiveJsonSplitter(
+            chunk_size=int(chunk_size), chunk_overlap=int(chunk_overlap)
+        )
+        yml_chunks = yml_splitter.split_documents(yml_documents)
+
         doc_splitter = RecursiveCharacterTextSplitter(
             chunk_size=int(chunk_size), chunk_overlap=int(chunk_overlap)
         )
@@ -415,6 +427,7 @@ class DocumentProcessor:
 
         documents_chunks.extend(python_chunks)
         documents_chunks.extend(sql_chunks)
+        documents_chunks.extend(yml_chunks)
 
         chunks = [
             Chunk(
