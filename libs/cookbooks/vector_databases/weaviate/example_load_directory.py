@@ -18,7 +18,6 @@ vdb_params = {
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
-with vdb:
-    response = vdb.load_dir('/xxx/xxx/xxx/xxx/models/', 'txt')
+response = vdb.load_dir('/xxx/xxx/xxx/xxx/models/', 'txt')
 
 print(response)

@@ -28,7 +28,6 @@ document = {
     }
 }
 
-with vdb:
-    response = vdb.load_text(document['document_text'], document['metadata'])
+response = vdb.load_text(document['document_text'], document['metadata'])
 
 print(response)

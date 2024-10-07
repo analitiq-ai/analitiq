@@ -10,8 +10,8 @@ from weaviate.collections.classes.internal import QueryReturn
 @pytest.fixture(autouse=True, scope="module")
 def params():
     return {
-        "collection_name": os.getenv("WEAVIATE_COLLECTION"),
-        "tenant_name": f"{os.getenv('WEAVIATE_TENANT_NAME')}",
+        "collection_name": "test",
+        "tenant_name": "test_tenant",
         "type": os.getenv("VDB_TYPE"),
         "host": os.getenv("WEAVIATE_URL"),
         "api_key": os.getenv("WEAVIATE_CLIENT_SECRET"),
@@ -74,34 +74,38 @@ def delete_documents(documents, test_dir: str = "test_dir"):
 
 
 def test_create_collection(vdb):
+    collection_name = vdb.params.get("collection_name")
     with vdb:
-        collection_name = vdb.params.get("collection_name")
         check = vdb.client.collections.exists(collection_name)
-        if check:
-            vdb.delete_collection(collection_name)
 
-        response = vdb.create_collection(collection_name)
-        assert response.name == collection_name.capitalize()
+    if check:
+        vdb.delete_collection(collection_name)
 
+    response = vdb.create_collection(collection_name)
+    assert response.name == collection_name.capitalize()
+
+    with vdb:
         check = vdb.client.collections.exists(collection_name)
-        assert check == True
+
+    assert check == True
 
 
 def test_create_tenant(vdb):
     tenant_name = vdb.params.get("tenant_name")
-    with vdb:
-        collection_name = vdb.params.get("collection_name")
-        vdb.collection_add_tenant(tenant_name)
-        multi_collection = vdb.client.collections.get(collection_name)
 
+    collection_name = vdb.params.get("collection_name")
+    vdb.collection_add_tenant(tenant_name)
+
+    with vdb:
+        multi_collection = vdb.client.collections.get(collection_name)
         tenants = multi_collection.tenants.get()
 
-        if tenant_name in tenants:
-            result = True
-        else:
-            result = False
+    if tenant_name in tenants:
+        result = True
+    else:
+        result = False
 
-        assert result == True
+    assert result == True
 
 
 def test_load_single_document(vdb):
@@ -109,8 +113,7 @@ def test_load_single_document(vdb):
     with open(test_document_path, "w") as f:
         f.write("This is a test document.")
 
-    with vdb:
-        response = vdb.load_file(test_document_path)
+    response = vdb.load_file(test_document_path)
 
     assert response > 0
 
@@ -121,8 +124,7 @@ def test_load_documents_from_directory(vdb):
     test_dir = "test_dir"
     create_documents(test_documents, test_dir)
 
-    with vdb:
-        response = vdb.load_dir(test_dir, "txt")
+    response = vdb.load_dir(test_dir, "txt")
 
     assert response >= 3
 
@@ -140,8 +142,8 @@ def test_keyword_search(vdb):
 
 def test_vector_search(vdb):
     query = "test document"
-    with vdb:
-        result = vdb.vector_search(query)
+
+    result = vdb.vector_search(query)
 
     assert isinstance(result, QueryReturn)
     assert len(result.objects) == 3
@@ -149,8 +151,8 @@ def test_vector_search(vdb):
 
 def test_hybrid_search(vdb):
     query = "test document"
-    with vdb:
-        result = vdb.hybrid_search(query)
+
+    result = vdb.hybrid_search(query)
 
     assert isinstance(result, QueryReturn)
     assert len(result.objects) == 3
@@ -185,8 +187,8 @@ def test_filter_count__equal(vdb):
             },
         ]
     }
-    with vdb:
-        result = vdb.filter_count(filter_expression=filter_expression)
+
+    result = vdb.filter_count(filter_expression=filter_expression)
 
     assert result.total_count == 1
 
@@ -198,8 +200,8 @@ def test_filter_count_and(vdb):
             {"property": "content", "operator": "like", "value": "first"},
         ]
     }
-    with vdb:
-        result = vdb.filter_count(filter_expression)
+
+    result = vdb.filter_count(filter_expression)
 
     assert result.total_count == 1
 
@@ -212,8 +214,8 @@ def test_filter_count__or(vdb):
         ]
     }
 
-    with vdb:
-        result = vdb.filter_count(filter_expression)
+
+    result = vdb.filter_count(filter_expression)
 
     assert result.total_count == 2
 
@@ -231,8 +233,8 @@ def test_filter_count__simple_and_complex_filter(vdb):
         ]
     }
 
-    with vdb:
-        result = vdb.filter_count(filter_expression)
+
+    result = vdb.filter_count(filter_expression)
 
     assert result.total_count == 2
 
@@ -263,8 +265,7 @@ def test_filter_count__complex_filter(vdb):
         ]
     }
 
-    with vdb:
-        result = vdb.filter_count(filter_expression)
+    result = vdb.filter_count(filter_expression)
 
     assert result.total_count == 1
 
@@ -276,8 +277,7 @@ def test_filter_group_count(vdb):
         "value": "test",
     }
 
-    with vdb:
-        result = vdb.filter_group_count(filter_expression, "document_name")
+    result = vdb.filter_group_count(filter_expression, "document_name")
 
     # Assert that there are exactly 3 AggregateGroup objects
     assert len(result.groups) == 3
@@ -304,8 +304,7 @@ def test_search_filter(vdb):
         ]
     }
 
-    with vdb:
-        result = vdb.search_filter(query, filter_expression)
+    result = vdb.search_filter(query, filter_expression)
 
     assert len(result.objects) == 4
 
@@ -316,7 +315,7 @@ def test_filter_count__like(vdb):
             {
                 "and": [
                     {"property": "document_name", "operator": "like", "value": "test"},
-                    {"property": "source", "operator": "like", "value": "test"},
+                    {"property": "document_source", "operator": "like", "value": "test"},
                 ]
             },
             {
@@ -335,8 +334,8 @@ def test_filter_count__like(vdb):
             },
         ]
     }
-    with vdb:
-        result = vdb.filter_count(filter_expression)
+
+    result = vdb.filter_count(filter_expression)
 
     assert result.total_count == 3
 
@@ -348,16 +347,14 @@ def test_filter(vdb):
         ]
     }
 
-    with vdb:
-        result = vdb.filter(filter_expression)
-        print(QueryReturn)
+    result = vdb.filter(filter_expression)
+
     assert len(result.objects) == 1
 
 
 def test_filter_delete(vdb):
 
-    with vdb:
-        result = vdb.filter_delete('document_name', 'test_document_1.txt')
+    result = vdb.filter_delete('document_name', 'test_document_1.txt')
 
     assert result.matches == 1
     assert result.successful == 1
@@ -365,13 +362,13 @@ def test_filter_delete(vdb):
 
 def test_delete_collection(vdb):
 
-    with vdb:
-        collection_name = vdb.params.get("collection_name")
-        result = vdb.delete_collection(collection_name)
+    collection_name = vdb.params.get("collection_name")
+
+    result = vdb.delete_collection(collection_name)
+
     assert result == True
 
+    collection_name = vdb.params.get("collection_name")
     with vdb:
-        collection_name = vdb.params.get("collection_name")
         check = vdb.client.collections.exists(collection_name)
     assert check == False
-

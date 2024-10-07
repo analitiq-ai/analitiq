@@ -18,9 +18,10 @@ vdb_params = {
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
-with vdb:
-    multi_collection = vdb.client.collections.get(vdb_params['collection_name'])
+multi_collection = vdb.client.collections.get(vdb_params['collection_name'])
 
-    tenants = multi_collection.tenants.get()
+tenants = multi_collection.tenants.get()
 
-    print(tenants)
+vdb.close()
+
+print(tenants)

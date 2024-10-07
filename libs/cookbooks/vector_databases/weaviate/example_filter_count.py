@@ -17,17 +17,32 @@ vdb_params = {
 
 
 filter_expression = {
-    "and": [
+    "or": [
         {
-            "property": "document_type",
-            "operator": "=",
-            "value": 'txt',
+            "and": [
+                {"property": "document_name", "operator": "like", "value": "test"},
+                {"property": "document_source", "operator": "like", "value": "test"},
+            ]
+        },
+        {
+            "and": [
+                {
+                    "property": "document_name",
+                    "operator": "=",
+                    "value": "test_document_1.txt",
+                },
+                {
+                    "property": "document_name",
+                    "operator": "=",
+                    "value": "test_document_1",
+                },
+            ]
         },
     ]
 }
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
-with vdb:
-    response = vdb.filter_count(filter_expression)
-    print(response)
+
+response = vdb.filter_count(filter_expression)
+print(response)

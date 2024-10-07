@@ -18,7 +18,6 @@ vdb_params = {
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
-with vdb:
-    response = vdb.search_filter('hello')
+response = vdb.search_filter('hello')
 
 print(response)

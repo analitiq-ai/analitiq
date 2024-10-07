@@ -18,7 +18,6 @@ vdb_params = {
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
-with vdb:
-    response = vdb.filter_delete("document_source", 'system')
+response = vdb.filter_delete("document_source", 'system')
 
 print(response)
