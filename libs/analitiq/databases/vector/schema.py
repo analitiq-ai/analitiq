@@ -2,7 +2,6 @@ from pydantic import BaseModel, Field
 from typing import Optional, List
 from datetime import datetime
 from enum import Enum
-import uuid
 
 
 def current_timestamp():
@@ -65,4 +64,4 @@ class Chunk(BaseModel):
     document_uuid: str = None
     chunk_num_char: int
     content_kw: str = None
-    created_ts: str = Field(default_factory=current_timestamp)
+    created_ts: datetime = Field(default_factory=current_timestamp)

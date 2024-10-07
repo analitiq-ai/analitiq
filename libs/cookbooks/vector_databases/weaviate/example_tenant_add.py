@@ -17,8 +17,7 @@ vdb_params = {
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
-with vdb:
-    response = vdb.collection_add_tenant(vdb_params['tenant_name'])
+response = vdb.collection_add_tenant(vdb_params['tenant_name'])
 
 
 print(response)

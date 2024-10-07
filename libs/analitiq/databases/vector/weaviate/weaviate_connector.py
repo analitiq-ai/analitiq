@@ -227,11 +227,10 @@ class WeaviateConnector(BaseVectorDatabase):
         with self:
             check = self.client.collections.exists(collection_name)
 
-        if check:
-            logger.info(f"Collection exists: {collection_name}")
-            return collection_name
+            if check:
+                logger.info(f"Collection exists: {collection_name}")
+                return collection_name
 
-        with self:
             result = self.client.collections.create(
                 collection_name,
                 multi_tenancy_config=Configure.multi_tenancy(
@@ -254,8 +253,10 @@ class WeaviateConnector(BaseVectorDatabase):
         tenants = [Tenant(name=tenant_name)]
 
         collection_name = self.params.get("collection_name")
-        multi_collection = self.client.collections.get(collection_name)
-        multi_collection.tenants.create(tenants=tenants)
+
+        with self:
+            multi_collection = self.client.collections.get(collection_name)
+            multi_collection.tenants.create(tenants=tenants)
 
         return True
 
@@ -282,24 +283,25 @@ class WeaviateConnector(BaseVectorDatabase):
             If there is an error during the loading process.
 
         """
+        with self:
+            collection = self.__get_tenant_collection_object()
 
-        collection = self.__get_tenant_collection_object()
-        with collection.batch.dynamic() as batch:
+            with collection.batch.dynamic() as batch:
 
-            for chunk in chunks:
-                chunk_model_json = chunk.model_dump()
+                for chunk in chunks:
+                    chunk_model_json = chunk.model_dump()
 
-                uuid = generate_uuid5(chunk_model_json)
-                hf_vector = self.vectorizer.vectorize(chunk.content)
-                try:
-                    response = batch.add_object(
-                        properties=chunk_model_json,
-                        uuid=uuid,
-                        vector=hf_vector,
-                    )
-                    logger.info(response)
-                except Exception as e:
-                    raise e
+                    uuid = generate_uuid5(chunk_model_json)
+                    hf_vector = self.vectorizer.vectorize(chunk.content)
+                    try:
+                        response = batch.add_object(
+                            properties=chunk_model_json,
+                            uuid=uuid,
+                            vector=hf_vector,
+                        )
+                        logger.info(response)
+                    except Exception as e:
+                        raise e
 
         # Check for failed objects
         if len(collection.batch.failed_objects) > 0:
@@ -404,13 +406,14 @@ class WeaviateConnector(BaseVectorDatabase):
         response = QueryReturn(objects=[])
 
         def ksearch():
-            collection = self.__get_tenant_collection_object()
-            return collection.query.bm25(
-                query=search_kw,
-                query_properties=QUERY_PROPERTIES,
-                return_metadata=MetadataQuery(score=True, distance=True),
-                limit=limit,
-            )
+            with self:
+                collection = self.__get_tenant_collection_object()
+                return collection.query.bm25(
+                    query=search_kw,
+                    query_properties=QUERY_PROPERTIES,
+                    return_metadata=MetadataQuery(score=True, distance=True),
+                    limit=limit,
+                )
 
         return search_and_handle_errors(ksearch, logger=logger)
 
@@ -451,12 +454,14 @@ class WeaviateConnector(BaseVectorDatabase):
 
         def vsearch() -> QueryReturn:
             query_vector = self.vectorizer.vectorize(query)
-            collection = self.__get_tenant_collection_object()
-            return collection.query.near_vector(
-                near_vector=query_vector,
-                limit=limit,
-                return_metadata=MetadataQuery(distance=True, score=True),
-            )
+
+            with self:
+                collection = self.__get_tenant_collection_object()
+                return collection.query.near_vector(
+                    near_vector=query_vector,
+                    limit=limit,
+                    return_metadata=MetadataQuery(distance=True, score=True),
+                )
 
         return search_and_handle_errors(vsearch, logger=logger)
 
@@ -590,16 +595,17 @@ class WeaviateConnector(BaseVectorDatabase):
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
 
-        collection = self.__get_tenant_collection_object()
+
         try:
             query_vector = self.vectorizer.vectorize(query)
-
-            response: QueryReturn = collection.query.near_vector(
-                near_vector=query_vector,
-                filters=filters,
-                limit=10,
-                return_metadata=MetadataQuery(distance=True, score=True),
-            )
+            with self:
+                collection = self.__get_tenant_collection_object()
+                response: QueryReturn = collection.query.near_vector(
+                    near_vector=query_vector,
+                    filters=filters,
+                    limit=10,
+                    return_metadata=MetadataQuery(distance=True, score=True),
+                )
 
         except Exception as e:
             logger.error(f"Error retrieving documents: {e}")
@@ -648,17 +654,17 @@ class WeaviateConnector(BaseVectorDatabase):
 
         """
 
-        collection = self.__get_tenant_collection_object()
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
-
-        response: QueryReturn = collection.query.fetch_objects(
-            filters=filters,
-            return_metadata=MetadataQuery(
-                creation_time=True,
-                last_update_time=True
+        with self:
+            collection = self.__get_tenant_collection_object()
+            response: QueryReturn = collection.query.fetch_objects(
+                filters=filters,
+                return_metadata=MetadataQuery(
+                    creation_time=True,
+                    last_update_time=True
+                )
             )
-        )
 
         return response
 
@@ -724,12 +730,13 @@ class WeaviateConnector(BaseVectorDatabase):
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
 
-        collection = self.__get_tenant_collection_object()
+        with self:
+            collection = self.__get_tenant_collection_object()
 
-        def aggregation():
-            return collection.aggregate.over_all(total_count=True, filters=filters)
+            def aggregation():
+                return collection.aggregate.over_all(total_count=True, filters=filters)
 
-        return search_and_handle_errors(aggregation, logger=logger)
+            return search_and_handle_errors(aggregation, logger=logger)
 
     def filter_group_count(self, filter_expression: dict, group_by_prop: str) -> AggregateGroupByReturn:
         """Example response:
@@ -751,22 +758,23 @@ class WeaviateConnector(BaseVectorDatabase):
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
 
-        collection = self.__get_tenant_collection_object()
-
-        response = collection.aggregate.over_all(
-            total_count=True,
-            filters=filters,
-            group_by=GroupByAggregate(prop=group_by_prop),
-        )
+        with self:
+            collection = self.__get_tenant_collection_object()
+            response = collection.aggregate.over_all(
+                total_count=True,
+                filters=filters,
+                group_by=GroupByAggregate(prop=group_by_prop),
+            )
 
         return response
 
     def filter_delete(self, property_name, property_value):
-        collection = self.__get_tenant_collection_object()
 
-        response = collection.data.delete_many(
-            where=weaviate.classes.query.Filter.by_property(property_name).equal(property_value)
-        )
+        with self:
+            collection = self.__get_tenant_collection_object()
+            response = collection.data.delete_many(
+                where=weaviate.classes.query.Filter.by_property(property_name).equal(property_value)
+            )
 
         return response
 
@@ -823,11 +831,11 @@ class WeaviateConnector(BaseVectorDatabase):
             else:
                 initial_filter = initial_filter & current_filter
 
-        collection = self.__get_tenant_collection_object()
-
-        result = collection.data.delete_many(
-            where=( initial_filter )
-        )
+        with self:
+            collection = self.__get_tenant_collection_object()
+            result = collection.data.delete_many(
+                where=( initial_filter )
+            )
 
         return result
 
@@ -867,10 +875,11 @@ class WeaviateConnector(BaseVectorDatabase):
 
         """
         try:
-            self.client.collections.delete(collection_name)
+            with self:
+                self.client.collections.delete(collection_name)
             logger.info(f"Deleted collection '{collection_name}'")
             return True
-        except Exception:
+        except Exception as e:
             logger.error(f"Error deleting collection: {e}")
             return False
 

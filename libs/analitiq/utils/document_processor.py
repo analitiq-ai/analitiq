@@ -383,7 +383,7 @@ class DocumentProcessor:
         chunks = [
             Chunk(
                 content=chunk.page_content,
-                source=chunk.metadata["source"],
+                document_source=chunk.metadata["source"],
                 document_type=extension,
                 document_name=pathlib.Path(chunk.metadata["source"]).name,
                 document_num_char=doc_lengths[chunk.metadata["source"]],

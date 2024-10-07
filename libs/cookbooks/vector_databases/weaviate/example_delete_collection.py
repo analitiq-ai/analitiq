@@ -17,7 +17,7 @@ vdb_params = {
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
 
-with vdb:
-    response = vdb.delete_collection(vdb_params['collection_name'])
+
+response = vdb.delete_collection(vdb_params['collection_name'])
 
 print(response)

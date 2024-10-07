@@ -15,14 +15,15 @@ vdb_params = {
     "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
 }
 
+
 vdb = VectorDatabaseFactory.create_database(vdb_params)
+
 
 response = vdb.create_collection(vdb_params['collection_name'])
 
-#print(response)
+print(response)
 
-#with vdb:
-#    response = vdb.collection_add_tenant(vdb_params['tenant_name'])
+response = vdb.collection_add_tenant(vdb_params['tenant_name'])
 
 print(response)
 

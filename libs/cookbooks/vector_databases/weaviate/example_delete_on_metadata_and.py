@@ -21,7 +21,6 @@ filter_list = [
 ]
 
 vdb = VectorDatabaseFactory.create_database(vdb_params)
-with vdb:
-    result = vdb.delete_on_metadata_and(filter_list)
+result = vdb.delete_on_metadata_and(filter_list)
 
 print(result)
