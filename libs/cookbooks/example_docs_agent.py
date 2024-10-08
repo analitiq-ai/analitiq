@@ -25,7 +25,8 @@ llm = LlmFactory.create_llm(llm_params)
 
 vdb_params = {
     "type": "weaviate",
-    "collection_name": "test",
+    "collection_name": os.getenv("WEAVIATE_COLLECTION"),
+    "tenant_name": os.getenv("WEAVIATE_TENANT_NAME"),
     "host": os.getenv("WEAVIATE_URL"),
     "api_key": os.getenv("WEAVIATE_CLIENT_SECRET"),
 }

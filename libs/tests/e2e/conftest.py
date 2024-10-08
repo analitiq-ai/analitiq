@@ -76,6 +76,7 @@ def vdb_params_fixture(env_vars):
     """Set the vdb Parameters."""
     return {
         "collection_name": env_vars.get("WEAVIATE_COLLECTION"),
+        "tenant_name": os.getenv("WEAVIATE_TENANT_NAME"),
         "type": "weaviate",
         "host": env_vars.get("WEAVIATE_URL"),
         "api_key": env_vars.get("WEAVIATE_CLIENT_SECRET"),

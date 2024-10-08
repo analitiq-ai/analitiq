@@ -1,5 +1,5 @@
 from weaviate.classes.query import Filter
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 
 class PropertyFilter:
@@ -21,6 +21,11 @@ class PropertyFilter:
     def not_equal(self, value: Any) -> Filter:
         return Filter.by_property(self.name).not_equal(value)
 
+    def contains_any(self, value: List) -> Filter:
+        return Filter.by_property(self.name).contains_any(value)
+
+    def contains_all(self, value: List) -> Filter:
+        return Filter.by_property(self.name).contains_all(value)
 
 class QueryBuilder:
     """QueryBuilder
@@ -49,7 +54,10 @@ class QueryBuilder:
             "like": "like",
             "=": "equal",
             "!=": "not_equal",
-            "not like": "not_like",
+            ">": "greater_than",
+            "<": "less_than",
+            "contains_any": "contains_any",
+            "contains_all": "contains_all"
         }
 
     def construct_query(self, expression: Dict[str, Any]) -> Filter:
@@ -66,8 +74,18 @@ class QueryBuilder:
                 return PropertyFilter(prop_name).like(value)
             elif operator == "=":
                 return PropertyFilter(prop_name).equal(value)
-            elif operator == "not like":
-                return PropertyFilter(prop_name).not_like(value)
+            elif operator == "!=":
+                return PropertyFilter(prop_name).not_equal(value)
+            elif operator == "contains_any":
+                # only allowed if value is an array
+                if not isinstance(value, list):
+                    raise ValueError(f"Value must be list: {value}")
+                return PropertyFilter(prop_name).contains_any(value)
+            elif operator == "contains_all":
+                # only allowed if value is list
+                if not isinstance(value, list):
+                    raise ValueError(f"Value must be list: {value}")
+                return PropertyFilter(prop_name).contains_all(value)
             else:
                 # Handle other operators as needed
                 raise ValueError(f"Unsupported operator: {operator}")

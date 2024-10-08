@@ -4,16 +4,22 @@
 
 import pytest
 import asyncio
-from libs.analitiq.base.llm.BaseLlm import BaseLlm
+from analitiq.factories.llm_factory import LlmFactory
 from libs.analitiq.agents.search_vdb.search_vdb import SearchVdb
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
+from dotenv import load_dotenv
 
+@pytest.fixture(autouse=True, scope="module")
+def load_environment():
+    """Loads environment variables from .env file"""
+
+    load_dotenv(".env", override=True)
 
 @pytest.fixture(name="search")
 def search(llm_params, vdb_params):
     """Fixture for setting up the SearchVdB."""
-    llm = BaseLlm(llm_params)
-    vdb = VectorDatabaseFactory(vdb_params)
+    llm = LlmFactory.create_llm(llm_params)
+    vdb = VectorDatabaseFactory.create_database(vdb_params)
     return SearchVdb(llm, vdb=vdb, search_mode="hybrid")
 
 
