@@ -344,10 +344,11 @@ class Sql:
 
                 if not success:
                     # Parse SQL from the error message if the correction also fails
-                    parsed_sql = self.extract_code(result, 'sql')
-                    if parsed_sql:
-                        logger.info(f"Parsed SQL from error message: {parsed_sql}")
-                        success, result = self.execute_sql(parsed_sql)
+                    extractor = CodeExtractor()
+                    extracted_code = extractor.extract_code(result, 'sql')
+                    if extracted_code:
+                        logger.info(f"Parsed SQL from error message: {extracted_code}")
+                        success, result = self.execute_sql(extracted_code)
 
             if success:
                 # Set the result in the response object
@@ -426,10 +427,11 @@ class Sql:
 
                 if not success:
                     # Parse SQL from the error message if the correction also fails
-                    parsed_sql = self.extract_code(result, 'sql')
-                    if parsed_sql:
-                        logger.info(f"Parsed SQL from error message: {parsed_sql}")
-                        success, result = self.execute_sql(parsed_sql)
+                    extractor = CodeExtractor()
+                    extracted_code = extractor.extract_code(result, 'sql')
+                    if extracted_code:
+                        logger.info(f"Parsed SQL from error message: {extracted_code}")
+                        success, result = self.execute_sql(extracted_code)
 
             if success:
                 # Set the result in the response object
