@@ -6,9 +6,8 @@ from analitiq.utils.code_extractor import CodeExtractor
 from analitiq.agents.sql.schema import SQL
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
-from langchain.output_parsers import PydanticOutputParser
 from sqlalchemy.exc import DatabaseError
-from analitiq.agents.sql.prompt import RETURN_RELEVANT_TABLE_NAMES, TEXT_TO_SQL_PROMPT
+from analitiq.agents.sql.prompt import TEXT_TO_SQL_PROMPT
 from langchain_core.exceptions import OutputParserException
 
 
@@ -205,27 +204,6 @@ class Sql:
         return response["SQL_Code"]
 
     @staticmethod
-    def parse_sql_from_error(error_message: str) -> Optional[str]:
-        """Attempts to parse the corrected SQL from the error message if available.
-
-        Args:
-        ----
-            error_message (str): The error message containing the suggested SQL correction.
-
-        Returns:
-        -------
-            Optional[str]: The parsed corrected SQL code if available, otherwise None.
-
-        """
-        import re
-
-        # Use regex to extract SQL code from the error message
-        match = re.search(r"```sql\n(.*?)\n```", error_message, re.DOTALL)
-        if match:
-            return match.group(1).strip()
-        return None
-
-    @staticmethod
     def glue_document_chunks(documents):
         """Glues document chunks into a single coherent document.
 
@@ -366,7 +344,7 @@ class Sql:
 
                 if not success:
                     # Parse SQL from the error message if the correction also fails
-                    parsed_sql = self.parse_sql_from_error(result)
+                    parsed_sql = self.extract_code(result, 'sql')
                     if parsed_sql:
                         logger.info(f"Parsed SQL from error message: {parsed_sql}")
                         success, result = self.execute_sql(parsed_sql)
@@ -448,7 +426,7 @@ class Sql:
 
                 if not success:
                     # Parse SQL from the error message if the correction also fails
-                    parsed_sql = self.parse_sql_from_error(result)
+                    parsed_sql = self.extract_code(result, 'sql')
                     if parsed_sql:
                         logger.info(f"Parsed SQL from error message: {parsed_sql}")
                         success, result = self.execute_sql(parsed_sql)
