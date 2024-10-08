@@ -260,7 +260,7 @@ class Analitiq:
 
         self.prompts["refined"] = self.prompts["original"]
 
-        # TODO we still need to fix the selectin process, so for now we overide and default
+        # TODO we still need to fix the selection process, so for now we overide and default
         # it to DocSearch service
         """
         #selected_services = self.llm.llm_select_services(self.prompts, self.avail_services_str)
@@ -274,8 +274,8 @@ class Analitiq:
         """
 
         selected_services = {
-            "SearchDocs": {
-                "Action": "Search Documents",
+            "QueryDatabase": {
+                "Action": "Query Database",
                 "ActionInput": "text",
                 "Instructions": user_prompt,
                 "DependsOn": "",
