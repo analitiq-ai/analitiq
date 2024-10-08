@@ -67,13 +67,13 @@ class Sql:
             chat_logger.error(f"Error executing SQL. {e!s}")
             return False, str(e)
 
-    def get_sql_from_llm(self, docs_ddl: Optional[str] = None, docs_schema: Optional[str] = None) -> str:
+    def get_sql_from_llm(self, docs_ddl_formatted: Optional[str] = None, docs_schema_formatted: Optional[str] = None) -> str:
         """Generates SQL from the LLM (Language Model) based on provided DDL and schema documentation.
 
         Args:
         ----
-            docs_ddl (str, optional): DDL documentation. Defaults to None.
-            docs_schema (str, optional): Schema documentation. Defaults to None.
+            docs_schema_formatted (str, optional): DDL documentation. Defaults to None.
+            docs_schema_formatted (str, optional): Schema documentation. Defaults to None.
 
         Returns:
         -------
@@ -85,8 +85,8 @@ class Sql:
 
         """
         # Format DDL documentation if provided
-        if docs_ddl:
-            docs_ddl = """I will provide a list of tables and columns for you to use to create an SQL query between the tags [DDL_START] and [DDL_END].
+        if docs_ddl_formatted:
+            docs_ddl_text = """I will provide a list of tables and columns for you to use to create an SQL query between the tags [DDL_START] and [DDL_END].
             Use only these tables and columns.
             Make sure you qualify schema for each table when creating the SQL.
             Please use only the specified table names, schemas, and column names in any queries or operations. 
@@ -95,13 +95,17 @@ class Sql:
             [DDL_START]
             {docs_ddl_placeholder}
             [DDL_END]
-            """.format(docs_ddl_placeholder="\n".join(docs_ddl))
+            """.format(docs_ddl_placeholder=docs_ddl_formatted)
+        else:
+            docs_ddl_text = ''
 
         # Format schema documentation if provided
-        if docs_schema:
-            docs_schema = """Here is some additional documentation that you may find useful to make your SQL more accurate:
+        if docs_schema_formatted:
+            docs_schema_text = """Here is some additional documentation that you may find useful to make your SQL more accurate:
             {docs_schema_placeholder}
-            """.format(docs_schema_placeholder="\n".join(docs_schema))
+            """.format(docs_schema_placeholder=docs_schema_formatted)
+        else:
+            docs_schema_text = ''
 
         # Set up the parser and prompt for generating SQL
         parser = JsonOutputParser(pydantic_object=SQL)
@@ -111,8 +115,8 @@ class Sql:
             input_variables=["user_prompt"],
             partial_variables={
                 "dialect": self.db.params["type"],
-                "docs_ddl": docs_ddl,
-                "docs_schema": docs_schema,
+                "docs_ddl": docs_ddl_text,
+                "docs_schema": docs_schema_text,
                 "top_k": 100,
                 "format_instructions": parser.get_format_instructions(),
             },
