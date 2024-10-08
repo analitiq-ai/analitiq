@@ -19,16 +19,18 @@ LOAD_DOC_CHUNK_OVERLAP = 200
 
 
 def string_to_chunk(document: DocumentSchema) -> Chunk:
+    document_tags = document.document_tags if hasattr(document, 'document_tags') else None
 
     return Chunk(
         content=document.document_content,
+        document_uuid=document.uuid,
         document_source=document.document_source,
         document_type=document.document_type,
         document_name=document.document_name,
+        document_tags=document_tags,
         document_num_char=len(document.document_content),
         chunk_num_char=len(document.document_content),
-        content_kw=keyword_extractions.extract_keywords(document.document_content),
-        document_uuid=document.uuid
+        content_kw=keyword_extractions.extract_keywords(document.document_content)
     )
 
 
@@ -75,7 +77,7 @@ def group_results_by_properties(results: object, group_by_properties: List[str])
     if not results.objects:
         return None
 
-    allowed_keys = list(Chunk.__annotations__.keys())
+    allowed_keys = list(Chunk.model_json_schema()["properties"].keys())
 
     if not set(group_by_properties).issubset(set(allowed_keys)):
         msg = f"The provided keys for grouping are not allowed. Allowed keys are: {allowed_keys}"

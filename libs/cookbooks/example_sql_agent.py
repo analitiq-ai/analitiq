@@ -58,7 +58,8 @@ def define_llm_params(env_vars):
 def define_vdb_params(env_vars):
     return {
         "collection_name": env_vars.get("WEAVIATE_COLLECTION"),
-        "type": "weaviate",
+        "tenant_name": os.getenv("WEAVIATE_TENANT_NAME"),
+        "type": os.getenv("VDB_TYPE"),
         "host": env_vars.get("WEAVIATE_URL"),
         "api_key": env_vars.get("WEAVIATE_CLIENT_SECRET")
     }
