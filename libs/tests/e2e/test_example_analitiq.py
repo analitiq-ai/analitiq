@@ -1,8 +1,14 @@
 """Test the analitiq instances."""
 
 import pytest
-
 from analitiq.main import Analitiq
+from dotenv import load_dotenv
+
+@pytest.fixture(autouse=True, scope="module")
+def load_environment():
+    """Loads environment variables from .env file"""
+
+    load_dotenv(".env", override=True)
 
 
 @pytest.fixture(name="analitiq_instance")

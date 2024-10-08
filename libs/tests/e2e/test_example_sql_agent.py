@@ -21,16 +21,14 @@ def sql_agent_fixture(db_params, llm_params, vdb_params):
     vdb = VectorDatabaseFactory.create_database(vdb_params)
     return Sql(db, llm, vdb=vdb)
 
-
+@pytest.mark.timeout(30)
 def test_analitiq_sql_agent(sql_agent):
     """Test the sql agent e2e."""
     user_prompt = "show me sales by venue."
-    result_generator = sql_agent.run(user_prompt)
+    result = sql_agent.run(user_prompt)
 
-    assert result_generator
+    assert result
 
-    for result in result_generator:
-        if isinstance(result, str):
-            assert result
-        else:
-            assert result
+    if isinstance(result, str):
+        assert result
+
