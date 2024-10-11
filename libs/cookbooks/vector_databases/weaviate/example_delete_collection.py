@@ -15,7 +15,7 @@ vdb_params = {
     "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
 }
 
-vdb = VectorDatabaseFactory.create_database(vdb_params)
+vdb = VectorDatabaseFactory.connect(vdb_params)
 
 
 response = vdb.delete_collection(vdb_params['collection_name'])

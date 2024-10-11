@@ -31,28 +31,32 @@ def compare_columns_between_tables(table_data, detailed: bool = False):
         try:
             # Fetch column data for the table
             column_data = db_wrapper.get_table_columns(table_name, schema_name)
+        except Exception as e:
+            print(f"Error fetching metadata for {db_name}: {e}. Table may not exist.")
+            metadata[db_name] = None
+
+        if column_data:
             # Store column names and their types in a dictionary
             column_details = {col["name"]: col["type"] for col in column_data}
 
             # Store the set of column names for later comparison
             metadata[db_name] = {"cols": set(column_details.keys())}
-        except Exception as e:
-            print(f"Error fetching metadata for {db_name}: {e}")
-            metadata[db_name] = None
 
         # If detailed comparison is requested, fetch numeric column statistics
         if detailed:
             # Fetch numeric columns from the column data
             numeric_columns = db_wrapper.get_numeric_columns(column_data)
+            print(f"Numeric columns: {numeric_columns}")
             num_col_stats = {}
-            for column_name in numeric_columns:
-                # Store summary statistics (min, max, avg) for each numeric column
-                num_col_stats[column_name] = db_wrapper.get_summary_statistics(
-                    schema_name, table_name, column_name
-                )
+            if numeric_columns:
+                for column_name in numeric_columns:
+                    # Store summary statistics (min, max, avg) for each numeric column
+                    num_col_stats[column_name] = db_wrapper.get_summary_statistics(
+                        schema_name, table_name, column_name
+                    )
 
-            # Add numeric column statistics to the metadata for the current database
-            metadata[db_name]["num_col_stats"] = num_col_stats
+                # Add numeric column statistics to the metadata for the current database
+                metadata[db_name]["num_col_stats"] = num_col_stats
 
     # Retrieve the names of the two databases for comparison
     db1, db2 = list(metadata.keys())

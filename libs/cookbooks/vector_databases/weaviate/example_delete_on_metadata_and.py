@@ -17,10 +17,10 @@ vdb_params = {
 
 
 filter_list = [
-    {"property": "document_type", "operator": "=", "value": "txt"}
+    {"property": "document_type", "operator": "=", "value": "json"}
 ]
 
-vdb = VectorDatabaseFactory.create_database(vdb_params)
+vdb = VectorDatabaseFactory.connect(vdb_params)
 result = vdb.delete_on_metadata_and(filter_list)
 
 print(result)
