@@ -21,7 +21,7 @@ filter_expression = {
     ]
 }
 
-vdb = VectorDatabaseFactory.create_database(vdb_params)
+vdb = VectorDatabaseFactory.connect(vdb_params)
 
 response = vdb.search_filter('venue', filter_expression)
 

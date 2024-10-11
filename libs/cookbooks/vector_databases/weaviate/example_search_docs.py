@@ -16,8 +16,8 @@ vdb_params = {
 }
 
 
-vdb = VectorDatabaseFactory.create_database(vdb_params)
+vdb = VectorDatabaseFactory.connect(vdb_params)
 
-response = vdb.search_filter('hello')
+response = vdb.hybrid_search('catid')
 
 print(response)

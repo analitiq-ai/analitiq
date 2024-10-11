@@ -16,7 +16,7 @@ vdb_params = {
 }
 
 
-vdb = VectorDatabaseFactory.create_database(vdb_params)
+vdb = VectorDatabaseFactory.connect(vdb_params)
 
 document = {
     "document_text": "This is sample document text",

@@ -1,11 +1,11 @@
 Usage of Relational Database Factory
 Loading a Database via the Factory
-You can use the create_database function from relational_database_factory.py to instantiate a database wrapper dynamically based on the db_type.
+You can use the connect function from relational_database_factory.py to instantiate a database wrapper dynamically based on the db_type.
 
 Example: PostgreSQL
 
 ```
-from analitiq.factories.relational_database_factory import create_database
+from analitiq.factories.relational_database_factory import connect
 
 # Parameters for PostgreSQL
 postgres_params = {
@@ -20,7 +20,7 @@ postgres_params = {
 
 # Create a PostgreSQL database instance using the factory
 
-postgres_db = create_database(db_type="postgres", params=postgres_params)
+postgres_db = connect(db_type="postgres", params=postgres_params)
 
 # Use the database instance
 schemas = postgres_db.get_schema_names()
@@ -28,7 +28,7 @@ print("PostgreSQL Schemas:", schemas)
 ```
 Example: Amazon Redshift
 ```
-from analitiq.factories.relational_database_factory import create_database
+from analitiq.factories.relational_database_factory import connect
 
 # Parameters for Redshift
 redshift_params = {
@@ -138,7 +138,7 @@ Use the Factory to Instantiate
 
 ```
 
-from relational_databases.relational_database_factory import create_database
+from relational_databases.relational_database_factory import connect
 
 # Parameters for MySQL
 mysql_params = {
@@ -151,7 +151,7 @@ mysql_params = {
 }
 
 # Create a MySQL database instance using the factory
-mysql_db = create_database(db_type="mysql", params=mysql_params)
+mysql_db = connect(db_type="mysql", params=mysql_params)
 
 # Use the database instance
 schemas = mysql_db.get_schema_names()

@@ -16,12 +16,12 @@ class LlmFactory:
     .. code-block:: python
 
         factory = LlmFactory()
-        db = factory.create_llm(params)
+        db = factory.connect(params)
 
     """
 
     @staticmethod
-    def create_llm(params: dict):
+    def connect(params: dict):
         if "type" not in params:
             raise KeyError("'type' not found in params. Please specify llm type")
 

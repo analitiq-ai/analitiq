@@ -198,7 +198,7 @@ class Graph:
             params["service_input"] = inputs if inputs else None
 
         response = service_instance.run(**params)
-        logger.info(f"Response from service {node.service_name}: {response}")
+        logger.info(f"Response from service\n{node.service_name}: {response}")
         # if we have a response with some data from a services, it will be structured as BaseResponse object
 
         return response

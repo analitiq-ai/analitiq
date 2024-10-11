@@ -1,17 +1,19 @@
 import pandas as pd
 from typing import Tuple, Optional
 from analitiq.logger.logger import logger, chat_logger
-from analitiq.base.BaseResponse import BaseResponse
 from analitiq.utils.code_extractor import CodeExtractor
 from analitiq.agents.sql.schema import SQL
+from analitiq.base.agent_context import AgentContext
+from analitiq.agents.base_agent import BaseAgent
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from sqlalchemy.exc import DatabaseError
+from sqlalchemy.sql import text
 from analitiq.agents.sql.prompt import TEXT_TO_SQL_PROMPT
 from langchain_core.exceptions import OutputParserException
 
 
-class Sql:
+class SQLAgent(BaseAgent):
     """Handles SQL query generation and execution against the database using LLM integration.
 
     This class provides methods to load DDL into a vector database, get relevant tables,
@@ -19,7 +21,7 @@ class Sql:
     get SQL from LLM, glue document chunks, and run the SQL agent.
     """
 
-    def __init__(self, db, llm, vdb=None):
+    def __init__(self, key: str):
         """Initialize the SQL Agent.
 
         SQL Agent writes SQL and executes the SQL against the database.
@@ -32,20 +34,18 @@ class Sql:
             vdb (optional): An optional parameter representing vdb (unknown data type).
 
         """
-        logger.info("SQL Agent Started.")
-        self.user_prompt: Optional[str] = None
-        self.db = db  # Database connection
-        self.llm = llm  # Language model to generate SQL queries
-        self.vdb = vdb  # Optional vector database for additional data context
-        self.relevant_tables = ""  # Placeholder for relevant table names
-        self.response = BaseResponse(self.__class__.__name__)  # Initialize response object
+        super().__init__(key)
+        logger.info(f"SQL Agent {key} started.")
+        self.key = key  # Unique key for this agent instance
+        self.user_query: str = None
 
-    def execute_sql(self, sql: str) -> Tuple[bool, Optional[pd.DataFrame]]:
+    def execute_sql(self, sql: str, params: Optional[dict] = None) -> Tuple[bool, Optional[pd.DataFrame]]:
         """Executes the given SQL query and returns the result as a DataFrame.
 
         Args:
         ----
             sql (str): The SQL query to be executed.
+            params (dict, optional): The parameters to be used in the SQL query.
 
         Returns:
         -------
@@ -55,7 +55,7 @@ class Sql:
         chat_logger.info(f"{sql}")  # Log the SQL query being executed
         try:
             # Execute the SQL query and store the result in a DataFrame
-            result = pd.read_sql(sql, self.db.engine)
+            result = pd.read_sql(text(sql), self.db.engine, params=params)
             if result.empty:
                 chat_logger.info("SQL executed successfully, but result is empty.")
             else:
@@ -122,11 +122,11 @@ class Sql:
             },
         )
 
-        chat_logger.info(f"Human: {prompt.format(user_prompt=self.user_prompt)}")
+        chat_logger.info(f"Human: {prompt.format(user_prompt=self.user_query)}")
 
         try:
             # Invoke the LLM to generate SQL
-            response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
+            response = self.llm.llm_invoke(self.user_query, prompt, parser)
         except Exception as e:
             # Handle LLM invocation errors
             chat_logger.error(f"Error invoking LLM: {e}")
@@ -188,7 +188,7 @@ class Sql:
         try:
             # Retry the correction process up to max_retries times
             while retries < max_retries:
-                response = self.llm.llm_invoke(self.user_prompt, prompt, parser)
+                response = self.llm.llm_invoke(self.user_query, prompt, parser)
                 if response.get("SQL_Code"):
                     break
                 retries += 1
@@ -240,42 +240,18 @@ class Sql:
             output.append(f"Table name: {table_name}\nColumn names: {columns})\n")
         return ''.join(output)
 
-    def _set_result(
-            self,
-            result: pd.DataFrame,
-            sql: Optional[str] = None,
-            explanation: Optional[str] = None,
-    ):
-        """Sets the result of the SQL execution into the response object.
-
-        Args:
-        ----
-            result (pd.DataFrame): The result of the SQL execution.
-            sql (str, optional): The SQL query executed. Defaults to None.
-            explanation (str, optional): Explanation of the result. Defaults to None.
-
-        """
-        # Set the content of the response as a DataFrame
-        self.response.set_content(result, "dataframe")
-        if result.empty:
-            # Add metadata if the query produced no results
-            self.response.add_text_to_metadata(
-                "The query produced no result. Please review your query and SQL generated based on it and fine-tune your instructions."
-            )
-        else:
-            # Add explanation and SQL query to metadata
-            self.response.add_text_to_metadata(f"\n{explanation}")
-            if sql:
-                self.response.add_text_to_metadata(f"\n```\n{sql}\n```")
-
     def __get_ddl_from_vdb(self, user_prompt):
         # Set up filter to search for relevant DDL documents in vector database
+        if self.vdb is None:
+            logger.warning("Vector Database (vdb) is not available. Skipping the usage of vector database.")
+            return []
+
         filter_list = [
             {"property": "document_tags", "operator": "contains_any", "value": ["ddl"]}
         ]
 
         # Add schema-specific filters
-        for schema in self.db.params["db_schemas"]:
+        for schema in self.db.params.get("db_schemas", []):
             filter_list.append({"property": "document_name", "operator": "like", "value": f"*{schema}*"} )
 
         filter_expression = {
@@ -285,7 +261,7 @@ class Sql:
         # Search the vector database using the filter expression
         return self.vdb.search_filter(user_prompt, filter_expression, ['document_name'])
 
-    def run(self, user_prompt: str) -> BaseResponse:
+    def run(self, context: AgentContext) -> AgentContext:
         """Main method to run the SQL agent based on the user's prompt.
 
         Args:
@@ -297,13 +273,11 @@ class Sql:
             BaseResponse: The response from the SQL agent.
 
         """
-        self.user_prompt = user_prompt
-
-        chat_logger.info(f"Human: {user_prompt}")
-        logger.info(f"[Sql Agent] Query: {user_prompt}")
+        logger.info(f"User query: {context.user_query}")
+        self.user_query = context.user_query
 
         # Get DDL documents from vector database
-        docs_ddl = self.__get_ddl_from_vdb(user_prompt)
+        docs_ddl = self.__get_ddl_from_vdb(context.user_query)
 
         if not docs_ddl or docs_ddl == "ANALYTQ___NO_ANSWER":
             logger.info("No relevant DDL documents in VDB located.")
@@ -318,8 +292,8 @@ class Sql:
 
         if not docs_ddl and not docs_schema:
             # If no supporting documents are found, return an appropriate response
-            self.response.add_text_to_metadata("No supporting documents found in Vector DB to query data.")
-            return self.response
+            context.add_result(self.key, "No supporting documents found in Vector DB to query data.")
+            return context
 
         try:
             # Generate SQL from LLM based on provided DDL and schema
@@ -327,8 +301,10 @@ class Sql:
             sql = response["SQL_Code"]
         except RuntimeError as e:
             # Handle errors during SQL generation
-            self.response.add_text_to_metadata(str(e))
-            return self.response
+            context.add_result(self.key, str(e))
+            return context
+
+        extractor = CodeExtractor()
 
         if sql:
             logger.info(f"SQL: {sql}")
@@ -337,57 +313,58 @@ class Sql:
                 success, result = self.execute_sql(sql)
             except Exception as e:
                 # Handle SQL execution errors
-                self.response.add_text_to_metadata(str(e))
-                return self.response
+                context.add_result(self.key, str(e))
+                return context
 
             if not success:
                 # Resubmit the SQL for correction if the execution fails
-                corrected_sql = self.resubmit_for_correction(docs_ddl_formatted, sql, result)
-                logger.info(f"Corrected SQL: {corrected_sql}")
-                success, result = self.execute_sql(corrected_sql)
+                sql = self.resubmit_for_correction(docs_ddl_formatted, sql, result)
+                logger.info(f"Corrected SQL: {sql}")
+                success, result = self.execute_sql(sql)
 
                 if not success:
                     # Parse SQL from the error message if the correction also fails
-                    extractor = CodeExtractor()
                     extracted_code = extractor.extract_code(result, 'sql')
                     if extracted_code:
                         logger.info(f"Parsed SQL from error message: {extracted_code}")
-                        success, result = self.execute_sql(extracted_code)
+                        sql = extracted_code
+                        success, result = self.execute_sql(sql)
 
             if success:
-                # Set the result in the response object
-                self._set_result(result, sql, response["Explanation"])
+                context.add_result(self.key, sql, 'sql')
+                context.add_result(self.key, result, 'data')
+                if 'Explanation' in response:
+                    context.add_result(self.key, response["Explanation"], 'text')
             else:
                 # Add error message to metadata if execution fails
-                self.response.add_text_to_metadata(result)
+                context.add_result(self.key, result, 'text')
 
-        return self.response
+        return context
 
-    async def arun(self, user_prompt: str):
+    async def arun(self, context: AgentContext) -> AgentContext:
         """Async method to run the SQL agent with streaming capability based on the user's prompt.
 
         Args:
         ----
-            user_prompt (str): The user's query.
+            context (AgentContext): The context containing user's query.
 
         Yields:
         -------
             dict: Intermediate results or final response from the SQL agent.
 
         """
-        self.user_prompt = user_prompt
-
-        chat_logger.info(f"Human: {user_prompt}")
-        logger.info(f"[Sql Agent] Query: {user_prompt}")
-
+        logger.info(f"[SQL Agent] user query: {context.user_query}")
         # Get DDL documents from vector database
-        docs_ddl = self.__get_ddl_from_vdb(user_prompt)
+        docs_ddl = self.__get_ddl_from_vdb(context.user_query)
 
         if not docs_ddl or docs_ddl == "ANALYTQ___NO_ANSWER":
             logger.info("No relevant DDL documents in VDB located.")
+            yield {"text": "No relevant DDL documents found in the vector database."}
+            return
+
         if docs_ddl:
             logger.info(f"DDL documents found: {len(docs_ddl)}")
-            yield {"content": f"DDL Documents found: {len(docs_ddl)}"}
+            yield {"text": f"DDL documents found: {len(docs_ddl)}"}
 
             # Format the DDL chunks for LLM input
             docs_ddl_formatted = self.format_ddl_chunks(docs_ddl)
@@ -397,51 +374,69 @@ class Sql:
 
         if not docs_ddl and not docs_schema:
             # If no supporting documents are found, yield an appropriate response
-            self.response.add_text_to_metadata("No supporting documents found in Vector DB to query data.")
-            yield self.response.to_json()
+            context.add_result(self.key, "No supporting documents found in Vector DB to query data.")
+            yield context
             return
 
         try:
             # Generate SQL from LLM based on provided DDL and schema
             response = self.get_sql_from_llm(docs_ddl_formatted, docs_schema_formatted)
             sql = response["SQL_Code"]
+            yield {"content": f"Here is the SQL that was used:\n ```\n{sql}\n```"}
         except RuntimeError as e:
             # Handle errors during SQL generation
-            self.response.add_text_to_metadata(str(e))
-            yield self.response.to_json()
+            context.add_result(self.key, str(e))
+            yield context
             return
 
+        extractor = CodeExtractor()
+
         if sql:
-            yield {"content": f"Here is the SQL that was used:\n ```\n{sql}\n```"}
             logger.info(f"SQL: {sql}")
             try:
                 # Execute the generated SQL
                 success, result = self.execute_sql(sql)
+                if success:
+                    context.add_result(self.key, sql, 'sql')
+                    context.add_result(self.key, result, 'data')
+                    context.add_result(self.key, response.get("Explanation", ""), 'text')
+                    yield context
+                    return
             except Exception as e:
                 # Handle SQL execution errors
-                self.response.add_text_to_metadata(str(e))
-                yield self.response.to_json()
+                context.add_result(self.key, str(e))
+                yield context
                 return
 
-            if not success:
+            retry_count = 0
+            max_retries = 3
+
+            while not success and retry_count < max_retries:
                 # Resubmit the SQL for correction if the execution fails
                 corrected_sql = self.resubmit_for_correction(docs_ddl_formatted, sql, result)
+                yield {"text": f"SQL execution failed, attempting to correct the SQL. Retry {retry_count + 1}/{max_retries}."}
                 logger.info(f"Corrected SQL: {corrected_sql}")
                 success, result = self.execute_sql(corrected_sql)
+                retry_count += 1
 
-                if not success:
-                    # Parse SQL from the error message if the correction also fails
-                    extractor = CodeExtractor()
-                    extracted_code = extractor.extract_code(result, 'sql')
-                    if extracted_code:
-                        logger.info(f"Parsed SQL from error message: {extracted_code}")
-                        success, result = self.execute_sql(extracted_code)
+                if success:
+                    context.add_result(self.key, corrected_sql, 'sql')
+                    context.add_result(self.key, result, 'data')
+                    yield context
+                    return
 
-            if success:
-                # Set the result in the response object
-                self._set_result(result, sql, response["Explanation"])
-                yield self.response.to_json()
-            else:
-                # Add error message to metadata if execution fails
-                self.response.add_text_to_metadata(result)
-                yield self.response.to_json()
+            # Parse SQL from the error message if the correction also fails
+            if not success:
+                extracted_code = extractor.extract_code(result, 'sql')
+                if extracted_code:
+                    logger.info(f"Parsed SQL from error message: {extracted_code}")
+                    success, result = self.execute_sql(extracted_code)
+                    if success:
+                        context.add_result(self.key, extracted_code, 'sql')
+                        context.add_result(self.key, result, 'data')
+                        yield context
+                        return
+
+            # Add error message to metadata if execution fails
+            context.add_result(self.key, result, 'text')
+            yield context

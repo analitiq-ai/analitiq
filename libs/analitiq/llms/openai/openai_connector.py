@@ -6,7 +6,7 @@ import logging
 class OpenaiConnector(BaseLlm):
     """Wrapper for Large language models."""
 
-    def create_llm(self):
+    def connect(self):
         return ChatOpenAI(
             openai_api_key=self.params["api_key"],
             temperature=self.params["temperature"],
