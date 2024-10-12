@@ -81,7 +81,7 @@ if __name__ == "__main__":
     inst = Analitiq(agents, params)
 
     # Run the pipeline
-    response = inst.run(user_query="give me events by venue")
+    response = inst.run(user_query="Give me count of events by month")
 
     sql = response.get_result_sql('sql_1')
     text = response.get_result_text('sql_1')
