@@ -1,6 +1,7 @@
 """This is an example of how to search documents using search services."""
 
 import os
+import asyncio
 from analitiq.agents.search_vdb.vdb_agent import VDBAgent
 from analitiq.main import Analitiq
 from dotenv import load_dotenv
@@ -28,7 +29,7 @@ vdb_params = {
 }
 
 
-if __name__ == "__main__":
+async def main():
 
     params = {
         "llm_params": llm_params,
@@ -41,18 +42,29 @@ if __name__ == "__main__":
     ]
 
     inst = Analitiq(agents, params)
+    final_res = None
 
-    # Run the pipeline
-    response = inst.run(user_query="catid")
+    # Call the async arun method and iterate over the yielded results
+    async for res in inst.arun(user_query="catid"):
+        if isinstance(res, dict):
+            print(f"Intermediate result: {res}")
+        else:
+            print(f"Final results:")
+            final_res = res
 
-    sql = response.get_result_sql('vdb_1')
-    text = response.get_result_text('vdb_1')
-    result = response.get_result_data('vdb_1')
+    # Process final results once after the async loop
+    if final_res:
+        for key, result in final_res.results.items():
+            print(f"Results for key '{key}':")
+            for result_type, value in result.items():
+                if result_type == 'data' and isinstance(value, pd.DataFrame):
+                    print(f"  {result_type}: {value.to_json(orient='split')}")
+                else:
+                    print(f"  {result_type}: {value}")
 
-    if text:
-        print(text)
-    if sql:
-        print(sql)
-    if result:
-        print(result)
+
+# Run the main function using asyncio
+if __name__ == "__main__":
+    asyncio.run(main())
+
 

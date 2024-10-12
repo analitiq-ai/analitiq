@@ -82,11 +82,22 @@ class BaseRelationalDatabase(ABC):
             "BIGINT",
             "SMALLINT",
         )
+        if not columns:
+            # No columns provided
+            return {}
+
         numeric_columns = {
             col["name"]: str(col["type"])
             for col in columns
-            if any(str(col["type"]).upper().startswith(num_type) for num_type in numeric_types)
+            if "type" in col and "name" in col and any(
+                str(col["type"]).upper().startswith(num_type) for num_type in numeric_types
+            )
         }
+
+        if not numeric_columns:
+            # No numeric columns found, return empty dictionary
+            return {}
+
         return numeric_columns
 
     def get_row_count(self, schema_name: str, table_name: str) -> int:

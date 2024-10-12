@@ -703,7 +703,7 @@ class WeaviateConnector(BaseVectorDatabase):
 
         Examples
         --------
-        >>> handler = VectorDatabaseFactory.create_database(vdb_params)
+        >>> handler = VectorDatabaseFactory.connect(vdb_params)
         >>> filter_expression = {
                 "or": [
                     {

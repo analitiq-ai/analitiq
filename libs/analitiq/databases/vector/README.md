@@ -29,7 +29,7 @@ params = {
     "api_key": "XXXXXX"
 }
 
-vdb = VectorDatabaseFactory.create_database(params)
+vdb = VectorDatabaseFactory.connect(params)
 FILE_PATH = './project/My_Project/sql'
 
 vdb.load(FILE_PATH, 'sql')
@@ -48,7 +48,7 @@ params = {
     "api_key": "XXXXXX"
 }
 
-vdb = VectorDatabaseFactory.create_database(params)
+vdb = VectorDatabaseFactory.connect(params)
 FILE_PATH = './project/My_Project/my_file.sql'
 vdb.load_file(FILE_PATH)
 ```
@@ -72,7 +72,7 @@ params = {
     "api_key": "XXXXXX"
 }
 
-vdb = VectorDatabaseFactory.create_database(params)
+vdb = VectorDatabaseFactory.connect(params)
 FILE_PATH = './project/My_Project/my_file.sql'
 vdb.load_file(FILE_PATH)
 search_results = vdb.kw_search("climate change", limit=5)
@@ -110,7 +110,7 @@ params = {
     "api_key": "XXXXXX"
 }
 
-vdb = VectorDatabaseFactory.create_database(params)
+vdb = VectorDatabaseFactory.connect(params)
 FILE_PATH = './project/My_Project/my_file.sql'
 vdb.load_file(FILE_PATH)
 grouped_results = vdb.kw_search_grouped("sustainable energy", limit=5)

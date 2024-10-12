@@ -6,7 +6,7 @@ import logging
 class MistralConnector(BaseLlm):
     """Wrapper for Large language models."""
 
-    def create_llm(self):
+    def connect(self):
         return ChatMistralAI(
             mistral_api_key=self.params["llm_api_key"],
             temperature=self.params["temperature"],

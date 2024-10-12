@@ -7,7 +7,7 @@ import logging
 class BedrockConnector(BaseLlm):
     """Wrapper for Large language models."""
 
-    def create_llm(self):
+    def connect(self):
         client = boto3.client(
             "bedrock-runtime",
             aws_access_key_id=self.params["aws_access_key_id"],

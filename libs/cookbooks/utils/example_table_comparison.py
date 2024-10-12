@@ -33,7 +33,7 @@ def add_to_sys_path():
     dynamic_path = f"{home_directory}/Documents/Projects/analitiq/libs/"
     sys.path.insert(0, dynamic_path)
 
-def load_env_variables(env: str = 'dev'):
+def load_env_variables(env_file: str = '.env'):
     """
     Loads environment variables from a .env file using python-dotenv.
 
@@ -46,12 +46,12 @@ def load_env_variables(env: str = 'dev'):
 
     # Load the appropriate .env file
     try:
-        dotenv_path = f'/Users/kirillandriychuk/Documents/Projects/analitiq/.env.mb.{env}'
+        dotenv_path = f'/Users/kirillandriychuk/Documents/Projects/analitiq-ai/.env.chiliz'
     except Exception as e:
         print(e)
 
     load_dotenv(dotenv_path=dotenv_path)
-
+    print(f"Loading DB: {os.getenv('DB_NAME')}")
     return {
         "name": os.getenv("DB_NAME"),
         "type": os.getenv("DB_TYPE"),
@@ -73,8 +73,8 @@ if __name__ == "__main__":
     add_to_sys_path()
 
     # Define database parameters for both production and development databases
-    db_params_1 = load_env_variables('prod')
-    db_params_2 = load_env_variables('prod')
+    db_params_1 = load_env_variables('.env.chiliz')
+    db_params_2 = load_env_variables('.env.chiliz')
 
     # Instantiate RelationalDatabaseFactory objects for both production and development databases
     db_1 = RelationalDatabaseFactory.create_database(db_params_1)
@@ -87,8 +87,8 @@ if __name__ == "__main__":
     # - The schema name
     # - The table name to compare
     table_data = {
-        "DB1": (db_1, db_params_1['db_schemas'], "model_final_output"),
-        "DB2": (db_2, db_params_2['db_schemas'], "model_final_output_v2")
+        "DB1": (db_1, db_params_1['db_schemas'], "test"),
+        "DB2": (db_2, db_params_2['db_schemas'], "test2")
     }
 
     # Compare the columns between the production and development databases

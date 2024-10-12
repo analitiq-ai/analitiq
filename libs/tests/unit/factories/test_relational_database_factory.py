@@ -28,19 +28,19 @@ def params():
 
 def test_create_postgres_database(params):
     params["type"] = "postgres"
-    db = RelationalDatabaseFactory.create_database(params)
+    db = RelationalDatabaseFactory.connect(params)
     assert isinstance(db, PostgresConnector)
 
 
 def submit_empty_params():
     params = {}
     with pytest.raises(ValueError) as excinfo:
-        RelationalDatabaseFactory.create_database(params)
+        RelationalDatabaseFactory.connect(params)
     assert "Unknown relational database type: unknown_db" in str(excinfo.value)
 
 
 def test_create_unknown_database(params):
     params["type"] = "oracle"
     with pytest.raises(ValueError) as excinfo:
-        RelationalDatabaseFactory.create_database(params)
+        RelationalDatabaseFactory.connect(params)
     assert f"Unknown relational database type: {params['type']}" in str(excinfo.value)

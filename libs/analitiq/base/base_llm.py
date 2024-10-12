@@ -21,10 +21,10 @@ class BaseLlm(ABC):
 
     def __init__(self, params: Dict):
         self.params = params
-        self.llm = self.create_llm()
+        self.llm = self.connect()
 
     @abstractmethod
-    def create_llm(self):
+    def connect(self):
         """Create and return a SQLAlchemy engine."""
 
     def llm_invoke(self, user_prompt: str, prompt: Any, parser: Any):

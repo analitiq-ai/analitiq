@@ -16,12 +16,12 @@ class RelationalDatabaseFactory:
     .. code-block:: python
 
         factory = DatabaseFactory()
-        db = factory.create_database("mysql", host="localhost", port=3306, user="root", password="password")
+        db = factory.connect("mysql", host="localhost", port=3306, user="root", password="password")
 
     """
 
     @staticmethod
-    def create_database(params: dict):
+    def connect(params: dict):
         if "type" not in params:
             raise KeyError("'type' not found in params. Please specify database type")
 
