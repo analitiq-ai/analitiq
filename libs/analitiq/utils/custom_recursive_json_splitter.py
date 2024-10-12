@@ -2,6 +2,7 @@
 
 Persist a specific metadata info from parent to child groups.
 """
+
 import json
 from typing import Dict, Any, List, Iterable
 from langchain_text_splitters import RecursiveJsonSplitter
@@ -17,10 +18,12 @@ class CustomRecursiveJsonSplitter(RecursiveJsonSplitter):
         """Initialize from parent class."""
         super().__init__(max_chunk_size, min_chunk_size)
 
-    def split_json(self, 
-                   json_data: Dict[str, Any],
-                   convert_lists: bool = False,
-                   metadata: Dict[str, List[str]] = _DEFAULT_METADATA) -> List[Dict]:
+    def split_json(
+        self,
+        json_data: Dict[str, Any],
+        convert_lists: bool = False,
+        metadata: Dict[str, List[str]] = _DEFAULT_METADATA,
+    ) -> List[Dict]:
         """Split JSON into a list of JSON chunks and adds metadata to each chunk.
 
         :param json_data: The JSON data to be split.
@@ -37,9 +40,10 @@ class CustomRecursiveJsonSplitter(RecursiveJsonSplitter):
         if models:
             final_chunks = []
             for model in models:
-                model_meta = {"version": my_json.get("version"),
-                               "models": [{name: model.get(name) for name 
-                                           in _DEFAULT_METADATA.get("models")}]}
+                model_meta = {
+                    "version": my_json.get("version"),
+                    "models": [{name: model.get(name) for name in _DEFAULT_METADATA.get("models")}],
+                }
                 data_to_chunk = {"columns": model.get("columns")}
                 chunks = super().split_json(data_to_chunk, convert_lists)
                 for chunk in chunks:

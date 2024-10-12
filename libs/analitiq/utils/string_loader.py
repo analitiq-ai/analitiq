@@ -1,4 +1,5 @@
 """Class for a custom string loader."""
+
 from typing import AsyncIterator, Iterator, List, Tuple
 
 from langchain_core.document_loaders import BaseLoader

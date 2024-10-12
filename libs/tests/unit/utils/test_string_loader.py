@@ -7,10 +7,12 @@ strings = [
     ("This is another test document.", "test2.txt"),
 ]
 
+
 def test_string_document_loader_init():
     """Test the initialization of the StringDocumentLoader."""
     loader = StringDocumentLoader(strings)
     assert loader.strings == strings
+
 
 def test_string_document_loader_lazy_load():
     """Test the lazy_load method of the StringDocumentLoader."""

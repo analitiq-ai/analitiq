@@ -1,4 +1,5 @@
 """Class for a custom string loader."""
+
 from typing import Iterator, List, Tuple
 import pathlib
 
@@ -32,8 +33,8 @@ class YamlLoader(BaseLoader):
         to yield documents one by one.
         """
         with open(self.file_path, encoding="utf-8") as f:
-                yaml_data = yaml.safe_load(f)
-                yield Document(
-                    page_content=json.dumps(yaml_data),
-                    metadata={"source": self.file_path},
-                )
+            yaml_data = yaml.safe_load(f)
+            yield Document(
+                page_content=json.dumps(yaml_data),
+                metadata={"source": self.file_path},
+            )

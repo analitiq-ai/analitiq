@@ -9,22 +9,25 @@ from langchain_core.documents.base import Document
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from analitiq.databases.vector.schema import Chunk
-from analitiq.utils import (sql_recursive_text_splitter,
-                            custom_recursive_json_splitter,
-                            string_loader,
-                            yaml_loader,
-                             keyword_extractions)
+from analitiq.utils import (
+    sql_recursive_text_splitter,
+    custom_recursive_json_splitter,
+    custom_directory_loader,
+    string_loader,
+    yaml_loader,
+    keyword_extractions,
+)
 from analitiq.databases.vector.schema import DocumentSchema
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "services/search_vdb/examples/example_test_files"
 ALLOWED_EXTENSIONS = [".py", ".yaml", ".yml", ".sql", ".txt", ".md", ".pdf"]
+
 LOAD_DOC_CHUNK_SIZE = 2000
 LOAD_DOC_CHUNK_OVERLAP = 200
 
-
 def string_to_chunk(document: DocumentSchema) -> Chunk:
-    document_tags = document.document_tags if hasattr(document, 'document_tags') else None
+    document_tags = document.document_tags if hasattr(document, "document_tags") else None
 
     return Chunk(
         content=document.document_content,
@@ -35,7 +38,7 @@ def string_to_chunk(document: DocumentSchema) -> Chunk:
         document_tags=document_tags,
         document_num_char=len(document.document_content),
         chunk_num_char=len(document.document_content),
-        content_kw=keyword_extractions.extract_keywords(document.document_content)
+        content_kw=keyword_extractions.extract_keywords(document.document_content),
     )
 
 
@@ -274,20 +277,22 @@ class DocumentProcessor:
         return any(re.search(pattern, text) for pattern in sql_patterns)
 
     def load_chunk_documents(
-            self,
-            path: str | pathlib.Path | List[Tuple[str, str]],
-            extension: Optional[str] = None,
-            chunk_size: int = LOAD_DOC_CHUNK_SIZE,
-            chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP):
+        self,
+        path: str | pathlib.Path | List[Tuple[str, str]],
+        extension: Optional[str] = None,
+        chunk_size: int = LOAD_DOC_CHUNK_SIZE,
+        chunk_overlap: int = LOAD_DOC_CHUNK_OVERLAP,
+    ):
         """Execute loading and chunking of documents."""
         docs = self.load_documents(path, extension=extension)
-        chunks = self.chunk_documents(docs, extension=extension,
-                                      chunk_size=chunk_size,
-                                      chunk_overlap=chunk_overlap)
+        chunks = self.chunk_documents(
+            docs, extension=extension, chunk_size=chunk_size, chunk_overlap=chunk_overlap
+        )
         return chunks
 
-    def load_documents(self, inputs: str | pathlib.Path | List[Tuple[str,str]], 
-                       extension: Optional[str] = None) -> List[Document]:
+    def load_documents(
+        self, inputs: str | pathlib.Path | List[Tuple[str, str]], extension: Optional[str] = None
+    ) -> List[Document]:
         """Load Documents from given path and return documents.
 
         It can also take a list of texts as input as List[Tuple[str,str]].
@@ -300,20 +305,28 @@ class DocumentProcessor:
                 msg = f"The path {my_path.__str__} does not exist."
                 raise FileNotFoundError(msg)
             if my_path.is_file():
-                if my_path.suffix in (".yml",".yaml"):
+                if my_path.suffix in (".yml", ".yaml"):
                     loader = yaml_loader.YamlLoader(my_path)
                 else:
                     loader = TextLoader(my_path)
             elif my_path.is_dir():
                 if not extension:
-                    loader = DirectoryLoader(my_path, glob="**/*.*", loader_cls=TextLoader)
+                    loader = custom_directory_loader.CustomDirectoryLoader(
+                        my_path, 
+                        glob="**/*.*",
+                        glob_loader=TextLoader,
+                        special_loaders={".yaml": yaml_loader.YamlLoader, ".yml": yaml_loader.YamlLoader})
                 else:
                     msg = f"Extension {extension} not allowed. Allowed Extensions are {ALLOWED_EXTENSIONS}."
                     if extension[0] != ".":
                         extension = "." + extension
                     if extension not in ALLOWED_EXTENSIONS:
                         raise ValueError(msg)
-                    loader = DirectoryLoader(my_path, glob=f"**/*{extension}", loader_cls=TextLoader)
+                    loader = custom_directory_loader.CustomDirectoryLoader(
+                        my_path, 
+                        glob=f"**/*{extension}",
+                        glob_loader=TextLoader,
+                        special_loaders={".yaml": yaml_loader.YamlLoader, ".yml": yaml_loader.YamlLoader})
             else:
                 msg = f"{my_path} does not exist or is a special file (e.g., socket, device file, etc.)."
                 raise FileNotFoundError(msg)
@@ -321,16 +334,20 @@ class DocumentProcessor:
             loader = string_loader.StringDocumentLoader(inputs)
 
         documents = loader.load()
-        files = [doc for doc in documents 
-                 if pathlib.Path(doc.metadata.get("source","")).suffix in ALLOWED_EXTENSIONS]
-        disallowed_files = [pathlib.Path(doc.metadata.get("source","")).name for doc in documents
-                            if pathlib.Path(doc.metadata.get("source","")).suffix not in ALLOWED_EXTENSIONS]
+        files = [
+            doc
+            for doc in documents
+            if pathlib.Path(doc.metadata.get("source", "")).suffix in ALLOWED_EXTENSIONS
+        ]
+        disallowed_files = [
+            pathlib.Path(doc.metadata.get("source", "")).name
+            for doc in documents
+            if pathlib.Path(doc.metadata.get("source", "")).suffix not in ALLOWED_EXTENSIONS
+        ]
 
         if len(disallowed_files) > 0:
-            error_msg = (
-                f"""The extensions of following files are not allowed: {disallowed_files}. \n
+            error_msg = f"""The extensions of following files are not allowed: {disallowed_files}. \n
                 Allowed extensions: {ALLOWED_EXTENSIONS}"""
-            )
             raise ValueError(error_msg)
 
         return files
@@ -386,19 +403,15 @@ class DocumentProcessor:
         doc_lengths = {doc.metadata["source"]: len(doc.page_content) for doc in documents}
 
         python_documents = [
-            doc
-            for doc in documents
-            if pathlib.Path(doc.metadata.get("source","")).suffix == ".py"
+            doc for doc in documents if pathlib.Path(doc.metadata.get("source", "")).suffix == ".py"
         ]
         sql_documents = [
-            doc
-            for doc in documents
-            if pathlib.Path(doc.metadata.get("source","")).suffix == ".sql"
+            doc for doc in documents if pathlib.Path(doc.metadata.get("source", "")).suffix == ".sql"
         ]
         yml_documents = [
             doc
             for doc in documents
-            if pathlib.Path(doc.metadata.get("source","")).suffix in [".yml", ".yaml"]
+            if pathlib.Path(doc.metadata.get("source", "")).suffix in [".yml", ".yaml"]
         ]
         text_documents = [
             doc
@@ -449,9 +462,3 @@ class DocumentProcessor:
             for chunk in documents_chunks
         ]
         return chunks
-
-data = pathlib.Path(__file__).parent / "data" / "test.yml"
-
-processor = DocumentProcessor("dummy")
-
-result = processor.load_chunk_documents(data)
