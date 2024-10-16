@@ -12,7 +12,11 @@ _DEFAULT_METADATA = {"models": ["name", "description"]}
 
 
 class CustomRecursiveJsonSplitter(RecursiveJsonSplitter):
-    """A Custom JSON Splitter."""
+    """A Custom JSON Splitter class.
+
+    Is splitting the document in a defined structure for Meta Data. Will result in an ValueError
+    if data is not a Table Definition Structure.
+    """
 
     def __init__(self, max_chunk_size: int = 2000, min_chunk_size: int | None = None):
         """Initialize from parent class."""
@@ -54,7 +58,7 @@ class CustomRecursiveJsonSplitter(RecursiveJsonSplitter):
         raise KeyError(errmsg)
 
     def split_documents(self, documents: Iterable[Document]) -> List[Document]:
-        """Split a list of documents."""
+        """Split a list of documents in defined chunks."""
         split_docs: List[Document] = []
         for doc in documents:
             text = doc.page_content

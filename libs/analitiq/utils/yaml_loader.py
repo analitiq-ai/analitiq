@@ -11,17 +11,33 @@ from langchain_core.documents import Document
 
 
 class YamlLoader(BaseLoader):
-    """An example document loader that reads a list of tuples with texts line by line."""
+    """An example YAML Loader to load a YAML File and interpret it as a dictionary."""
 
     def __init__(self, file_path: str | pathlib.Path) -> None:
         """Initialize the loader with a file path.
-
-        This is
 
         Args:
         ----
          file_path: str | pathlib.Path
             Input path to a yaml file
+
+        Example:
+        -------
+        loader = YamlLoader("my_file_path.yaml")
+        document = loader.load()
+
+        ExampleFileInput:
+        ----------------
+        '''
+        ---
+        key1: value
+        key2:
+          - value1
+          - value2
+
+        ExampleResult:
+        -------------
+        "{'key1':'value', 'key2': ['value1','value2']}"
 
         """
         self.file_path = str(file_path)

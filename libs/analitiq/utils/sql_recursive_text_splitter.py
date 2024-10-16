@@ -42,7 +42,7 @@ class SQLRecursiveCharacterTextSplitter(RecursiveCharacterTextSplitter):
         return cls(separators=sql_separators, **kwargs)
 
     def split_text(self, text: str) -> List[str]:
-        """Split text bei sql statements."""
+        """Split text by sql statements."""
         # Parse the SQL text using sqlparse
         parsed = sqlparse.parse(text)
         statements = []

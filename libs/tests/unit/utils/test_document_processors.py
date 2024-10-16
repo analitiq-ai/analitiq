@@ -1,4 +1,3 @@
-import os
 import pathlib
 import tempfile
 
@@ -70,7 +69,7 @@ def test_load_single_yml_document(tmp_dir):
     }
     for filename, content in file_contents.items():
         file_path = tmp_dir / filename
-        with open(file_path, "w") as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
 
     expect_yaml_result = Document(page_content='{"key": "value", "number": 12345}',
@@ -93,7 +92,7 @@ def test_load_documents_yaml_mixed(tmp_dir):
 
     for filename, content in file_contents.items():
         file_path = tmp_dir / filename
-        with open(file_path, "w") as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
 
     expect_txt_result = Document(page_content="This is a dummy text file. please load it correctly",

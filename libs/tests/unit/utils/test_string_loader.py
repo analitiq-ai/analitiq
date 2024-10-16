@@ -1,5 +1,3 @@
-import pytest
-from langchain_core.documents import Document
 from analitiq.utils.string_loader import StringDocumentLoader
 
 strings = [

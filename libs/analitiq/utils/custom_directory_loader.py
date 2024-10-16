@@ -4,7 +4,11 @@ from langchain_core.documents import Document
 from langchain_core.document_loaders import BaseLoader
 
 class CustomDirectoryLoader:
-    """Custom Directory Loader class to implement features."""
+    """Custom Directory Loader class to implement own logic in loading a complete Directory.
+
+    Loading a whole Directory with the specified glob_loader. Can define loaders for specific suffixes.
+    E.g. for .yaml files.
+    """
 
     def __init__(self, directory_path: str | pathlib.Path, glob: str = "**/*.*", glob_loader=BaseLoader,
                  special_loaders: Optional[Dict[str, BaseLoader]]= None):
@@ -13,7 +17,15 @@ class CustomDirectoryLoader:
         :param directory_path: Path to the directory containing files to load.
         :param glob: Glob pattern to match files within the directory.
         :param glob_loader: Mode to use with UnstructuredFileLoader ('single', 'elements', or 'paged').
-        :param special_loader: Special loaders for specific requests.
+        :param special_loader: Special loaders for specific requests. Given in dict as key the suffix of files
+        and the loader as value to use for these files.
+
+        Example:
+        -------
+        loader = CustomDirectoryLoader("your_path_to_dir", glob = "**/*.*", glob_loader=TextLoader,
+                specific_loaders={".yaml":YamlLoader, ".csv":CsvLoader}
+        )
+
         """
         self.directory_path = pathlib.Path(directory_path)
         self.glob_pattern = glob

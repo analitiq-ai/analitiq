@@ -12,13 +12,19 @@ class StringDocumentLoader(BaseLoader):
     def __init__(self, strings: List[Tuple[str, str]]) -> None:
         """Initialize the loader with a file path.
 
-        This is
-
         Args:
         ----
          strings: List[Tuple[str,str]]
             Input texts as a list whereas the tuple represents each a document text.
-            The first entryis the text and the second is the filename including file extension.
+            The first entry is the text and the second is the filename including file extension.
+
+        Example:
+        -------
+        loader = StringDocumentLoader([
+        "This is my string to convert to a document", "dummy_filename.txt",
+        "This is a second string to convert into a document", "dummy_filename.txt",
+        ])
+        documents = loader.load()
 
         """
         self.strings = strings
