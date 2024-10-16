@@ -11,8 +11,7 @@ from dotenv import load_dotenv
 
 @pytest.fixture(autouse=True, scope="module")
 def load_environment():
-    """Loads environment variables from .env file"""
-
+    """Load environment variables from .env file."""
     load_dotenv(".env", override=True)
 
 @pytest.fixture(name="search")

@@ -331,7 +331,7 @@ class WeaviateConnector(BaseVectorDatabase):
 
         """
         chunk_processor = DocumentProcessor(self.collection_name)
-        chunks = chunk_processor.chunk_documents(path)
+        chunks = chunk_processor.load_chunk_documents(path)
 
         return self.load_chunks(chunks)
 

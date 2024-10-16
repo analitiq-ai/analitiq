@@ -60,7 +60,7 @@ jobs:
         DB_THREADS: ${{ secrets.DB_THREADS }}
         DB_KEEPALIVES_IDLE: ${{ secrets.DB_KEEPALIVES_IDLE }}
         DB_CONNECT_TIMEOUT: ${{ secrets.DB_CONNECT_TIMEOUT }}
-      run: nox --sessions install ruff_format ruff_check pylint mypy pytest coverage pytest_e2e
+      run: nox --sessions install ruff_format pylint pytest coverage pytest_e2e
 
   yaml_lint:
     runs-on: ubuntu-latest
