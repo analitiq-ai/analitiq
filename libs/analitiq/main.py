@@ -29,6 +29,9 @@ sys.path.append("/analitiq")
 class Analitiq:
 
     def __init__(self, agents: list, params: Optional[Dict[str, Any]] = None):
+        if not isinstance(agents, list):
+            raise TypeError("agents must be a list")
+
         self.pipeline = AgentPipeline(agents, params)
 
     def run(self, user_query: str):

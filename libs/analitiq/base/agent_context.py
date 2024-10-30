@@ -29,6 +29,9 @@ class AgentContext:
         else:
             self.results[key][result_type] = result
 
+        # Stream the added result to the requestor as soon as it's added
+        return {key: {result_type: result}}  # This can be used to stream results incrementally
+
     # Function to retrieve the full result (SQL, data, text) by key
     def get_result(self, key: str):
         return self.results.get(key, {})

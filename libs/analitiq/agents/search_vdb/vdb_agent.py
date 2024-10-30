@@ -100,7 +100,7 @@ class VDBAgent(BaseAgent):
         return context
 
     async def arun(self, context) -> AsyncGenerator[Union[str, None], None]:
-        print(self.vdb)
+
         logger.info(f"[Search VDb Agent]. Query: {context.user_query}. Search mode: {self.search_mode}")
         if self.search_mode == "kw":
             response = self.vdb.kw_search(context.user_query)
@@ -113,19 +113,17 @@ class VDBAgent(BaseAgent):
             docs = response.objects
         except Exception:
             logger.error("[Body: Vector Search] Error: No objects returned")
-            context.add_result(self.key, "Search produced no results")
-            yield context
+            yield context.add_result(self.key, "Search produced no results")
 
             return
 
         document_name_list, formatted_documents_string = self.format_docs_into_string(docs)
+
         if self.llm is not None:
             ai_response = self.llm.llm_summ_docs(context.user_query, formatted_documents_string)
-            context.add_result(self.key, ai_response)
-            context.add_result(self.key, f"Documents: {', '.join(document_name_list)}")
+            yield context.add_result(self.key, ai_response)
+            yield context.add_result(self.key, f"Documents: {', '.join(document_name_list)}")
         else:
             logger.error("ERROR: No llm set")
-
-        yield context
 
         return

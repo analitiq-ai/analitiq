@@ -353,18 +353,20 @@ class SQLAgent(BaseAgent):
             dict: Intermediate results or final response from the SQL agent.
 
         """
+        self.user_query = context.user_query
         logger.info(f"[SQL Agent] user query: {context.user_query}")
         # Get DDL documents from vector database
         docs_ddl = self.__get_ddl_from_vdb(context.user_query)
 
         if not docs_ddl or docs_ddl == "ANALYTQ___NO_ANSWER":
             logger.info("No relevant DDL documents in VDB located.")
-            yield {"text": "No relevant DDL documents found in the vector database."}
+            yield context.add_result(self.key, "No relevant DDL documents found in the vector database.")
             return
 
         if docs_ddl:
-            logger.info(f"DDL documents found: {len(docs_ddl)}")
-            yield {"text": f"DDL documents found: {len(docs_ddl)}"}
+            msg = f"DDL documents found: {len(docs_ddl)}"
+            logger.info(msg)
+            yield context.add_result(self.key, msg)
 
             # Format the DDL chunks for LLM input
             docs_ddl_formatted = self.format_ddl_chunks(docs_ddl)
@@ -373,20 +375,19 @@ class SQLAgent(BaseAgent):
         docs_schema_formatted: str = None
 
         if not docs_ddl and not docs_schema:
+            msg = "No supporting documents found in Vector DB to query data."
             # If no supporting documents are found, yield an appropriate response
-            context.add_result(self.key, "No supporting documents found in Vector DB to query data.")
-            yield context
+            yield context.add_result(self.key, msg)
             return
 
         try:
             # Generate SQL from LLM based on provided DDL and schema
             response = self.get_sql_from_llm(docs_ddl_formatted, docs_schema_formatted)
             sql = response["SQL_Code"]
-            yield {"content": f"Here is the SQL that was used:\n ```\n{sql}\n```"}
+            #yield context.add_result(self.key, sql, 'sql')
         except RuntimeError as e:
             # Handle errors during SQL generation
-            context.add_result(self.key, str(e))
-            yield context
+            yield context.add_result(self.key, str(e))
             return
 
         extractor = CodeExtractor()
@@ -397,15 +398,13 @@ class SQLAgent(BaseAgent):
                 # Execute the generated SQL
                 success, result = self.execute_sql(sql)
                 if success:
-                    context.add_result(self.key, sql, 'sql')
-                    context.add_result(self.key, result, 'data')
-                    context.add_result(self.key, response.get("Explanation", ""), 'text')
-                    yield context
+                    yield context.add_result(self.key, response.get("Explanation", ""), 'text')
+                    yield context.add_result(self.key, sql, 'sql')
+                    yield context.add_result(self.key, result, 'data')
                     return
             except Exception as e:
                 # Handle SQL execution errors
-                context.add_result(self.key, str(e))
-                yield context
+                yield context.add_result(self.key, str(e))
                 return
 
             retry_count = 0
@@ -414,15 +413,15 @@ class SQLAgent(BaseAgent):
             while not success and retry_count < max_retries:
                 # Resubmit the SQL for correction if the execution fails
                 corrected_sql = self.resubmit_for_correction(docs_ddl_formatted, sql, result)
-                yield {"text": f"SQL execution failed, attempting to correct the SQL. Retry {retry_count + 1}/{max_retries}."}
+                yield context.add_result(self.key, f"SQL execution failed, attempting to correct the SQL. Retry {retry_count + 1}/{max_retries}.", 'text')
+
                 logger.info(f"Corrected SQL: {corrected_sql}")
                 success, result = self.execute_sql(corrected_sql)
                 retry_count += 1
 
                 if success:
-                    context.add_result(self.key, corrected_sql, 'sql')
-                    context.add_result(self.key, result, 'data')
-                    yield context
+                    yield context.add_result(self.key, corrected_sql, 'sql')
+                    yield context.add_result(self.key, result, 'data')
                     return
 
             # Parse SQL from the error message if the correction also fails
@@ -432,11 +431,11 @@ class SQLAgent(BaseAgent):
                     logger.info(f"Parsed SQL from error message: {extracted_code}")
                     success, result = self.execute_sql(extracted_code)
                     if success:
-                        context.add_result(self.key, extracted_code, 'sql')
-                        context.add_result(self.key, result, 'data')
-                        yield context
+                        yield context.add_result(self.key, extracted_code, 'sql')
+                        yield context.add_result(self.key, result, 'data')
+
                         return
 
             # Add error message to metadata if execution fails
-            context.add_result(self.key, result, 'text')
-            yield context
+            yield context.add_result(self.key, result, 'text')
+
