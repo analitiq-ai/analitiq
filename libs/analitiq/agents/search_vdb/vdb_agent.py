@@ -1,13 +1,13 @@
 from typing import Literal, AsyncGenerator, Union
-from analitiq.logger.logger import logger as alogger
-from analitiq.base.BaseResponse import BaseResponse
-from analitiq.databases.vector.weaviate.weaviate_connector import WeaviateConnector
+from analitiq.logger.logger import logger as logger
+from analitiq.agents.base_agent import BaseAgent
+from analitiq.base.agent_context import AgentContext
 
 DEFAULT_SEARCH_MODE = "hybrid"
 
 
-class SearchVdb:
-    """SearchVdb.
+class VDBAgent(BaseAgent):
+    """VDBAgent.
 
     This class represents a search agent that queries a Weaviate database based on a user prompt. It provides different search modes: keyword search, vector search, and hybrid search. It
     * also uses a Language Model (LLM) to summarize the documents retrieved from the search.
@@ -46,14 +46,13 @@ class SearchVdb:
 
     def __init__(
         self,
-        llm,
-        vdb: WeaviateConnector,
+        key: str,
         search_mode: Literal["kw", "vector", "hybrid"] = DEFAULT_SEARCH_MODE,
     ) -> None:
-        self.llm = llm
-        self.client = vdb
-        self.user_prompt: str
-        self.response = BaseResponse(self.__class__.__name__)
+        super().__init__(key)
+        print(f"VDB Agent {self.key} started.")
+        self.key = key  # Unique key for this agent instance
+        self.user_query: str = None
         self.search_mode = search_mode
 
     @staticmethod
@@ -69,63 +68,62 @@ class SearchVdb:
 
         return document_name_list, formatted_documents_string
 
-    def run(self, user_prompt):
-        self.user_prompt = user_prompt
-        alogger.info(f"[Search VDb Agent]. Query: {user_prompt}")
+    def run(self, context: AgentContext) -> AgentContext:
+        logger.info(f"[Search VDb Agent]. Query: {context.user_query}. Search mode: {self.search_mode}")
+        self.user_query = context.user_query
+        print(self.vdb)
 
         if self.search_mode == "kw":
-            response = self.client.kw_search(user_prompt)
+            response = self.vdb.kw_search(context.user_query)
         elif self.search_mode == "hybrid":
-            response = self.client.hybrid_search(user_prompt)
+            response = self.vdb.hybrid_search(context.user_query)
         elif self.search_mode == "vector":
-            response = self.client.vector_search(user_prompt)
+            response = self.vdb.vector_search(context.user_query)
 
         try:
             docs = response.objects
         except Exception:
-            alogger.error("[Body: Vector Search] Error: No objects returned")
-            self.response.set_content("Search failed")
-            return self.response
+            logger.error("[Body: Vector Search] Error: No objects returned")
+            context.add_result(self.key, "Search failed")
+            return context
 
         # Initialize an empty string to hold the formatted content
         document_name_list, formatted_documents_string = self.format_docs_into_string(docs)
+
         if self.llm is not None:
-            ai_response = self.llm.llm_summ_docs(user_prompt, formatted_documents_string)
-            self.response.set_content(ai_response)
-            self.response.set_metadata({"documents": ", ".join(document_name_list)})
+            ai_response = self.llm.llm_summ_docs(context.user_query, formatted_documents_string)
+            context.add_result(self.key, ai_response)
+            context.add_result(self.key, f"Documents: {', '.join(document_name_list)}")
         else:
             logger.error("ERROR: No llm set")
 
-        return self.response
+        return context
 
-    async def arun(self, user_prompt) -> AsyncGenerator[Union[str, BaseResponse], None]:
-        self.user_prompt = user_prompt
-        alogger.info(f"[Search VDb Agent]. Query: {user_prompt}")
+    async def arun(self, context) -> AsyncGenerator[Union[str, None], None]:
 
+        logger.info(f"[Search VDb Agent]. Query: {context.user_query}. Search mode: {self.search_mode}")
         if self.search_mode == "kw":
-            response = self.client.kw_search(user_prompt)
+            response = self.vdb.kw_search(context.user_query)
         elif self.search_mode == "hybrid":
-            response = self.client.hybrid_search(user_prompt)
+            response = self.vdb.hybrid_search(context.user_query)
         elif self.search_mode == "vector":
-            response = self.client.vector_search(user_prompt)
+            response = self.vdb.vector_search(context.user_query)
 
         try:
             docs = response.objects
         except Exception:
-            alogger.error("[Body: Vector Search] Error: No objects returned")
-            self.response.set_content("Search produced no results")
-            yield self.response.to_json()
+            logger.error("[Body: Vector Search] Error: No objects returned")
+            yield context.add_result(self.key, "Search produced no results")
 
             return
 
         document_name_list, formatted_documents_string = self.format_docs_into_string(docs)
+
         if self.llm is not None:
-            ai_response = self.llm.llm_summ_docs(user_prompt, formatted_documents_string)
-            self.response.set_content(ai_response)
-            self.response.set_metadata({"documents": ", ".join(document_name_list)})
+            ai_response = self.llm.llm_summ_docs(context.user_query, formatted_documents_string)
+            yield context.add_result(self.key, ai_response)
+            yield context.add_result(self.key, f"Documents: {', '.join(document_name_list)}")
         else:
             logger.error("ERROR: No llm set")
-
-        yield self.response.to_json()
 
         return

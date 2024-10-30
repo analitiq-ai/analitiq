@@ -16,7 +16,7 @@ vdb_params = {
 }
 
 
-vdb = VectorDatabaseFactory.create_database(vdb_params)
+vdb = VectorDatabaseFactory.connect(vdb_params)
 
 
 response = vdb.create_collection(vdb_params['collection_name'])

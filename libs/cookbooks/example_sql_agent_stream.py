@@ -1,5 +1,7 @@
 import os
 import sys
+import asyncio
+import pandas as pd
 from analitiq.agents.sql.sql_agent import SQLAgent
 from analitiq.main import Analitiq
 from dotenv import load_dotenv
@@ -63,7 +65,7 @@ def define_vdb_params(env_vars):
     }
 
 
-if __name__ == "__main__":
+async def main():
     add_to_sys_path()
     env_vars = load_env_variables()
 
@@ -80,13 +82,23 @@ if __name__ == "__main__":
 
     inst = Analitiq(agents, params)
 
-    # Run the pipeline
-    response = inst.run(user_query="Give me count of events by month")
+    # Call the async arun method and iterate over the yielded results
+    async for response in inst.arun(user_query="give me events by venue"):
+        # Loop through all results and handle dataframes accordingly
+        print(response)
+        try:
+            for key, result in response.items():
+                print(f"Streaming result for agent key '{key}':")
+                for content_type, content in result.items():
+                    if content_type == 'data' and isinstance(content, pd.DataFrame):
+                        print(f"  {content_type}: {content.to_json(orient='split')}")
+                    else:
+                        print(f"  {content_type}: {content}")
+        except Exception as e:
+            print(e)
 
-    sql = response.get_result_sql('sql_1')
-    text = response.get_result_text('sql_1')
-    result = response.get_result_data('sql_1')
 
-    print(text)
-    print(sql)
-    print(result)
+# Run the main function using asyncio
+if __name__ == "__main__":
+    asyncio.run(main())
+

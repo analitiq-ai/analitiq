@@ -451,12 +451,12 @@ class DocumentProcessor:
         chunks = [
             Chunk(
                 content=chunk.page_content,
-                document_source=chunk.metadata["source"],
+                document_source='upload', # this is by default, all manual uploads of data are flagged as source-upload
                 document_type=extension,
                 document_name=pathlib.Path(chunk.metadata["source"]).name,
                 document_num_char=doc_lengths[chunk.metadata["source"]],
                 chunk_num_char=len(chunk.page_content),
-                created_ts=datetime.now(timezone.utc),
+                created_ts=datetime.now(timezone.utc).isoformat(),
                 content_kw=keyword_extractions.extract_keywords(chunk.page_content),
             )
             for chunk in documents_chunks

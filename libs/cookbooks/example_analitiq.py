@@ -78,13 +78,13 @@ params = {
     }
 }
 
-user_prompt = "Bikes"
+user_prompt = "Show me events by venue."
 
 a = Analitiq(params)
 agent_responses = a.run(user_prompt)
 
 for response in agent_responses.values():
     if response:
-        pass
+        print(response)
 
 

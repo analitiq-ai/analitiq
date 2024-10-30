@@ -27,7 +27,7 @@ def load_environment():
 
 @pytest.fixture(scope="module")
 def vdb(params):
-    handler = VectorDatabaseFactory.create_database(params)
+    handler = VectorDatabaseFactory.connect(params)
     yield handler
 
 
@@ -44,7 +44,10 @@ test_documents = [
         "document_name": "project_plan.txt",
         "content": "This document contains the project plan.",
     },
-    {"document_name": "summary_report.txt", "content": "The summary of all reports."},
+    {
+        "document_name": "summary_report.txt",
+        "content": "The summary of all reports."
+    },
     {
         "document_name": "test_document_3.txt",
         "content": "This document is for additional tests.",
@@ -314,8 +317,8 @@ def test_filter_count__like(vdb):
         "or": [
             {
                 "and": [
-                    {"property": "document_name", "operator": "like", "value": "test"},
-                    {"property": "document_source", "operator": "like", "value": "test"},
+                    {"property": "document_name", "operator": "like", "value": "test*"},
+                    {"property": "document_name", "operator": "like", "value": "*.txt"},
                 ]
             },
             {
@@ -323,7 +326,7 @@ def test_filter_count__like(vdb):
                     {
                         "property": "document_name",
                         "operator": "=",
-                        "value": "test_document_1.txt",
+                        "value": "project_plan.txt",
                     },
                     {
                         "property": "document_name",

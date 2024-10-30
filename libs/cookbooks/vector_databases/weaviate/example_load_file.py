@@ -16,7 +16,7 @@ vdb_params = {
 }
 
 
-vdb = VectorDatabaseFactory.create_database(vdb_params)
+vdb = VectorDatabaseFactory.connect(vdb_params)
 
 FILE_PATH = '/Users/kirillandriychuk/Documents/Projects/analitiq-ai/libs/cookbooks/vector_databases/weaviate/test_file.txt'
 response = vdb.load_file(FILE_PATH)
