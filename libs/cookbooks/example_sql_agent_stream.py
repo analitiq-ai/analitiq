@@ -83,20 +83,20 @@ async def main():
     inst = Analitiq(agents, params)
 
     # Call the async arun method and iterate over the yielded results
-    async for res in inst.arun(user_query="give me events by venue"):
-        # Process each result
-        if isinstance(res, dict):
-            print(f"Intermediate result: {res}")
-        else:
-            print(f"Final results:")
-    # Loop through all results and handle dataframes accordingly
-    for key, result in res.results.items():
-        print(f"Results for key '{key}':")
-        for result_type, value in result.items():
-            if result_type == 'data' and isinstance(value, pd.DataFrame):
-                print(f"  {result_type}: {value.to_json(orient='split')}")
-            else:
-                print(f"  {result_type}: {value}")
+    async for response in inst.arun(user_query="give me events by venue"):
+        # Loop through all results and handle dataframes accordingly
+        print(response)
+        try:
+            for key, result in response.items():
+                print(f"Streaming result for agent key '{key}':")
+                for content_type, content in result.items():
+                    if content_type == 'data' and isinstance(content, pd.DataFrame):
+                        print(f"  {content_type}: {content.to_json(orient='split')}")
+                    else:
+                        print(f"  {content_type}: {content}")
+        except Exception as e:
+            print(e)
+
 
 # Run the main function using asyncio
 if __name__ == "__main__":

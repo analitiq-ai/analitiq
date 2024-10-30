@@ -1,4 +1,3 @@
-import asyncio
 import collections.abc
 from analitiq.base.agent_context import AgentContext
 
@@ -8,7 +7,7 @@ class AgentPipeline:
         self.agents = agents
         self.params = params
 
-    def run(self, context):
+    def run(self, context: AgentContext):
         for agent in self.agents:
             agent.invoke(self.params)  # Agents initialize dependencies
             context = agent.run(context)
