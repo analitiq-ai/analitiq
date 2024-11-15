@@ -25,14 +25,14 @@ class RelationalDatabaseFactory:
         if "type" not in params:
             raise KeyError("'type' not found in params. Please specify database type")
 
-        db_type = params["type"]
-        """Factory function to create a database wrapper instance based on db_type."""
-        module_path = f"analitiq.databases.relational.{db_type}.{db_type}_connector"
-        class_name = f"{db_type.capitalize()}Connector"
+        db_dialect = params["dialect"]
+        """Factory function to create a database wrapper instance based on db_dialect."""
+        module_path = f"analitiq.databases.relational.{db_dialect}.{db_dialect}_connector"
+        class_name = f"{db_dialect.capitalize()}Connector"
 
         try:
             module = importlib.import_module(module_path)
             database_class = getattr(module, class_name)
             return database_class(params)
         except (ImportError, AttributeError) as e:
-            raise ValueError(f"Unknown relational database type: {db_type}") from e
+            raise ValueError(f"Unknown relational database type {db_dialect}.") from e

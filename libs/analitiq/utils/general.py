@@ -1,10 +1,12 @@
 import time
-from analitiq.logger.logger import logger
+from analitiq.logger.logger import initialize_logging
+logger, chat_logger = initialize_logging()
 import re
 
 import yaml
 from typing import Dict, Any
 
+logger, chat_logger = initialize_logging()
 
 def retry(max_retries, wait_time):
     """Decorator to retry a function with specified maximum retries and wait time between retries.

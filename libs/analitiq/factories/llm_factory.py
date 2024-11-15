@@ -27,7 +27,7 @@ class LlmFactory:
 
         llm_type = params["type"]
 
-        """Factory function to create a database wrapper instance based on db_type."""
+        """Factory function to create a database wrapper instance based on db_dialect."""
         module_path = f"analitiq.llms.{llm_type}.{llm_type}_connector"
         class_name = f"{llm_type.capitalize()}Connector"
 

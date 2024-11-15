@@ -10,16 +10,17 @@ from weaviate.collections.classes.aggregate import AggregateGroupByReturn
 from weaviate.classes.config import Configure
 from weaviate.classes.query import MetadataQuery, Filter
 from weaviate.classes.aggregate import GroupByAggregate
+from weaviate.collections.classes.internal import QueryReturn
 from analitiq.base.base_vector_database import BaseVectorDatabase
 from analitiq.databases.vector.weaviate.query_builder import QueryBuilder
-from analitiq.utils.document_processor import (
-    DocumentProcessor,
-    group_results_by_properties,
-)
-from analitiq.utils.keyword_extractions import extract_keywords
 from analitiq.databases.vector.utils.analitiq_vectorizer import AnalitiqVectorizer
-from weaviate.collections.classes.internal import QueryReturn
-from analitiq.databases.vector.schema import Chunk
+from analitiq.utils.keyword_extractions import extract_keywords
+from analitiq.loaders.documents.directory_loader import DirectoryLoader
+from analitiq.factories.chunker_factory import ChunkerFactory
+from analitiq.utils.document_processor import group_results_by_properties
+from analitiq.loaders.documents.file_loader import FileLoader
+from analitiq.loaders.documents.text_loader import TextLoader
+from analitiq.loaders.documents.schemas import Chunk
 
 logger = logging.getLogger(__name__)
 
@@ -287,7 +288,6 @@ class WeaviateConnector(BaseVectorDatabase):
             collection = self.__get_tenant_collection_object()
 
             with collection.batch.dynamic() as batch:
-
                 for chunk in chunks:
                     chunk_model_json = chunk.model_dump()
 
@@ -330,8 +330,12 @@ class WeaviateConnector(BaseVectorDatabase):
             If there is an error during file processing or loading.
 
         """
-        chunk_processor = DocumentProcessor(self.collection_name)
-        chunks = chunk_processor.load_chunk_documents(path)
+
+        loader = FileLoader(path)
+        documents = loader.load()
+        document=documents[0]
+        chunker = ChunkerFactory.get_chunker(document.metadata.document_type.value)
+        chunks = chunker.chunk(document)
 
         return self.load_chunks(chunks)
 
@@ -358,11 +362,35 @@ class WeaviateConnector(BaseVectorDatabase):
             If there is an error during directory processing or loading.
 
         """
-        chunk_processor = DocumentProcessor(self.collection_name)
-        chunks = chunk_processor.chunk_documents(path, extension)
+
+        loader = DirectoryLoader(path, extension)
+        documents = loader.load()
+        if not documents:
+            logger.info("No documents were loaded from the directory.")
+        document_chunks=[]
+        for doc in documents:
+            chunker = ChunkerFactory.get_chunker(doc.metadata.document_type.value)
+            chunks = chunker.chunk(doc)
+            document_chunks.extend(chunks)
+        return self.load_chunks(document_chunks)
+
+    def load_text(self, content: str, document_name: str, document_type: str) -> int:
+        """
+        Load a text chunk into the Vector Database.
+        :param content: the content of the document
+        :param document_name: the name of the document
+        :param document_type: the type of the document
+        :return: The number of chunks that were loaded (always returns 1).
+        """
+
+        loader = TextLoader(content, document_name, document_type)
+        documents = loader.load()
+
+        document=documents[0]
+        chunker = ChunkerFactory.get_chunker(document.metadata.document_type.value)
+        chunks = chunker.chunk(document)
 
         return self.load_chunks(chunks)
-
 
     @search_only
     def kw_search(self, query: str, limit: int = 3) -> QueryReturn:
@@ -594,7 +622,6 @@ class WeaviateConnector(BaseVectorDatabase):
         """
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
-
 
         try:
             query_vector = self.vectorizer.vectorize(query)

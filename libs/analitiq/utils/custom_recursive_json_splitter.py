@@ -1,4 +1,6 @@
-"""Class will split a json structure in a given format.
+"""
+Filename: custom_recursive_json_splitter.py
+Class will split a json structure in a given format.
 
 Persist a specific metadata info from parent to child groups.
 """
@@ -11,7 +13,7 @@ from langchain_community.docstore.document import Document
 _DEFAULT_METADATA = {"models": ["name", "description"]}
 
 
-class CustomRecursiveJsonSplitter(RecursiveJsonSplitter):
+class RecursiveJsonSplitter(RecursiveJsonSplitter):
     """A Custom JSON Splitter class.
 
     Is splitting the document in a defined structure for Meta Data. Will result in an ValueError

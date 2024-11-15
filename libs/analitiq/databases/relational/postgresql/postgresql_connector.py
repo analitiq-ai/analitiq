@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from analitiq.base.base_relational_database import BaseRelationalDatabase
 
 
-class PostgresConnector(BaseRelationalDatabase):
+class PostgresqlConnector(BaseRelationalDatabase):
     """Database wrapper for PostgreSQL databases."""
 
     def create_engine(self):

@@ -1,4 +1,4 @@
-from analitiq.logger.logger import logger
+from analitiq.logger.logger import initialize_logging
 import os
 import json
 from typing import List, Dict, Any, Optional
@@ -8,7 +8,7 @@ from analitiq.base.BaseSession import BaseSession
 from analitiq.base.GlobalConfig import GlobalConfig
 from enum import Enum
 
-
+logger, chat_logger = initialize_logging()
 class EntityType(Enum):
     HUMAN = "Human"
     ANALITIQ = "Analitiq"

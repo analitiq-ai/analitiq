@@ -46,7 +46,7 @@ load_dotenv()
 params = {
     'db_params': {
         "name": os.getenv("DB_NAME"),
-        "type": os.getenv("DB_TYPE"),
+        "dialect": os.getenv("DB_DIALECT"),
         "host": os.getenv("DB_HOST"),
         "username": os.getenv("DB_USERNAME"),
         "password": os.getenv("DB_PASSWORD"),

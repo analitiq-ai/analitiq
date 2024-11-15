@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import Tuple, Optional
-from analitiq.logger.logger import logger, chat_logger
+from analitiq.logger.logger import initialize_logging
 from analitiq.utils.code_extractor import CodeExtractor
 from analitiq.agents.sql.schema import SQL
 from analitiq.base.agent_context import AgentContext
@@ -12,7 +12,7 @@ from sqlalchemy.sql import text
 from analitiq.agents.sql.prompt import TEXT_TO_SQL_PROMPT
 from langchain_core.exceptions import OutputParserException
 
-
+logger, chat_logger = initialize_logging()
 class SQLAgent(BaseAgent):
     """Handles SQL query generation and execution against the database using LLM integration.
 
@@ -53,6 +53,7 @@ class SQLAgent(BaseAgent):
 
         """
         chat_logger.info(f"{sql}")  # Log the SQL query being executed
+
         try:
             # Execute the SQL query and store the result in a DataFrame
             result = pd.read_sql(text(sql), self.db.engine, params=params)

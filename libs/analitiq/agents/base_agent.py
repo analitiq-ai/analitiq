@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Dict, Any
-import logging
-from analitiq.logger.logger import logger
+from analitiq.logger.logger import initialize_logging
 from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 from analitiq.factories.llm_factory import LlmFactory
 
-
+logger, chat_logger = initialize_logging()
 class BaseAgent(ABC):
     """Abstract base class for agents."""
 

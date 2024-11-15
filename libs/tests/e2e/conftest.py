@@ -16,7 +16,7 @@ ENV_VARIABLES = [
     "AWS_SECRET_ACCESS_KEY",
     "REGION_NAME",
     "DB_NAME",
-    "DB_TYPE",
+    "DB_DIALECT",
     "DB_HOST",
     "DB_USERNAME",
     "DB_PASSWORD",
@@ -41,7 +41,7 @@ def db_params_fixture(env_vars):
     """Set the database parameters."""
     return {
         "name": env_vars.get("DB_NAME"),
-        "type": env_vars.get("DB_TYPE"),
+        "dialect": env_vars.get("DB_DIALECT"),
         "host": env_vars.get("DB_HOST"),
         "username": env_vars.get("DB_USERNAME"),
         "password": env_vars.get("DB_PASSWORD"),

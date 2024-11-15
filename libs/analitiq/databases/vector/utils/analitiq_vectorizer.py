@@ -4,7 +4,7 @@ import numpy as np
 
 
 class AnalitiqVectorizer:
-    """A class to handle vectorization of text using Hugging Face models.
+    """A class to handle vectorization of text using HuggingFace models.
 
     Attributes
     ----------

@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 ENV_VARIABLES = ["WEAVIATE_COLLECTION", "WEAVIATE_URL", "WEAVIATE_CLIENT_SECRET", "LLM_MODEL_NAME",
                  "CREDENTIALS_PROFILE_NAME",
-                 "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "REGION_NAME", "DB_NAME", "DB_TYPE", "DB_HOST",
+                 "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "REGION_NAME", "DB_NAME", "DB_DIALECT", "DB_HOST",
                  "DB_USERNAME",
                  "DB_PASSWORD", "DB_PORT", "DB_DB_NAME", "DB_SCHEMAS", "DB_THREADS", "DB_KEEPALIVES_IDLE",
                  "DB_CONNECT_TIMEOUT"]
@@ -27,8 +27,9 @@ def load_env_variables():
 
 def define_db_params(env_vars):
     return {
-        "name": env_vars.get("DB_NAME"),
         "type": env_vars.get("DB_TYPE"),
+        "name": env_vars.get("DB_NAME"),
+        "dialect": env_vars.get("DB_DIALECT"),
         "host": env_vars.get("DB_HOST"),
         "username": env_vars.get("DB_USERNAME"),
         "password": env_vars.get("DB_PASSWORD"),
@@ -83,17 +84,13 @@ async def main():
     inst = Analitiq(agents, params)
 
     # Call the async arun method and iterate over the yielded results
-    async for response in inst.arun(user_query="give me events by venue"):
+    async for response in inst.arun(user_query="give me count of events by venue."):
         # Loop through all results and handle dataframes accordingly
-        print(response)
         try:
             for key, result in response.items():
                 print(f"Streaming result for agent key '{key}':")
                 for content_type, content in result.items():
-                    if content_type == 'data' and isinstance(content, pd.DataFrame):
-                        print(f"  {content_type}: {content.to_json(orient='split')}")
-                    else:
-                        print(f"  {content_type}: {content}")
+                    print(f"  {content_type}: {content}")
         except Exception as e:
             print(e)
 

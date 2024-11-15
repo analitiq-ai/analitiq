@@ -26,7 +26,7 @@ class VectorDatabaseFactory:
             raise KeyError("'type' not found in params. Please specify database type")
 
         db_type = params["type"]
-
+        print(params)
         module_path = f"analitiq.databases.vector.{db_type}.{db_type}_connector"
         class_name = f"{db_type.capitalize()}Connector"
 
@@ -35,4 +35,4 @@ class VectorDatabaseFactory:
             database_class = getattr(module, class_name)
             return database_class(params)
         except (ImportError, AttributeError) as e:
-            raise ValueError(f"Unknown vector database type: {db_type}") from e
+            raise ValueError(f"Error loading Vector Database {db_type}: {e}") from e

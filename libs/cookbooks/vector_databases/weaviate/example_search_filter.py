@@ -17,7 +17,7 @@ vdb_params = {
 
 filter_expression = {
     "and": [
-        {"property": "document_tags", "operator": "contains_any", "value": ["ddl"]}
+        {"property": "document_name", "operator": "=", "value": "project_plan"},
     ]
 }
 

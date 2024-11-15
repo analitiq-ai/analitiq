@@ -1,9 +1,9 @@
 import os
 import importlib.util
 import re
+from analitiq.logger.logger import initialize_logging
 
-from analitiq.logger.logger import logger
-
+logger, chat_logger = initialize_logging()
 
 class ServicesLoader:
     """ConfigLoader is responsible for loading configuration files

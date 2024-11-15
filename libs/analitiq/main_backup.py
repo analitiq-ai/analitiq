@@ -1,7 +1,7 @@
 import pathlib
 import sys
 from typing import Dict, Optional, Any
-from analitiq.logger.logger import logger
+from analitiq.logger.logger import initialize_logging
 from analitiq.base.BaseMemory import BaseMemory
 from analitiq.factories.relational_database_factory import RelationalDatabaseFactory
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
@@ -15,7 +15,7 @@ from analitiq.agents.sql.sql_agent import SQLAgent
 from analitiq.base.agent_context import AgentContext
 from analitiq.agents.agent_pipeline import AgentPipeline
 
-
+logger, chat_logger = initialize_logging()
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LOGPATH = ROOT / "logger"
 

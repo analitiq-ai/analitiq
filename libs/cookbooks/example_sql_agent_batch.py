@@ -1,12 +1,13 @@
 import os
 import sys
+import pandas as pd
 from analitiq.agents.sql.sql_agent import SQLAgent
 from analitiq.main import Analitiq
 from dotenv import load_dotenv
 
 ENV_VARIABLES = ["WEAVIATE_COLLECTION", "WEAVIATE_URL", "WEAVIATE_CLIENT_SECRET", "LLM_MODEL_NAME",
                  "CREDENTIALS_PROFILE_NAME",
-                 "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "REGION_NAME", "DB_NAME", "DB_TYPE", "DB_HOST",
+                 "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "REGION_NAME", "DB_NAME", "DB_DIALECT", "DB_HOST",
                  "DB_USERNAME",
                  "DB_PASSWORD", "DB_PORT", "DB_DB_NAME", "DB_SCHEMAS", "DB_THREADS", "DB_KEEPALIVES_IDLE",
                  "DB_CONNECT_TIMEOUT"]
@@ -25,8 +26,9 @@ def load_env_variables():
 
 def define_db_params(env_vars):
     return {
-        "name": env_vars.get("DB_NAME"),
         "type": env_vars.get("DB_TYPE"),
+        "name": env_vars.get("DB_NAME"),
+        "dialect": env_vars.get("DB_DIALECT"),
         "host": env_vars.get("DB_HOST"),
         "username": env_vars.get("DB_USERNAME"),
         "password": env_vars.get("DB_PASSWORD"),
@@ -45,11 +47,11 @@ def define_llm_params(env_vars):
         , "api_key": None
         , "temperature": 0.0
         , "llm_model_name": env_vars.get("LLM_MODEL_NAME")
-        , "credentials_profile_name": env_vars.get("CREDENTIALS_PROFILE_NAME")
+        , "credentials_profile_name": env_vars.get("LLM_CREDENTIALS_PROFILE_NAME")
         , "provider": "anthropic"
-        , "aws_access_key_id": env_vars.get("AWS_ACCESS_KEY_ID")
-        , "aws_secret_access_key": env_vars.get("AWS_SECRET_ACCESS_KEY")
-        , "region_name": env_vars.get("REGION_NAME")
+        , "aws_access_key_id": env_vars.get("LLM_AWS_ACCESS_KEY_ID")
+        , "aws_secret_access_key": env_vars.get("LLM_AWS_SECRET_ACCESS_KEY")
+        , "region_name": env_vars.get("LLM_REGION_NAME")
             }
 
 
@@ -81,8 +83,21 @@ if __name__ == "__main__":
     inst = Analitiq(agents, params)
 
     # Run the pipeline
-    response = inst.run(user_query="Give me count of events by month")
+    agents_responses = inst.run(user_query="Give me a count of events.")
+    results = agents_responses.get_results()
+    print(results)
 
+    try:
+        for agent_key, result in results.items():
+            print(f"Batch result for agent key '{agent_key}':")
+            for content_type, content in result.items():
+                print(content)
+
+    except Exception as e:
+        print(e)
+"""
+    # results for a particular agent can also be called individually
+    
     sql = response.get_result_sql('sql_1')
     text = response.get_result_text('sql_1')
     result = response.get_result_data('sql_1')
@@ -90,3 +105,5 @@ if __name__ == "__main__":
     print(text)
     print(sql)
     print(result)
+
+"""

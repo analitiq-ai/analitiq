@@ -54,7 +54,7 @@ def load_env_variables(env_file: str = '.env'):
     print(f"Loading DB: {os.getenv('DB_NAME')}")
     return {
         "name": os.getenv("DB_NAME"),
-        "type": os.getenv("DB_TYPE"),
+        "dialect": os.getenv("DB_DIALECT"),
         "host": os.getenv("DB_HOST"),
         "username": os.getenv("DB_USERNAME"),
         "password": os.getenv("DB_PASSWORD"),

@@ -17,6 +17,7 @@ vdb_params = {
 
 vdb = VectorDatabaseFactory.connect(vdb_params)
 
+
 response = vdb.collection_add_tenant(vdb_params['tenant_name'])
 
 

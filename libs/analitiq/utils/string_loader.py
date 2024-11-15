@@ -11,13 +11,11 @@ class StringDocumentLoader(BaseLoader):
 
     def __init__(self, strings: List[Tuple[str, str]]) -> None:
         """Initialize the loader with a file path.
-
         Args:
         ----
          strings: List[Tuple[str,str]]
             Input texts as a list whereas the tuple represents each a document text.
             The first entry is the text and the second is the filename including file extension.
-
         Example:
         -------
         loader = StringDocumentLoader([
@@ -25,13 +23,11 @@ class StringDocumentLoader(BaseLoader):
         "This is a second string to convert into a document", "dummy_filename.txt",
         ])
         documents = loader.load()
-
         """
         self.strings = strings
 
-    def lazy_load(self) -> Iterator[Document]:  # <-- Does not take any arguments
+    def stream(self) -> Iterator[Document]:  # <-- Does not take any arguments
         """Load a file line by line in lazy mode.
-
         When you're implementing lazy load methods, you should use a generator
         to yield documents one by one.
         """

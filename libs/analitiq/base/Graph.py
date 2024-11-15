@@ -1,9 +1,9 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from analitiq.logger.logger import logger
+from analitiq.logger.logger import initialize_logging
 import inspect
 import json
 
-
+logger, chat_logger = initialize_logging()
 class InvalidServiceNameException(Exception):
     """Exception raised for invalid service names."""
 

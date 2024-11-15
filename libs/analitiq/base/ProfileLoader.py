@@ -1,8 +1,8 @@
-from analitiq.logger.logger import logger
+from analitiq.logger.logger import initialize_logging
 from typing import List, Optional
 from pydantic import BaseModel, field_validator, ValidationError
 
-
+logger, chat_logger = initialize_logging()
 class DatabaseConnection(BaseModel):
     name: str
     type: str

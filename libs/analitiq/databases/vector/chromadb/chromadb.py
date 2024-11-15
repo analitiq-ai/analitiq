@@ -1,12 +1,12 @@
 from typing import Optional
 import os
-
 import chromadb
 from chromadb.api import ClientAPI
 
-from analitiq.logger.logger import logger
+from analitiq.logger.logger import initialize_logging
 from analitiq.databases.vector.chromadb.schema import VectorStoreCollection
 
+logger, chat_logger = initialize_logging()
 
 def get_vector_store():
     vector_store = chromadb.HttpClient(host=os.getenv("CHROMA_DB_HOST"), port=os.getenv("CHROMA_DB_PORT"))

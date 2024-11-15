@@ -1,4 +1,4 @@
-from analitiq.logger.logger import logger
+from analitiq.logger.logger import initialize_logging
 from typing import Dict, Any
 from pathlib import Path
 import os
@@ -6,7 +6,7 @@ from analitiq.base.ProfileLoader import ProfileLoader
 from analitiq.base.ServicesLoader import ServicesLoader
 from analitiq.utils.general import load_yaml
 
-
+logger, chat_logger = initialize_logging()
 class GlobalConfig:
     _instance = None
     _initialized = False

@@ -1,10 +1,10 @@
 from typing import Literal, AsyncGenerator, Union
-from analitiq.logger.logger import logger as logger
+from analitiq.logger.logger import initialize_logging
 from analitiq.agents.base_agent import BaseAgent
 from analitiq.base.agent_context import AgentContext
 
 DEFAULT_SEARCH_MODE = "hybrid"
-
+logger, chat_logger = initialize_logging()
 
 class VDBAgent(BaseAgent):
     """VDBAgent.
@@ -50,7 +50,7 @@ class VDBAgent(BaseAgent):
         search_mode: Literal["kw", "vector", "hybrid"] = DEFAULT_SEARCH_MODE,
     ) -> None:
         super().__init__(key)
-        print(f"VDB Agent {self.key} started.")
+        logger.info(f"VDB Agent {self.key} started.")
         self.key = key  # Unique key for this agent instance
         self.user_query: str = None
         self.search_mode = search_mode
@@ -71,7 +71,6 @@ class VDBAgent(BaseAgent):
     def run(self, context: AgentContext) -> AgentContext:
         logger.info(f"[Search VDb Agent]. Query: {context.user_query}. Search mode: {self.search_mode}")
         self.user_query = context.user_query
-        print(self.vdb)
 
         if self.search_mode == "kw":
             response = self.vdb.kw_search(context.user_query)

@@ -1,6 +1,6 @@
 Usage of Relational Database Factory
 Loading a Database via the Factory
-You can use the connect function from relational_database_factory.py to instantiate a database wrapper dynamically based on the db_type.
+You can use the connect function from relational_database_factory.py to instantiate a database wrapper dynamically based on the db_dialect.
 
 Example: PostgreSQL
 
@@ -20,7 +20,7 @@ postgres_params = {
 
 # Create a PostgreSQL database instance using the factory
 
-postgres_db = connect(db_type="postgres", params=postgres_params)
+postgres_db = connect(db_dialect="postgresql", params=postgres_params)
 
 # Use the database instance
 schemas = postgres_db.get_schema_names()
@@ -42,7 +42,7 @@ redshift_params = {
 
 # Create a Redshift database instance using the factory
 
-redshift_db = create_database(db_type="redshift", params=redshift_params)
+redshift_db = create_database(db_dialect="redshift", params=redshift_params)
 
 # Use the database instance
 
@@ -55,7 +55,7 @@ Alternatively, you can instantiate the database wrapper classes directly without
 
 Example: PostgreSQL
 ```
-from analitiq.factories.postgres.postgres_connector import PostgresConnector
+from analitiq.factories.postgres.postgres_connector import PostgresqlConnector
 
 # Parameters for PostgreSQL
 postgres_params = {
@@ -68,7 +68,7 @@ postgres_params = {
 }
 
 # Create a PostgreSQL database instance directly
-postgres_db = PostgresConnector(params=postgres_params)
+postgres_db = PostgresqlConnector(params=postgres_params)
 
 # Use the database instance
 schemas = postgres_db.get_schema_names()
@@ -151,7 +151,7 @@ mysql_params = {
 }
 
 # Create a MySQL database instance using the factory
-mysql_db = connect(db_type="mysql", params=mysql_params)
+mysql_db = connect(db_dialect="mysql", params=mysql_params)
 
 # Use the database instance
 schemas = mysql_db.get_schema_names()

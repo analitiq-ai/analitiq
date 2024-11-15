@@ -24,3 +24,8 @@ or directly via:
 ````python
 poetry run pytest libs/tests/unit/databases/vector/weaviate/test_weaviate_connector.py
 ````
+
+to run with printed statements:
+```python
+pytest -s -v test.py
+```

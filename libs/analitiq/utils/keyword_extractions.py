@@ -6,6 +6,11 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import PorterStemmer
 from nltk.data import find
 
+DOWNLOAD_DIR = "/tmp"  # Specify your download directory here
+
+# Set the default NLTK data path to include your custom directory.
+# This needs to happen before calling is_resource_downloaded to ensure that directory is checked.
+nltk.data.path.append(DOWNLOAD_DIR)
 
 def is_resource_downloaded(resource):
     """Checks if a resource has been downloaded.
@@ -25,13 +30,13 @@ stopwords_downloaded = is_resource_downloaded("corpora/stopwords")
 punkt_tab_downloaded = is_resource_downloaded("tokenizers/punkt_tab")
 
 if not punkt_downloaded:
-    nltk.download("punkt")
+    nltk.download("punkt", download_dir=DOWNLOAD_DIR)
 
 if not punkt_tab_downloaded:
-    nltk.download("punkt_tab")
+    nltk.download("punkt_tab", download_dir=DOWNLOAD_DIR)
 
 if not stopwords_downloaded:
-    nltk.download("stopwords")
+    nltk.download("stopwords", download_dir=DOWNLOAD_DIR)
 
 
 def extract_keywords(text: str) -> str:

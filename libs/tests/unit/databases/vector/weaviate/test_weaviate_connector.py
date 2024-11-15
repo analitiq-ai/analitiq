@@ -1,20 +1,20 @@
 # pylint: disable=redefined-outer-name
-
+import pathlib
 import pytest
 import os
 from dotenv import load_dotenv
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 from weaviate.collections.classes.internal import QueryReturn
 
-
 @pytest.fixture(autouse=True, scope="module")
-def params():
+def params(pytestconfig):
+    load_dotenv(f"{pytestconfig.rootpath}/.env", override=True)
     return {
         "collection_name": "test",
         "tenant_name": "test_tenant",
         "type": os.getenv("VDB_TYPE"),
-        "host": os.getenv("WEAVIATE_URL"),
-        "api_key": os.getenv("WEAVIATE_CLIENT_SECRET"),
+        "host": os.getenv("VDB_HOST"),
+        "api_key": os.getenv("VDB_API_KEY"),
     }
 
 
@@ -64,7 +64,6 @@ def create_documents(documents, test_dir: str = "test_dir"):
 
     print("Documents created successfully.")
 
-
 def delete_documents(documents, test_dir: str = "test_dir"):
     for doc in documents:
         try:
@@ -78,6 +77,7 @@ def delete_documents(documents, test_dir: str = "test_dir"):
 
 def test_create_collection(vdb):
     collection_name = vdb.params.get("collection_name")
+
     with vdb:
         check = vdb.client.collections.exists(collection_name)
 
@@ -128,7 +128,7 @@ def test_load_documents_from_directory(vdb):
     create_documents(test_documents, test_dir)
 
     response = vdb.load_dir(test_dir, "txt")
-
+    print(response)
     assert response >= 3
 
     delete_documents(test_documents, test_dir)
@@ -179,12 +179,12 @@ def test_filter_count__equal(vdb):
                     {
                         "property": "document_name",
                         "operator": "=",
-                        "value": "test_document_1.txt",
+                        "value": "test_document_1",
                     },
                     {
                         "property": "document_name",
                         "operator": "=",
-                        "value": "test_document_2.txt",
+                        "value": "test_document_2",
                     },
                 ]
             },
@@ -260,7 +260,7 @@ def test_filter_count__complex_filter(vdb):
                     {
                         "property": "document_name",
                         "operator": "=",
-                        "value": "project_plan.txt",
+                        "value": "project_plan",
                     },
                     {"property": "content", "operator": "like", "value": "project"},
                 ]
@@ -318,7 +318,6 @@ def test_filter_count__like(vdb):
             {
                 "and": [
                     {"property": "document_name", "operator": "like", "value": "test*"},
-                    {"property": "document_name", "operator": "like", "value": "*.txt"},
                 ]
             },
             {
@@ -326,7 +325,7 @@ def test_filter_count__like(vdb):
                     {
                         "property": "document_name",
                         "operator": "=",
-                        "value": "project_plan.txt",
+                        "value": "project_plan",
                     },
                     {
                         "property": "document_name",
@@ -346,7 +345,7 @@ def test_filter_count__like(vdb):
 def test_filter(vdb):
     filter_expression = {
         "and": [
-            {"property": "document_name", "operator": "=", "value": "project_plan.txt"},
+            {"property": "document_name", "operator": "=", "value": "project_plan"},
         ]
     }
 
@@ -357,7 +356,7 @@ def test_filter(vdb):
 
 def test_filter_delete(vdb):
 
-    result = vdb.filter_delete('document_name', 'test_document_1.txt')
+    result = vdb.filter_delete('document_name', 'test_document_1')
 
     assert result.matches == 1
     assert result.successful == 1
