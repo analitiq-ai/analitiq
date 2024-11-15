@@ -4,7 +4,7 @@ Filename: analitiq/loaders/documents/directory_loader.py
 
 from pathlib import Path
 from typing import List, Optional, Dict
-from analitiq.loaders.documents.schemas import DocumentSchema, ALLOWED_EXTENSIONS
+from analitiq.loaders.documents.schemas import DocumentSchema
 from langchain_core.document_loaders import BaseLoader
 from langchain_community.document_loaders import TextLoader
 from analitiq.factories.loader_factory import DocumentLoaderFactory

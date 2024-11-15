@@ -4,7 +4,7 @@ Filename: analitiq/loaders/documents/text_loader.py
 
 from typing import List
 from langchain_core.document_loaders import BaseLoader
-from analitiq.loaders.documents.schemas import DocumentSchema, DocumentMetadata
+from analitiq.loaders.documents.schemas import DocumentMetadata
 from analitiq.loaders.documents.utils.common_loader_funcs import get_document_type
 from analitiq.loaders.documents.schemas import DocumentSchema, ALLOWED_EXTENSIONS
 from analitiq.logger.logger import initialize_logging

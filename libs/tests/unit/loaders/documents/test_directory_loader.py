@@ -1,7 +1,6 @@
 # Filename: test_directory_loader.py
 
 import pytest
-from pathlib import Path
 from analitiq.loaders.documents.directory_loader import DirectoryLoader
 from analitiq.loaders.documents.schemas import DocumentSchema
 

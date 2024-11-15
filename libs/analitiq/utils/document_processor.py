@@ -1,8 +1,5 @@
-from typing import List
-import re
+from typing import List, Union
 import pathlib
-import ast
-from datetime import datetime, timezone
 from analitiq.loaders.documents.schemas import  Chunk
 
 
@@ -10,7 +7,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "services/search_vdb/examples/example_test_files"
 
 
-def group_results_by_properties(results: object, group_by_properties: List[str]) -> List:
+def group_results_by_properties(results: object, group_by_properties: List[str]) -> Union[List[str], None]:
     """Group a list of dictionaries (chunks of data) by given keys and return the grouped data as a list of dictionaries.
 
     Each dictionary in the returned list corresponds to a unique group as determined by `group_by_properties`. The keys of the

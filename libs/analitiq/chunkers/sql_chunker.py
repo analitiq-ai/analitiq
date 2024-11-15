@@ -3,7 +3,7 @@ Filename: analitiq/chunkers/sql_chunker.py
 
 """
 import sqlparse
-from typing import Any, List, Iterable
+from typing import Any, List
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from analitiq.utils.keyword_extractions import extract_keywords
 from analitiq.base.base_chunker import BaseChunker

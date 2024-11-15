@@ -95,7 +95,7 @@ class Configuration(BaseModel):
 class ProfileLoader:
     """Initializes the ProfileLoader with the provided file path.
 
-    :param file_path: The path to the configuration file.
+    :param profile_config: The path to the configuration file.
     """
 
     def __init__(self, profile_config):

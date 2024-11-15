@@ -1,7 +1,7 @@
 # File: databases/vector/weaviate/weaviate_connector.py
 
 import logging
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Tuple
 import weaviate
 from weaviate.auth import AuthApiKey
 from weaviate.util import generate_uuid5

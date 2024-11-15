@@ -2,7 +2,7 @@
 
 import pytest
 from analitiq.chunkers.python_chunker import PythonChunker
-from analitiq.loaders.documents.schemas import DocumentSchema, DocumentMetadata, Chunk
+from analitiq.loaders.documents.schemas import DocumentSchema, DocumentMetadata
 
 CHUNK_SIZE = 50  # Define the chunk size for testing
 CHUNK_OVERLAP = 10  # Define the overlap for testing

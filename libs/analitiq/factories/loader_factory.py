@@ -2,13 +2,14 @@
 Filename: chunker_factory.py
 
 """
+from typing import Union
 from pathlib import Path
 from analitiq.base.base_loader import BaseLoader
 from analitiq.loaders.documents.schemas import DocumentTypeEnum
 
 class DocumentLoaderFactory:
     @staticmethod
-    def get_loader(file_path: str) -> BaseLoader:
+    def get_loader(file_path: str):
         file_path = Path(file_path)
         suffix = file_path.suffix
         file_extension = suffix[1:] if suffix.startswith('.') else suffix

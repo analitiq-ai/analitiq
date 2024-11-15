@@ -6,8 +6,8 @@ import json
 import yaml
 from pathlib import Path
 from langchain_core.document_loaders import BaseLoader
-from analitiq.loaders.documents.schemas import DocumentSchema, DocumentMetadata, ALLOWED_EXTENSIONS
-from analitiq.loaders.documents.utils.common_loader_funcs import split_filename, get_document_type
+from analitiq.loaders.documents.schemas import DocumentSchema, ALLOWED_EXTENSIONS
+from analitiq.loaders.documents.utils.common_loader_funcs import get_document_type
 from analitiq.agents.sql.sql_agent import logger
 from langchain_core.documents.base import Document
 

@@ -4,7 +4,6 @@ This is an example of how to create a collection in Vector Database using Analit
 import os
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 from dotenv import load_dotenv
-import weaviate
 load_dotenv()
 
 vdb_params = {

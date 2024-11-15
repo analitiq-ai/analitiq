@@ -46,7 +46,6 @@ class CustomRecursiveJsonSplitter(RecursiveJsonSplitter):
         except json.JSONDecodeError as e:
             logger.error(f"Document {document.document_name} is not a valid JSON")
             raise e  # Re-raise the caught exception
-            return False
 
     def split_json(self, node, max_length):
         """
@@ -117,7 +116,7 @@ class CustomRecursiveJsonSplitter(RecursiveJsonSplitter):
         _split_json(node, [])
         return chunks
 
-    def split_documents(self, documents: Iterable[DocumentSchema]) -> List[Document]:
+    def split_documents(self, documents: Iterable[DocumentSchema]) -> List[Chunk]:
         """Split a list of documents in defined chunks."""
         return_chunks: List[Chunk] = []
         for doc in documents:

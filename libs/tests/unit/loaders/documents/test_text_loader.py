@@ -3,7 +3,6 @@
 import pytest
 from analitiq.loaders.documents.text_loader import TextLoader
 from analitiq.loaders.documents.schemas import DocumentSchema, DocumentMetadata, ALLOWED_EXTENSIONS
-from analitiq.loaders.documents.utils.common_loader_funcs import get_document_type
 
 # Test cases for TextLoader initialization and loading functionality
 

@@ -1,6 +1,6 @@
 # tests/unit/chunkers/test_json_chunker.py
 
-import pytest
+
 import json
 from analitiq.chunkers.json_chunker import JsonChunker
 from analitiq.loaders.documents.schemas import DocumentSchema, DocumentMetadata, Chunk

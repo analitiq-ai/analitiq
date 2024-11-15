@@ -39,7 +39,6 @@ class DocumentMetadata(BaseModel):
     :param document_type: The type of the document. Defaults to DocumentTypeEnum.txt.
     :param document_source: The source of the document. Defaults to DocumentSourceEnum.upl.
     :param document_tags: Optional list of tags associated with the document.
-    :param created_ts: The timestamp when the document metadata was created.
 
     """
     document_name: str

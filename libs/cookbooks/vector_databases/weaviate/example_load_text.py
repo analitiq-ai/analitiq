@@ -2,7 +2,6 @@
 This is an example of how to load a directory into the Vector Database using Analitiq.
 """
 import os
-from analitiq.loaders.documents.schemas import DocumentSchema, DocumentMetadata
 from analitiq.factories.vector_database_factory import VectorDatabaseFactory
 
 from dotenv import load_dotenv

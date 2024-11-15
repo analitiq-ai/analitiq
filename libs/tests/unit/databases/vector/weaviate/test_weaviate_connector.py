@@ -1,5 +1,4 @@
 # pylint: disable=redefined-outer-name
-import pathlib
 import pytest
 import os
 from dotenv import load_dotenv

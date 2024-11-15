@@ -2,7 +2,7 @@
 
 import pytest
 from analitiq.chunkers.text_chunker import TextChunker
-from analitiq.loaders.documents.schemas import DocumentSchema, DocumentMetadata, Chunk
+from analitiq.loaders.documents.schemas import DocumentSchema, DocumentMetadata
 
 CHUNK_SIZE = 10  # Set the chunk size to 10 for testing
 CHUNK_OVERLAP = 2  # Adjust if overlap is defined differently in your implementation
