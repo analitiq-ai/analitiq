@@ -2,9 +2,8 @@
 Filename: chunker_factory.py
 
 """
-from typing import Union
+
 from pathlib import Path
-from analitiq.base.base_loader import BaseLoader
 from analitiq.loaders.documents.schemas import DocumentTypeEnum
 
 class DocumentLoaderFactory:
