@@ -29,9 +29,6 @@ for item in collection.iterator():
 
 vdb.client.close()
 
-import requests
-import json
-
 
 # Note: Replace "YOUR_API_KEY_HERE" with your actual OpenAI API key.
 # You can obtain an API key from https://platform.openai.com/account/api-keys

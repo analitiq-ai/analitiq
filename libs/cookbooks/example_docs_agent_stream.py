@@ -5,6 +5,7 @@ import asyncio
 from analitiq.agents.search_vdb.vdb_agent import VDBAgent
 from analitiq.main import Analitiq
 from dotenv import load_dotenv
+import pandas as pd
 load_dotenv()
 
 

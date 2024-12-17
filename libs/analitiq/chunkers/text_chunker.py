@@ -4,7 +4,7 @@ Filename: analitiq/chunkers/text_chunker.py
 Class will split a text into text chunks
 """
 
-from typing import List
+from typing import List, Union
 from analitiq.base.base_chunker import BaseChunker
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from analitiq.base.base_chunker import CHUNK_SIZE, CHUNK_OVERLAP
@@ -17,7 +17,7 @@ class TextChunker(BaseChunker):
         self.max_chunk_size = max_chunk_size
         self.chunk_overlap = chunk_overlap
 
-    def chunk(self, document: DocumentSchema) -> List[Chunk]:
+    def chunk(self, document: DocumentSchema) -> Union[List[Chunk], None]:
         if document.document_content == '':
             return None
 
