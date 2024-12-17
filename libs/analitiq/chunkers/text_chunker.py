@@ -35,6 +35,7 @@ class TextChunker(BaseChunker):
                 content=chunk,
                 document_num_char=len(document.document_content),
                 document_name=document.metadata.document_name,
+                document_tags=document.metadata.document_tags,
                 document_uuid = document.uuid,
                 chunk_num_char=len(chunk),
                 content_kw = extract_keywords(chunk)

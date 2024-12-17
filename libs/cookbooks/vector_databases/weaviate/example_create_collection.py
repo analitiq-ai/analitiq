@@ -8,11 +8,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 vdb_params = {
-    "collection_name": os.getenv("WEAVIATE_COLLECTION"),
+    "collection_name": os.getenv("COLLECTION_NAME"),
     "tenant_name": os.getenv("WEAVIATE_TENANT_NAME"),
     "type": os.getenv("VDB_TYPE"),
-    "host": os.getenv("WEAVIATE_URL"),
-    "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
+    "host": os.getenv("VDB_HOST"),
+    "api_key": os.getenv("VDB_API_KEY")
 }
 
 

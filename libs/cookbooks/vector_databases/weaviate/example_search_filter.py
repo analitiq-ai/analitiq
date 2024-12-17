@@ -8,16 +8,17 @@ from dotenv import load_dotenv
 load_dotenv()
 
 vdb_params = {
-    "collection_name": os.getenv("WEAVIATE_COLLECTION"),
+    "collection_name": os.getenv("COLLECTION_NAME"),
     "tenant_name": os.getenv("WEAVIATE_TENANT_NAME"),
     "type": os.getenv("VDB_TYPE"),
-    "host": os.getenv("WEAVIATE_URL"),
-    "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
+    "host": os.getenv("VDB_HOST"),
+    "api_key": os.getenv("VDB_API_KEY")
 }
+
 
 filter_expression = {
     "and": [
-        {"property": "document_name", "operator": "=", "value": "project_plan"},
+        {"property": "document_tags", "operator": "contains_any", "value": ["ddl"]}
     ]
 }
 
@@ -25,4 +26,18 @@ vdb = VectorDatabaseFactory.connect(vdb_params)
 
 response = vdb.search_filter('venue', filter_expression)
 
-print(response)
+# Iterate through each object in the 'objects' list
+for obj in response.objects:
+    # Access the properties of the object
+    uuid = obj.uuid
+    metadata = obj.metadata
+    properties = obj.properties
+
+    # Print or process the object details as needed
+    print(f"UUID: {uuid}")
+    print(f"Metadata: {metadata}")
+    print(f"Properties: {properties}")
+    print("-" * 40)  # Separator for clarity
+
+
+#print(response)

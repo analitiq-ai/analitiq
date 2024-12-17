@@ -11,11 +11,13 @@ from analitiq.logger.logger import initialize_logging
 logger, chat_logger = initialize_logging()
 
 class TextLoader(BaseLoader):
-    def __init__(self, content: str, filename: str, extension: str):
+    def __init__(self, content: str, filename: str, extension: str, document_uuid: str = None, tags: List[str] = None):
         logger.info("Text loader initialized")
         self.content = content
         self.filename = filename
         self.extension = extension
+        self.document_uuid = document_uuid
+        self.tags = tags
 
         # if file is empty, pass
         if len(content) == 0:
@@ -29,7 +31,11 @@ class TextLoader(BaseLoader):
 
         metadata = DocumentMetadata(
             document_name=self.filename,
+            document_tags=self.tags,
             document_type=get_document_type(self.extension)
         )
 
-        return [DocumentSchema(document_content=self.content, metadata=metadata)]
+        return [DocumentSchema(document_content=self.content,
+                               uuid=self.document_uuid,
+                               metadata=metadata)
+                ]

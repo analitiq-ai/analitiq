@@ -309,7 +309,7 @@ class WeaviateConnector(BaseVectorDatabase):
 
         return len(chunks) - len(collection.batch.failed_objects)
 
-    def load_file(self, path: str) -> int:
+    def load_file(self, path: str) -> (List, int):
         """Load a file into Weaviate.
 
         Reads the file at the given path, processes it into chunks, and loads the chunks into Weaviate.
@@ -337,9 +337,9 @@ class WeaviateConnector(BaseVectorDatabase):
         chunker = ChunkerFactory.get_chunker(document.metadata.document_type.value)
         chunks = chunker.chunk(document)
 
-        return self.load_chunks(chunks)
+        return [document], self.load_chunks(chunks)
 
-    def load_dir(self, path: str, extension: str) -> int:
+    def load_dir(self, path: str, extension: str) -> (List, int):
         """Load files from a directory into Weaviate.
 
         Processes all files with the given extension in the directory and loads them into Weaviate.
@@ -372,25 +372,31 @@ class WeaviateConnector(BaseVectorDatabase):
             chunker = ChunkerFactory.get_chunker(doc.metadata.document_type.value)
             chunks = chunker.chunk(doc)
             document_chunks.extend(chunks)
-        return self.load_chunks(document_chunks)
+        return documents, self.load_chunks(document_chunks)
 
-    def load_text(self, content: str, document_name: str, document_type: str) -> int:
+    def load_text(self, content: str,
+                  document_name: str,
+                  document_type: str,
+                  document_uuid: str = None,
+                  document_tags: str = None) -> (List, int):
         """
         Load a text chunk into the Vector Database.
         :param content: the content of the document
         :param document_name: the name of the document
         :param document_type: the type of the document
+        :param document_uuid: the uuid of the document if you want to maintain link to the source system from which the document came.
+        :param document_tags: the tags of the document
         :return: The number of chunks that were loaded (always returns 1).
         """
 
-        loader = TextLoader(content, document_name, document_type)
+        loader = TextLoader(content, document_name, document_type, document_uuid, document_tags)
         documents = loader.load()
 
         document=documents[0]
         chunker = ChunkerFactory.get_chunker(document.metadata.document_type.value)
         chunks = chunker.chunk(document)
 
-        return self.load_chunks(chunks)
+        return [document], self.load_chunks(chunks)
 
     @search_only
     def kw_search(self, query: str, limit: int = 3) -> QueryReturn:
@@ -623,6 +629,7 @@ class WeaviateConnector(BaseVectorDatabase):
         query_builder = QueryBuilder()
         filters = query_builder.construct_query(filter_expression)
 
+
         try:
             query_vector = self.vectorizer.vectorize(query)
             with self:
@@ -630,7 +637,6 @@ class WeaviateConnector(BaseVectorDatabase):
                 response: QueryReturn = collection.query.near_vector(
                     near_vector=query_vector,
                     filters=filters,
-                    limit=10,
                     return_metadata=MetadataQuery(distance=True, score=True),
                 )
 
@@ -639,7 +645,7 @@ class WeaviateConnector(BaseVectorDatabase):
             return None
 
         if not response.objects:
-            return None
+            return []
 
         if group_properties:
             return group_results_by_properties(response, group_properties)
@@ -801,6 +807,26 @@ class WeaviateConnector(BaseVectorDatabase):
             collection = self.__get_tenant_collection_object()
             response = collection.data.delete_many(
                 where=weaviate.classes.query.Filter.by_property(property_name).equal(property_value)
+            )
+
+        return response
+
+    def delete_many_on_param(self, property_name:str, filter_list: List[str]):
+
+        with self:
+            collection = self.__get_tenant_collection_object()
+            response = collection.data.delete_many(
+                where=weaviate.classes.query.Filter.by_property(property_name).contains_any(filter_list)
+            )
+
+        return response
+
+    def delete_many_on_uuids(self, uuids: List[str]):
+
+        with self:
+            collection = self.__get_tenant_collection_object()
+            response = collection.data.delete_many(
+                where=weaviate.classes.query.Filter.by_id().contains_any(uuids)
             )
 
         return response

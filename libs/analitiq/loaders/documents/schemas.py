@@ -81,3 +81,4 @@ class Chunk(DocumentMetadata):
     document_uuid: str = None
     chunk_num_char: int
     content_kw: str = None
+    created_ts: str = Field(default_factory=current_timestamp)

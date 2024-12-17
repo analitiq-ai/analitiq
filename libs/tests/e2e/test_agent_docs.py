@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 def load_environment():
     """Loads environment variables from .env file"""
 
-    load_dotenv(".env", override=True)
+    load_dotenv("/Users/kirillandriychuk/Documents/Projects/analitiq-ai/.env", override=True)
 
 @pytest.fixture(name="agent")
 def agent_fixture(db_params, llm_params, vdb_params):

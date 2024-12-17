@@ -9,17 +9,17 @@ load_dotenv()
 
 vdb_params = {
     "type": os.getenv("VDB_TYPE"),
-    "collection_name": os.getenv("WEAVIATE_COLLECTION"),
+    "collection_name": os.getenv("COLLECTION_NAME"),
     "tenant_name": os.getenv("WEAVIATE_TENANT_NAME"),
-    "host": os.getenv("WEAVIATE_URL"),
-    "api_key": os.getenv("WEAVIATE_CLIENT_SECRET")
+    "host": os.getenv("VDB_HOST"),
+    "api_key": os.getenv("VDB_API_KEY")
 }
 
 vdb = VectorDatabaseFactory.connect(vdb_params)
 
 multi_collection = vdb.client.collections.get(vdb_params['collection_name'])
 
-result = multi_collection.tenants.remove(['12345-12345-24324'])
+result = multi_collection.tenants.remove(['Belle'])
 
 vdb.close()
 

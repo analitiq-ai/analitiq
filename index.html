@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Kirill Andriychuk | Personalized Data Analytics, Data Engineering, and AI Solutions for SMEs.">
+    <title>Key2Market GmbH | Kirill Andriychuk</title>
+    <style>
+        /* General Styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Header Styles */
+        header {
+            background-color: #edf2f7;
+            text-align: center;
+            padding: 50px 20px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            color: #2d3748;
+        }
+
+        header p {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            color: #4a5568;
+        }
+
+        /* Container Styles */
+        .container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #2d3748;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        /* Skills Section */
+        .skills {
+            margin-bottom: 40px;
+        }
+
+        .skill {
+            background-color: #fff;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .skill h3 {
+            margin-top: 0;
+            color: #2c5282;
+        }
+
+        .skill p {
+            color: #4a5568;
+        }
+
+        /* Contact Form */
+        .contact-form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .contact-form label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .contact-form input,
+        .contact-form textarea,
+        .contact-form button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+        }
+
+        .contact-form button {
+            background-color: #63b3ed;
+            color: white;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+
+        .contact-form button:hover {
+            background-color: #4299e1;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 20px;
+            background-color: #edf2f7;
+            color: #4a5568;
+        }
+
+        footer span {
+            unicode-bidi: bidi-override;
+            direction: rtl;
+        }
+    </style>
+</head>
+
+<body>
+<header>
+    <h1>Hello, I'm Kirill Andriychuk</h1>
+    <p>Helping SMEs transform data into actionable insights and innovative solutions.</p>
+</header>
+
+<div class="container">
+    <section class="skills">
+        <h2 class="section-title">What I Can Do for Your Business</h2>
+
+        <div class="skill">
+            <h3>Data Integration and ETL Development</h3>
+            <p>I create seamless data pipelines to unify complex data sources, saving your team time and ensuring your business scales effortlessly.</p>
+        </div>
+
+        <div class="skill">
+            <h3>Data Modeling for Business Insights</h3>
+            <p>By building tailored data models, I help businesses like yours make faster, smarter decisions without unnecessary costs.</p>
+        </div>
+
+        <div class="skill">
+            <h3>AI-Driven Analytics and Applications</h3>
+            <p>From anomaly detection to AI-powered dashboards, I bring cutting-edge solutions that give your business a competitive edge.</p>
+        </div>
+
+        <div class="skill">
+            <h3>End-to-End Automation</h3>
+            <p>Let me automate repetitive data workflows, so you can focus on the strategic tasks that matter most.</p>
+        </div>
+
+        <div class="skill">
+            <h3>Custom AI and NLP Solutions</h3>
+            <p>Enhance customer experiences and drive personalized marketing with AI-driven solutions built specifically for your needs.</p>
+        </div>
+
+        <div class="skill">
+            <h3>Strategic Consulting and Scoping</h3>
+            <p>Get detailed roadmaps and tailored recommendations to ensure your data initiatives deliver maximum value.</p>
+        </div>
+    </section>
+
+    <section>
+        <h2 class="section-title">Get in Touch</h2>
+        <div class="contact-form">
+            <form onsubmit="return sendEmail(this)">
+                <label for="name">Your Name:</label>
+                <input type="text" id="name" name="name" placeholder="Enter your name" required>
+
+                <label for="email">Your Email:</label>
+                <input type="email" id="email" name="email" placeholder="Enter your email" required>
+
+                <label for="message">Your Message:</label>
+                <textarea id="message" name="message" rows="5" placeholder="How can I help you?" required></textarea>
+
+                <button type="submit">Request Free Consultation</button>
+            </form>
+        </div>
+    </section>
+</div>
+
+<footer>
+    <p>&copy; 2024 Key2Market GmbH | Email: <span class="email-protected">moc.tekram2yek@llirik</span></p>
+</footer>
+
+<script>
+    // Protect email from harvesting
+    document.querySelectorAll('.email-protected').forEach(span => {
+        span.textContent = span.textContent.split('').reverse().join('');
+    });
+
+    // Simulated form submission
+    function sendEmail(form) {
+        const name = form.name.value;
+        const email = form.email.value;
+        const message = form.message.value;
+
+        const mailtoLink = `mailto:kirill@key2market.com?subject=Consultation%20Request&body=Name:%20${encodeURIComponent(name)}%0AEmail:%20${encodeURIComponent(email)}%0AMessage:%20${encodeURIComponent(message)}`;
+        window.location.href = mailtoLink;
+
+        return false; // Prevent actual form submission
+    }
+</script>
+</body>
+
+</html>

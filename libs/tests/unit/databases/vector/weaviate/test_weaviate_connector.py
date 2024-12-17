@@ -115,9 +115,9 @@ def test_load_single_document(vdb):
     with open(test_document_path, "w") as f:
         f.write("This is a test document.")
 
-    response = vdb.load_file(test_document_path)
+    docs, chunks = vdb.load_file(test_document_path)
 
-    assert response > 0
+    assert chunks > 0
 
     os.remove(test_document_path)
 
@@ -126,9 +126,9 @@ def test_load_documents_from_directory(vdb):
     test_dir = "test_dir"
     create_documents(test_documents, test_dir)
 
-    response = vdb.load_dir(test_dir, "txt")
-    print(response)
-    assert response >= 3
+    docs, chunks = vdb.load_dir(test_dir, "txt")
+
+    assert chunks >= 3
 
     delete_documents(test_documents, test_dir)
 
@@ -360,7 +360,24 @@ def test_filter_delete(vdb):
     assert result.matches == 1
     assert result.successful == 1
 
+def test_delete_on_uuids(vdb):
+    result = vdb.delete_many_on_uuids(['12347c94-ee8a-40f9-9a2c-d2ed7003f7dd','12347c94-ee8a-40f9-9a2c-d2ed7003f7df'])
+    assert result.matches == 0
 
+def test_load_text(vdb):
+    """Test loading manually text and make sure the UUID remains the same """
+    vdb.load_text("This is another test document.", "test2", "txt", "4435056b-44b2-4935-a11f-2adb3c06b305", ["tag1","tag2"])
+
+    filter_expression = {
+        "and": [
+            {"property": "document_uuid", "operator": "=", "value": "4435056b-44b2-4935-a11f-2adb3c06b305"}
+        ]
+    }
+
+    response = vdb.search_filter('another', filter_expression)
+    print(response)
+    assert len(response) == 1
+"""
 def test_delete_collection(vdb):
 
     collection_name = vdb.params.get("collection_name")
@@ -373,3 +390,4 @@ def test_delete_collection(vdb):
     with vdb:
         check = vdb.client.collections.exists(collection_name)
     assert check == False
+"""

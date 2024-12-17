@@ -22,11 +22,11 @@ Write an initial draft of the query. Then double check the {dialect} query for c
 - Using the proper columns for joins.
 - Make sure the SQL complies with {dialect} standard.
 - Keep in mind that underlying granular data may be very large. Try to obtain a summarized set of data from the database, but granular enough to answer the input question.
-
+```
 {docs_ddl}
 
 {docs_schema}
-
+```
 {format_instructions}
 """
 

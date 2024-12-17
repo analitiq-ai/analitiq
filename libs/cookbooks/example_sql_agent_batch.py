@@ -4,7 +4,7 @@ from analitiq.agents.sql.sql_agent import SQLAgent
 from analitiq.main import Analitiq
 from dotenv import load_dotenv
 
-ENV_VARIABLES = ["WEAVIATE_COLLECTION", "WEAVIATE_URL", "WEAVIATE_CLIENT_SECRET", "LLM_MODEL_NAME",
+ENV_VARIABLES = ["COLLECTION_NAME", "VDB_HOST", "VDB_API_KEY", "LLM_MODEL_NAME",
                  "CREDENTIALS_PROFILE_NAME",
                  "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "REGION_NAME", "DB_NAME", "DB_DIALECT", "DB_HOST",
                  "DB_USERNAME",
@@ -56,11 +56,11 @@ def define_llm_params(env_vars):
 
 def define_vdb_params(env_vars):
     return {
-        "collection_name": env_vars.get("WEAVIATE_COLLECTION"),
+        "collection_name": env_vars.get("COLLECTION_NAME"),
         "tenant_name": os.getenv("WEAVIATE_TENANT_NAME"),
         "type": os.getenv("VDB_TYPE"),
-        "host": env_vars.get("WEAVIATE_URL"),
-        "api_key": env_vars.get("WEAVIATE_CLIENT_SECRET")
+        "host": env_vars.get("VDB_HOST"),
+        "api_key": env_vars.get("VDB_API_KEY")
     }
 
 
@@ -82,7 +82,7 @@ if __name__ == "__main__":
     inst = Analitiq(agents, params)
 
     # Run the pipeline
-    agents_responses = inst.run(user_query="Give me a count of events.")
+    agents_responses = inst.run(user_query="Count records in table revenues")
     results = agents_responses.get_results()
     print(results)
 
